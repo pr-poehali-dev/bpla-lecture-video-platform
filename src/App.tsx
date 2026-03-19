@@ -14,6 +14,7 @@ import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AdminPage from "@/pages/AdminPage";
 import Layout from "@/components/Layout";
+import Intro from "@/components/Intro";
 import { api } from "@/api";
 
 export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions";
@@ -33,6 +34,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [adminViewSite, setAdminViewSite] = useState(false);
+  const [introDone, setIntroDone] = useState(() => !!sessionStorage.getItem("intro_done"));
 
   useEffect(() => {
     const token = localStorage.getItem("drone_token");
@@ -54,6 +56,15 @@ export default function App() {
     setUser(null);
     setAuthPage("login");
   };
+
+  if (!introDone) {
+    return (
+      <Intro onDone={() => {
+        sessionStorage.setItem("intro_done", "1");
+        setIntroDone(true);
+      }} />
+    );
+  }
 
   if (checking) {
     return (
