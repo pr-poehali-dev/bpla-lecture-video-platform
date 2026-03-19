@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function LoginPage({ onLogin, onRegister }: Props) {
-  const [email, setEmail] = useState("");
+  const [callsign, setCallsign] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await api.login({ email, password });
+    const res = await api.login({ callsign, password });
     setLoading(false);
     if (res.token) {
       localStorage.setItem("drone_token", res.token);
@@ -75,14 +75,14 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
 
           <form onSubmit={handle} className="space-y-4">
             <div>
-              <label className="font-mono text-[10px] text-[#3a5570] tracking-widest block mb-1.5">EMAIL</label>
+              <label className="font-mono text-[10px] text-[#3a5570] tracking-widest block mb-1.5">ПОЗЫВНОЙ</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={callsign}
+                onChange={(e) => setCallsign(e.target.value)}
                 required
                 className="w-full bg-[#050810] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-plex text-sm px-3 py-2.5 rounded-sm outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060]"
-                placeholder="operator@example.com"
+                placeholder="Ваш позывной"
               />
             </div>
             <div>

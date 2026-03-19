@@ -25,10 +25,10 @@ export interface FileItem {
 }
 
 export const api = {
-  register: (data: { email: string; password: string; name: string }) =>
+  register: (data: { callsign: string; name: string; email: string; password: string }) =>
     fetch(`${AUTH_URL}/?action=register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
 
-  login: (data: { email: string; password: string }) =>
+  login: (data: { callsign: string; password: string }) =>
     fetch(`${AUTH_URL}/?action=login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
 
   me: () =>

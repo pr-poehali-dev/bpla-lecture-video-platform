@@ -4,7 +4,7 @@
       "name": "Register new user",
       "method": "POST",
       "path": "/?action=register",
-      "body": {"email": "test_drone_777@example.com", "password": "test1234", "name": "Test User"},
+      "body": {"email": "test_drone_999@example.com", "password": "test1234", "name": "Test User 999", "callsign": "Сокол-999"},
       "expectedStatus": 201,
       "expectedBody": {"message": "Заявка отправлена. Ожидайте одобрения администратора."},
       "bodyMatcher": "partial"
@@ -13,7 +13,7 @@
       "name": "Login pending user",
       "method": "POST",
       "path": "/?action=login",
-      "body": {"email": "test_drone_777@example.com", "password": "test1234"},
+      "body": {"callsign": "Сокол-999", "password": "test1234"},
       "expectedStatus": 403,
       "expectedBody": {"error": "pending"},
       "bodyMatcher": "partial"

@@ -1,6 +1,7 @@
 """
 Аутентификация пользователей: регистрация, вход, проверка сессии, выход.
 Роутинг через query param ?action=register|login|me|logout
+Вход выполняется по позывному (callsign) и паролю.
 """
 import json
 import os
@@ -19,8 +20,7 @@ def get_schema():
     return os.environ.get("MAIN_DB_SCHEMA", "public")
 
 def get_conn():
-    conn = psycopg2.connect(os.environ["DATABASE_URL"])
-    return conn
+    return psycopg2.connect(os.environ["DATABASE_URL"])
 
 def q(table: str) -> str:
     return f'"{get_schema()}".{table}'
@@ -57,8 +57,9 @@ def handler(event: dict, context) -> dict:
         email = (body.get("email") or "").strip().lower()
         password = body.get("password") or ""
         name = (body.get("name") or "").strip()
+        callsign = (body.get("callsign") or "").strip()
 
-        if not email or not password or not name:
+        if not email or not password or not name or not callsign:
             return err("Заполните все поля")
         if len(password) < 6:
             return err("Пароль минимум 6 символов")
@@ -67,28 +68,35 @@ def handler(event: dict, context) -> dict:
         if cur.fetchone():
             return err("Email уже зарегистрирован")
 
+        cur.execute(f"SELECT id FROM {q('users')} WHERE callsign = %s", (callsign,))
+        if cur.fetchone():
+            return err("Позывной уже занят")
+
         pw_hash = hash_password(password)
         cur.execute(
-            f"INSERT INTO {q('users')} (email, password_hash, name, status) VALUES (%s, %s, %s, 'pending') RETURNING id",
-            (email, pw_hash, name)
+            f"INSERT INTO {q('users')} (email, password_hash, name, callsign, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id",
+            (email, pw_hash, name, callsign)
         )
         conn.commit()
         return ok({"message": "Заявка отправлена. Ожидайте одобрения администратора."}, 201)
 
-    # login
+    # login — по позывному
     if action == "login" and method == "POST":
-        email = (body.get("email") or "").strip().lower()
+        callsign = (body.get("callsign") or "").strip()
         password = body.get("password") or ""
 
-        if not email or not password:
-            return err("Введите email и пароль")
+        if not callsign or not password:
+            return err("Введите позывной и пароль")
 
         pw_hash = hash_password(password)
-        cur.execute(f"SELECT id, name, status, is_admin FROM {q('users')} WHERE email = %s AND password_hash = %s", (email, pw_hash))
+        cur.execute(
+            f"SELECT id, name, callsign, email, status, is_admin FROM {q('users')} WHERE callsign = %s AND password_hash = %s",
+            (callsign, pw_hash)
+        )
         user = cur.fetchone()
 
         if not user:
-            return err("Неверный email или пароль", 401)
+            return err("Неверный позывной или пароль", 401)
 
         status = user["status"]
         if status == "pending":
@@ -105,7 +113,8 @@ def handler(event: dict, context) -> dict:
             "user": {
                 "id": user["id"],
                 "name": user["name"],
-                "email": email,
+                "callsign": user["callsign"],
+                "email": user["email"],
                 "is_admin": user["is_admin"],
                 "status": status,
             }
@@ -118,7 +127,7 @@ def handler(event: dict, context) -> dict:
         if not token:
             return err("Не авторизован", 401)
 
-        cur.execute(f"SELECT id, name, email, status, is_admin FROM {q('users')} WHERE session_token = %s", (token,))
+        cur.execute(f"SELECT id, name, callsign, email, status, is_admin FROM {q('users')} WHERE session_token = %s", (token,))
         user = cur.fetchone()
         if not user:
             return err("Сессия недействительна", 401)
