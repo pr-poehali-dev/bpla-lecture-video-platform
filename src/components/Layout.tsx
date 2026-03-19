@@ -8,6 +8,7 @@ const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "videos", label: "Видео", icon: "Play" },
   { id: "drone-types", label: "Типы БпЛА", icon: "Plane" },
   { id: "materials", label: "Материалы", icon: "FileText" },
+  { id: "firmware", label: "Прошивки FPV КТ", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
   { id: "downloads", label: "Загрузки", icon: "Download" },
 ];

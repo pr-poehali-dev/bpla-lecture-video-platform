@@ -10,6 +10,7 @@ import MaterialsPage from "@/pages/MaterialsPage";
 import DroneTypesPage from "@/pages/DroneTypesPage";
 import DownloadsPage from "@/pages/DownloadsPage";
 import DiscussionsPage from "@/pages/DiscussionsPage";
+import FirmwarePage from "@/pages/FirmwarePage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AdminPage from "@/pages/AdminPage";
@@ -17,7 +18,7 @@ import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import { api } from "@/api";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -111,6 +112,7 @@ export default function App() {
       case "drone-types": return <DroneTypesPage />;
       case "downloads": return <DownloadsPage />;
       case "discussions": return <DiscussionsPage />;
+      case "firmware": return <FirmwarePage />;
       default: return <HomePage onNavigate={setCurrentPage} />;
     }
   };

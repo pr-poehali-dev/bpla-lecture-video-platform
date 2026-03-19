@@ -52,10 +52,11 @@ export const api = {
   },
 
   files: {
-    list: (type?: "video" | "document", category?: string): Promise<{ files: FileItem[] }> => {
+    list: (type?: "video" | "document", category?: string, section?: string): Promise<{ files: FileItem[] }> => {
       const params = new URLSearchParams();
       if (type) params.set("type", type);
       if (category) params.set("category", category);
+      if (section) params.set("section", section);
       return fetch(`${FILES_URL}/?${params.toString()}`).then((r) => r.json());
     },
 
@@ -63,6 +64,7 @@ export const api = {
       title: string;
       description: string;
       category: string;
+      section?: string;
       original_name: string;
       mime_type: string;
       file_data: string;
@@ -79,7 +81,7 @@ export const api = {
         headers: { Authorization: `Bearer ${getToken()}` },
       }).then((r) => r.json()),
 
-    addYoutube: (data: { title: string; description: string; category: string; youtube_id: string }) =>
+    addYoutube: (data: { title: string; description: string; category: string; section?: string; youtube_id: string }) =>
       fetch(`${FILES_URL}/`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },

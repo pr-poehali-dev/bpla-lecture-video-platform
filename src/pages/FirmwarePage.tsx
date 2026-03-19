@@ -1,0 +1,183 @@
+import { useState, useEffect } from "react";
+import { api, FileItem } from "@/api";
+import Icon from "@/components/ui/icon";
+
+const FIRMWARE_CATEGORIES = ["Все", "Betaflight", "ArduPilot", "ExpressLRS", "OpenTX/EdgeTX", "Инструкции"];
+
+const MIME_LABELS: Record<string, { label: string; color: string }> = {
+  "application/pdf": { label: "PDF", color: "#ff6b00" },
+  "text/plain": { label: "TXT", color: "#00ff88" },
+  "application/msword": { label: "DOC", color: "#2b7fff" },
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": { label: "DOCX", color: "#2b7fff" },
+  "application/zip": { label: "ZIP", color: "#a855f7" },
+  "application/octet-stream": { label: "BIN", color: "#00f5ff" },
+};
+
+function formatSize(bytes: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
+
+function DocViewerModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const isPdf = file.mime_type === "application/pdf";
+  const isTxt = file.mime_type === "text/plain";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(5,8,16,0.95)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl flex flex-col"
+        style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "90vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="font-mono text-sm text-white truncate">{file.title}</span>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+            <a href={file.cdn_url} download={file.original_name} className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors flex items-center gap-1">
+              <Icon name="Download" size={14} />
+              Скачать
+            </a>
+            <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff]">
+              <Icon name="X" size={20} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden" style={{ background: "#050810", minHeight: 0 }}>
+          {isPdf ? (
+            <iframe src={`${file.cdn_url}#toolbar=1`} className="w-full h-full" style={{ minHeight: "70vh", border: "none" }} title={file.title} />
+          ) : isTxt ? (
+            <TxtViewer url={file.cdn_url} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
+              <Icon name="FileDown" size={48} className="text-[#3a5570]" />
+              <div className="font-mono text-sm text-[#3a5570] text-center">Предпросмотр недоступен для этого формата</div>
+              <a href={file.cdn_url} download={file.original_name} className="font-mono text-xs px-4 py-2 transition-all" style={{ border: "1px solid #00f5ff", color: "#00f5ff", background: "rgba(0,245,255,0.05)" }}>
+                СКАЧАТЬ ФАЙЛ
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TxtViewer({ url }: { url: string }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    fetch(url).then((r) => r.text()).then(setText).catch(() => setText("Не удалось загрузить файл"));
+  }, [url]);
+  if (text === null) return <div className="flex items-center justify-center h-full py-20"><div className="font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div></div>;
+  return <div className="h-full overflow-auto p-6" style={{ minHeight: "60vh" }}><pre className="font-mono text-xs text-[#8899aa] whitespace-pre-wrap leading-relaxed">{text}</pre></div>;
+}
+
+export default function FirmwarePage() {
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("Все");
+  const [viewing, setViewing] = useState<FileItem | null>(null);
+
+  useEffect(() => {
+    api.files.list("document", undefined, "firmware").then((res) => {
+      setFiles(res.files || []);
+      setLoading(false);
+    });
+  }, []);
+
+  const filtered = activeCategory === "Все"
+    ? files
+    : files.filter((f) => f.category === activeCategory);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {viewing && <DocViewerModal file={viewing} onClose={() => setViewing(null)} />}
+
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 flex items-center justify-center" style={{ border: "1px solid #00f5ff" }}>
+          <Icon name="Cpu" size={16} className="text-[#00f5ff]" />
+        </div>
+        <div>
+          <h1 className="font-mono text-lg text-white tracking-wider">ПРОШИВКИ FPV КТ</h1>
+          <p className="font-mono text-xs text-[#3a5570]">ПРОШИВКИ, КОНФИГИ И ИНСТРУКЦИИ</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {FIRMWARE_CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className="font-mono text-xs px-3 py-1.5 transition-all"
+            style={{
+              border: `1px solid ${activeCategory === cat ? "#00f5ff" : "#1a2a3a"}`,
+              color: activeCategory === cat ? "#00f5ff" : "#3a5570",
+              background: activeCategory === cat ? "rgba(0,245,255,0.05)" : "transparent",
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="text-center py-20">
+          <div className="font-mono text-xs text-[#3a5570] tracking-widest animate-pulse">ЗАГРУЗКА...</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20" style={{ border: "1px solid #1a2a3a" }}>
+          <Icon name="Cpu" size={32} className="text-[#3a5570] mx-auto mb-3" />
+          <div className="font-mono text-xs text-[#3a5570] tracking-widest">ФАЙЛЫ НЕ НАЙДЕНЫ</div>
+          <div className="font-mono text-xs text-[#1a2a3a] mt-1">Администратор ещё не добавил прошивки</div>
+        </div>
+      ) : (
+        <div style={{ border: "1px solid #1a2a3a" }}>
+          <div className="hidden md:grid font-mono text-xs text-[#3a5570] px-4 py-2" style={{ gridTemplateColumns: "auto 1fr auto auto auto", gap: "1rem", borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
+            <span>#</span><span>НАЗВАНИЕ</span><span>КАТЕГОРИЯ</span><span>РАЗМЕР</span><span>ДЕЙСТВИЯ</span>
+          </div>
+          {filtered.map((file, i) => {
+            const meta = MIME_LABELS[file.mime_type] || { label: "FILE", color: "#3a5570" };
+            return (
+              <div
+                key={file.id}
+                className="flex items-center px-4 py-3 transition-colors hover:bg-[#0a1520] cursor-pointer gap-3"
+                style={{ borderBottom: i < filtered.length - 1 ? "1px solid #0d1a28" : "none" }}
+                onClick={() => setViewing(file)}
+              >
+                <span className="font-mono text-xs text-[#1a2a3a] w-6 flex-shrink-0">{i + 1}</span>
+                <span className="font-mono text-xs px-1.5 py-0.5 flex-shrink-0" style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}66`, color: meta.color }}>
+                  {meta.label}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-mono text-sm text-white truncate">{file.title}</div>
+                  {file.description && <div className="font-mono text-xs text-[#3a5570] truncate">{file.description}</div>}
+                </div>
+                {file.category && <span className="font-mono text-xs text-[#3a5570] hidden md:block">{file.category}</span>}
+                <span className="font-mono text-xs text-[#1a2a3a]">{formatSize(file.file_size)}</span>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => setViewing(file)} className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Открыть">
+                    <Icon name="Eye" size={16} />
+                  </button>
+                  <a href={file.cdn_url} download={file.original_name} className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Скачать">
+                    <Icon name="Download" size={16} />
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

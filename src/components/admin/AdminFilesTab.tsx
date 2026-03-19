@@ -4,6 +4,12 @@ import { api, FileItem } from "@/api";
 
 const VIDEO_CATEGORIES = ["Боевые", "Учебные", "Технические", "Разбор миссий"];
 const DOC_CATEGORIES = ["Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
+const FIRMWARE_CATEGORIES = ["Betaflight", "ArduPilot", "ExpressLRS", "OpenTX/EdgeTX", "Инструкции"];
+
+const SECTIONS = [
+  { key: "general", label: "Материалы / Видео" },
+  { key: "firmware", label: "Прошивки FPV КТ" },
+];
 
 const ACCEPTED_MIME: Record<string, string> = {
   "video/mp4": "video",
@@ -35,7 +41,7 @@ export default function AdminFilesTab() {
   const [mode, setMode] = useState<"file" | "youtube">("file");
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", category: "" });
+  const [form, setForm] = useState({ title: "", description: "", category: "", section: "general" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<FileItem[]>([]);
@@ -74,6 +80,7 @@ export default function AdminFilesTab() {
         title: form.title.trim(),
         description: form.description,
         category: form.category,
+        section: form.section,
         original_name: selectedFile.name,
         mime_type: selectedFile.type,
         file_data: base64,
@@ -82,7 +89,7 @@ export default function AdminFilesTab() {
       if (res.id) {
         showMsg("Файл загружен успешно!");
         setSelectedFile(null);
-        setForm({ title: "", description: "", category: "" });
+        setForm({ title: "", description: "", category: "", section: "general" });
         if (fileRef.current) fileRef.current.value = "";
         loadFiles();
       } else {
@@ -101,13 +108,14 @@ export default function AdminFilesTab() {
       title: form.title.trim(),
       description: form.description,
       category: form.category,
+      section: form.section,
       youtube_id: ytId,
     });
     setUploading(false);
     if (res.id) {
       showMsg("Видео добавлено!");
       setYoutubeUrl("");
-      setForm({ title: "", description: "", category: "" });
+      setForm({ title: "", description: "", category: "", section: "general" });
       loadFiles();
     } else {
       showMsg(res.error || "Ошибка", false);
@@ -121,7 +129,12 @@ export default function AdminFilesTab() {
   };
 
   const detectedType = selectedFile ? ACCEPTED_MIME[selectedFile.type] : null;
-  const categories = mode === "youtube" || detectedType === "video" ? VIDEO_CATEGORIES : DOC_CATEGORIES;
+  const isFirmware = form.section === "firmware";
+  const categories = isFirmware
+    ? FIRMWARE_CATEGORIES
+    : mode === "youtube" || detectedType === "video"
+      ? VIDEO_CATEGORIES
+      : DOC_CATEGORIES;
   const ytId = extractYoutubeId(youtubeUrl);
   const formatSize = (b: number) => !b ? "YouTube" : b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} КБ` : `${(b / (1024 * 1024)).toFixed(1)} МБ`;
 
@@ -206,6 +219,27 @@ export default function AdminFilesTab() {
             )}
           </div>
         )}
+
+        <div>
+          <label className="font-mono text-xs text-[#3a5570] block mb-1">РАЗДЕЛ</label>
+          <div className="flex gap-2">
+            {SECTIONS.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setForm((p) => ({ ...p, section: s.key, category: "" }))}
+                className="font-mono text-xs px-3 py-1.5 transition-all"
+                style={{
+                  border: `1px solid ${form.section === s.key ? "#00f5ff" : "#1a2a3a"}`,
+                  color: form.section === s.key ? "#050810" : "#3a5570",
+                  background: form.section === s.key ? "#00f5ff" : "transparent",
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
