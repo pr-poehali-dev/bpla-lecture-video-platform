@@ -1,0 +1,113 @@
+"""
+Админ-панель: список пользователей, одобрение/отклонение заявок.
+"""
+import json
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from datetime import datetime
+
+CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
+}
+
+def get_schema():
+    return os.environ.get("MAIN_DB_SCHEMA", "public")
+
+def get_conn():
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    return conn
+
+def q(table: str) -> str:
+    return f'"{get_schema()}".{table}'
+
+def ok(data: dict) -> dict:
+    return {"statusCode": 200, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps(data, ensure_ascii=False, default=str)}
+
+def err(msg: str, status: int = 400) -> dict:
+    return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"error": msg}, ensure_ascii=False)}
+
+def get_admin(event, cur):
+    auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
+    token = auth.replace("Bearer ", "").strip()
+    if not token:
+        return None
+    cur.execute(f"SELECT id, name, email, is_admin FROM {q('users')} WHERE session_token = %s", (token,))
+    user = cur.fetchone()
+    if not user or not user["is_admin"]:
+        return None
+    return user
+
+def handler(event: dict, context) -> dict:
+    if event.get("httpMethod") == "OPTIONS":
+        return {"statusCode": 200, "headers": CORS, "body": ""}
+
+    method = event.get("httpMethod", "GET")
+    params = event.get("queryStringParameters") or {}
+    action = params.get("action", "")
+
+    body = {}
+    if event.get("body"):
+        try:
+            body = json.loads(event["body"])
+        except Exception:
+            pass
+
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    admin = get_admin(event, cur)
+    if not admin:
+        return err("Доступ запрещён", 403)
+
+    # GET ?action=users
+    if action == "users" and method == "GET":
+        cur.execute(f"SELECT id, name, email, status, is_admin, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
+        users = [dict(u) for u in cur.fetchall()]
+        return ok({"users": users})
+
+    # POST ?action=approve
+    if action == "approve" and method == "POST":
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        cur.execute(
+            f"UPDATE {q('users')} SET status = 'approved', approved_at = NOW() WHERE id = %s RETURNING id, name, email",
+            (user_id,)
+        )
+        user = cur.fetchone()
+        conn.commit()
+        if not user:
+            return err("Пользователь не найден", 404)
+        return ok({"message": f"Пользователь {user['email']} одобрен", "user": dict(user)})
+
+    # POST ?action=reject
+    if action == "reject" and method == "POST":
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        cur.execute(
+            f"UPDATE {q('users')} SET status = 'rejected' WHERE id = %s RETURNING id, name, email",
+            (user_id,)
+        )
+        user = cur.fetchone()
+        conn.commit()
+        if not user:
+            return err("Пользователь не найден", 404)
+        return ok({"message": f"Пользователь {user['email']} отклонён", "user": dict(user)})
+
+    # POST ?action=make-admin
+    if action == "make-admin" and method == "POST":
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        cur.execute(f"UPDATE {q('users')} SET is_admin = TRUE, status = 'approved' WHERE id = %s RETURNING id, email", (user_id,))
+        user = cur.fetchone()
+        conn.commit()
+        if not user:
+            return err("Пользователь не найден", 404)
+        return ok({"message": f"{user['email']} назначен администратором"})
+
+    return err("Не найдено", 404)
