@@ -1,17 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
 
 const VIDEO_CATEGORIES = ["Все", "Боевые", "Учебные", "Технические", "Разбор миссий"];
 
 function formatSize(bytes: number): string {
-  if (!bytes) return "";
+  if (!bytes) return "YouTube";
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
 
+function getYoutubeThumbnail(cdnUrl: string): string {
+  const match = cdnUrl.match(/embed\/([a-zA-Z0-9_-]{11})/);
+  return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : "";
+}
+
 function VideoPlayerModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const isYoutube = file.mime_type === "youtube";
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -36,17 +41,24 @@ function VideoPlayerModal({ file, onClose }: { file: FileItem; onClose: () => vo
             <Icon name="X" size={20} />
           </button>
         </div>
-        <div style={{ background: "#000" }}>
-          <video
-            ref={videoRef}
-            src={file.cdn_url}
-            controls
-            autoPlay
-            className="w-full"
-            style={{ maxHeight: "70vh" }}
-          >
-            Ваш браузер не поддерживает воспроизведение видео.
-          </video>
+        <div style={{ background: "#000", position: "relative", paddingBottom: "56.25%", height: 0 }}>
+          {isYoutube ? (
+            <iframe
+              src={`${file.cdn_url}?autoplay=1&rel=0`}
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            />
+          ) : (
+            <video
+              src={file.cdn_url}
+              controls
+              autoPlay
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+            >
+              Ваш браузер не поддерживает воспроизведение видео.
+            </video>
+          )}
         </div>
         {file.description && (
           <div className="px-4 py-3 font-mono text-xs text-[#3a5570]" style={{ background: "#0a1520" }}>
@@ -126,18 +138,34 @@ export default function VideosPage() {
               onClick={() => setPlaying(file)}
             >
               <div
-                className="relative flex items-center justify-center"
+                className="relative flex items-center justify-center overflow-hidden"
                 style={{ aspectRatio: "16/9", background: "#050810" }}
               >
+                {file.mime_type === "youtube" && getYoutubeThumbnail(file.cdn_url) && (
+                  <img
+                    src={getYoutubeThumbnail(file.cdn_url)}
+                    alt={file.title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity"
+                  />
+                )}
                 <div
-                  className="w-14 h-14 flex items-center justify-center transition-all group-hover:scale-110"
-                  style={{ border: "1px solid #00f5ff", boxShadow: "0 0 20px rgba(0,245,255,0.2)" }}
+                  className="relative z-10 w-14 h-14 flex items-center justify-center transition-all group-hover:scale-110"
+                  style={{
+                    border: `1px solid ${file.mime_type === "youtube" ? "#ff2244" : "#00f5ff"}`,
+                    boxShadow: `0 0 20px ${file.mime_type === "youtube" ? "rgba(255,34,68,0.4)" : "rgba(0,245,255,0.2)"}`,
+                    background: file.mime_type === "youtube" ? "rgba(255,0,0,0.7)" : "rgba(0,0,0,0.5)",
+                  }}
                 >
-                  <Icon name="Play" size={24} className="text-[#00f5ff] ml-1" />
+                  <Icon name="Play" size={24} className="text-white ml-1" />
                 </div>
+                {file.mime_type === "youtube" && (
+                  <span className="absolute bottom-2 right-2 font-mono text-xs px-1.5 py-0.5 z-10" style={{ background: "rgba(255,34,68,0.85)", color: "#fff" }}>
+                    YouTube
+                  </span>
+                )}
                 {file.category && (
                   <span
-                    className="absolute top-2 left-2 font-mono text-xs px-2 py-0.5"
+                    className="absolute top-2 left-2 font-mono text-xs px-2 py-0.5 z-10"
                     style={{ background: "rgba(0,245,255,0.1)", border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff" }}
                   >
                     {file.category}

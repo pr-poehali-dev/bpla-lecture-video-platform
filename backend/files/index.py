@@ -126,6 +126,26 @@ def handler(event: dict, context) -> dict:
         if not title:
             return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите название"})}
 
+        # YouTube — без загрузки в S3
+        if mime_type == "youtube":
+            youtube_id = body.get("youtube_id", "").strip()
+            if not youtube_id:
+                return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите youtube_id"})}
+            cdn_url = f"https://www.youtube.com/embed/{youtube_id}"
+            s3_key = f"youtube/{youtube_id}"
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute(
+                f"""INSERT INTO {schema}.files
+                    (title, description, file_type, category, original_name, mime_type, file_size, s3_key, cdn_url, uploaded_by)
+                    VALUES (%s, %s, 'video', %s, %s, 'youtube', 0, %s, %s, %s) RETURNING id""",
+                (title, description, category, youtube_id, s3_key, cdn_url, user["id"]),
+            )
+            new_id = cur.fetchone()[0]
+            conn.commit()
+            conn.close()
+            return {"statusCode": 200, "headers": CORS, "body": json.dumps({"id": new_id, "cdn_url": cdn_url, "file_type": "video"})}
+
         if mime_type in ALLOWED_VIDEO:
             file_type = "video"
         elif mime_type in ALLOWED_DOC:

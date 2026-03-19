@@ -78,5 +78,12 @@ export const api = {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getToken()}` },
       }).then((r) => r.json()),
+
+    addYoutube: (data: { title: string; description: string; category: string; youtube_id: string }) =>
+      fetch(`${FILES_URL}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ ...data, mime_type: "youtube" }),
+      }).then((r) => r.json()),
   },
 };
