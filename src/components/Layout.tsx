@@ -3,7 +3,7 @@ import { type Page } from "@/App";
 import Icon from "@/components/ui/icon";
 
 const navItems: { id: Page; label: string; icon: string }[] = [
-  { id: "home", label: "Главная", icon: "Home" },
+  { id: "home", label: "Главная", icon: "Crosshair" },
   { id: "lectures", label: "Лекции", icon: "BookOpen" },
   { id: "videos", label: "Видео", icon: "Play" },
   { id: "drone-types", label: "Типы БпЛА", icon: "Plane" },
@@ -40,8 +40,8 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("home")}>
-            <div className="w-8 h-8 relative flex items-center justify-center text-lg" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
-              🚁
+            <div className="w-8 h-8 relative flex items-center justify-center" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
+              <Icon name="Crosshair" size={18} className="text-[#00f5ff]" />
             </div>
             <div>
               <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">DRONE</div>
