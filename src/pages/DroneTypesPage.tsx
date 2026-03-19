@@ -173,7 +173,7 @@ export default function DroneTypesPage() {
             </div>
           ) : (
             <div className="card-drone h-64 flex flex-col items-center justify-center text-center p-8">
-              <Icon name="Crosshair" size={40} className="text-[#1a3050] mb-4" />
+              <span className="text-5xl mb-4">🚁</span>
               <div className="font-orbitron text-sm text-[#2a4060] tracking-wider">ВЫБЕРИТЕ ТИП БпЛА</div>
               <div className="font-mono text-xs text-[#1a2840] mt-2">для просмотра характеристик</div>
             </div>

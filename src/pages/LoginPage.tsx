@@ -37,8 +37,8 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 flex items-center justify-center" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 20px rgba(0,245,255,0.4)" }}>
-              <Icon name="Crosshair" size={20} className="text-[#00f5ff]" />
+            <div className="w-10 h-10 flex items-center justify-center text-xl" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 20px rgba(0,245,255,0.4)" }}>
+              🚁
             </div>
             <div className="text-left">
               <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">DRONE</div>
