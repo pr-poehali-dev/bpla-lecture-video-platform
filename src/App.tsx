@@ -32,6 +32,7 @@ export default function App() {
   const [authPage, setAuthPage] = useState<AuthPage>("login");
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
+  const [adminViewSite, setAdminViewSite] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("drone_token");
@@ -80,12 +81,12 @@ export default function App() {
     );
   }
 
-  if (user.is_admin) {
+  if (user.is_admin && !adminViewSite) {
     return (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AdminPage currentUser={user} onLogout={handleLogout} />
+        <AdminPage currentUser={user} onLogout={handleLogout} onGoToSite={() => setAdminViewSite(true)} />
       </TooltipProvider>
     );
   }
@@ -107,7 +108,7 @@ export default function App() {
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Layout currentPage={currentPage} onNavigate={setCurrentPage} user={user} onLogout={handleLogout}>
+      <Layout currentPage={currentPage} onNavigate={setCurrentPage} user={user} onLogout={handleLogout} onBackToAdmin={user?.is_admin ? () => setAdminViewSite(false) : undefined}>
         {renderPage()}
       </Layout>
     </TooltipProvider>

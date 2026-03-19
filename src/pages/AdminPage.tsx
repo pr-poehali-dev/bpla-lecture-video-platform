@@ -27,9 +27,10 @@ const statusLabel: Record<string, string> = {
 interface Props {
   currentUser: { name: string; email: string };
   onLogout: () => void;
+  onGoToSite: () => void;
 }
 
-export default function AdminPage({ currentUser, onLogout }: Props) {
+export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
@@ -82,6 +83,10 @@ export default function AdminPage({ currentUser, onLogout }: Props) {
         </div>
         <div className="flex items-center gap-4">
           <span className="font-mono text-xs text-[#5a7a95]">@{currentUser.name}</span>
+          <button onClick={onGoToSite} className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all" style={{ border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff", background: "rgba(0,245,255,0.05)" }}>
+            <Icon name="Globe" size={13} />
+            НА САЙТ
+          </button>
           <button onClick={onLogout} className="flex items-center gap-1.5 font-mono text-xs text-[#3a5570] hover:text-[#ff2244] transition-colors">
             <Icon name="LogOut" size={13} />
             ВЫХОД

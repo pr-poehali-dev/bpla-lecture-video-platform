@@ -18,9 +18,10 @@ interface LayoutProps {
   children: React.ReactNode;
   user?: { name: string; email: string };
   onLogout?: () => void;
+  onBackToAdmin?: () => void;
 }
 
-export default function Layout({ currentPage, onNavigate, children, user, onLogout }: LayoutProps) {
+export default function Layout({ currentPage, onNavigate, children, user, onLogout, onBackToAdmin }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -68,9 +69,15 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           </nav>
 
           {/* User + status */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-3">
             {user && (
-              <div className="flex items-center gap-3">
+              <>
+                {onBackToAdmin && (
+                  <button onClick={onBackToAdmin} className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all" style={{ border: "1px solid rgba(255,107,0,0.4)", color: "#ff6b00", background: "rgba(255,107,0,0.05)" }}>
+                    <Icon name="Shield" size={12} />
+                    ПАНЕЛЬ
+                  </button>
+                )}
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
                   <span className="font-mono text-xs text-[#5a7a95]">{user.name}</span>
@@ -80,7 +87,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     <Icon name="LogOut" size={12} />
                   </button>
                 )}
-              </div>
+              </>
             )}
           </div>
 
