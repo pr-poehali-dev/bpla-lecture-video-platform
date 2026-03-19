@@ -1,28 +1,41 @@
-
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import HomePage from "@/pages/HomePage";
+import LecturesPage from "@/pages/LecturesPage";
+import VideosPage from "@/pages/VideosPage";
+import MaterialsPage from "@/pages/MaterialsPage";
+import DroneTypesPage from "@/pages/DroneTypesPage";
+import DownloadsPage from "@/pages/DownloadsPage";
+import DiscussionsPage from "@/pages/DiscussionsPage";
+import Layout from "@/components/Layout";
 
-const queryClient = new QueryClient();
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<Page>("home");
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "home": return <HomePage onNavigate={setCurrentPage} />;
+      case "lectures": return <LecturesPage />;
+      case "videos": return <VideosPage />;
+      case "materials": return <MaterialsPage />;
+      case "drone-types": return <DroneTypesPage />;
+      case "downloads": return <DownloadsPage />;
+      case "discussions": return <DiscussionsPage />;
+      default: return <HomePage onNavigate={setCurrentPage} />;
+    }
+  };
+
+  return (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
+        {renderPage()}
+      </Layout>
     </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+  );
+}
