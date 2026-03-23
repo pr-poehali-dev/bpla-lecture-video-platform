@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { api } from "@/api";
 
@@ -12,6 +12,15 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199/?action=me", {
+      signal: AbortSignal.timeout(5000),
+    })
+      .then(() => setServerOnline(true))
+      .catch(() => setServerOnline(false));
+  }, []);
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +54,19 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
               <div className="font-orbitron font-bold text-base tracking-[0.2em] text-white leading-none">ACADEMY</div>
             </div>
           </div>
-          <div className="font-mono text-xs text-[#3a5570] tracking-[0.3em]">// АВТОРИЗАЦИЯ ДОСТУПА</div>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{
+                background: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244",
+                boxShadow: serverOnline === null ? "none" : serverOnline ? "0 0 6px #00ff88" : "0 0 6px #ff2244",
+                animation: serverOnline === true ? "pulse 2s infinite" : "none",
+              }}
+            />
+            <span className="font-mono text-xs tracking-[0.3em]" style={{ color: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244" }}>
+              {serverOnline === null ? "// ПРОВЕРКА СВЯЗИ..." : serverOnline ? "// СИСТЕМА АКТИВНА" : "// СЕРВЕР НЕДОСТУПЕН"}
+            </span>
+          </div>
         </div>
 
         {/* Form */}
