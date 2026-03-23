@@ -38,6 +38,7 @@ export default function AdminRolesTab() {
   const [saving, setSaving] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     load();
@@ -45,11 +46,18 @@ export default function AdminRolesTab() {
 
   const load = async () => {
     setLoading(true);
-    const res = await api.admin.getPermissions();
-    if (res.permissions) {
-      setPermissions(res.permissions);
-      setPages(res.pages || []);
-      setRoles(res.roles || []);
+    setError("");
+    try {
+      const res = await api.admin.getPermissions();
+      if (res.permissions) {
+        setPermissions(res.permissions);
+        setPages(res.pages || []);
+        setRoles(res.roles || []);
+      } else {
+        setError(res.error || "Не удалось загрузить права доступа");
+      }
+    } catch {
+      setError("Ошибка соединения с сервером");
     }
     setLoading(false);
   };
@@ -75,7 +83,18 @@ export default function AdminRolesTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-20 font-mono text-xs text-[#3a5570]">ЗАГРУЗКА...</div>;
+    return <div className="text-center py-20 font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <div className="font-mono text-sm text-[#ff2244] mb-3">{error}</div>
+        <button onClick={load} className="font-mono text-xs px-4 py-2" style={{ border: "1px solid #1a2a3a", color: "#3a5570" }}>
+          ПОВТОРИТЬ
+        </button>
+      </div>
+    );
   }
 
   return (
