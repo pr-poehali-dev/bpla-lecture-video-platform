@@ -77,7 +77,7 @@ export default function VideosPage() {
   const [playing, setPlaying] = useState<FileItem | null>(null);
 
   useEffect(() => {
-    api.files.list("video").then((res) => {
+    api.files.list("video", undefined, "general").then((res) => {
       setFiles(res.files || []);
       setLoading(false);
     });
