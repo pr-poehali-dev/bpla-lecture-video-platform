@@ -62,6 +62,12 @@ def handler(event: dict, context) -> dict:
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
+    # Discussions — открытые эндпоинты (не требуют is_admin)
+    if action.startswith("disc-"):
+        result = handle_discussions(event, method, action, body, conn, cur)
+        conn.close()
+        return result if result else err("Не найдено", 404)
+
     admin = get_admin(event, cur)
     if not admin:
         return err("Доступ запрещён", 403)
@@ -196,3 +202,103 @@ def handler(event: dict, context) -> dict:
         return ok({"total": total, "pending": pending, "approved": approved, "admins": admins, "by_role": by_role})
 
     return err("Не найдено", 404)
+
+
+# ── DISCUSSIONS ──────────────────────────────────────────────────────────────
+
+DISC_CATEGORIES = ["Общее", "Техника", "Тактика", "Настройка", "Разбор", "Вопросы"]
+
+
+def get_any_user(event, cur):
+    """Возвращает пользователя по токену (не обязательно admin)."""
+    auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
+    token = auth.replace("Bearer ", "").strip()
+    if not token:
+        return None
+    cur.execute(f"SELECT id, name, callsign, is_admin, role FROM {q('users')} WHERE session_token = %s AND status = 'approved'", (token,))
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def handle_discussions(event, method, action, body, conn, cur):
+    topic_id = (event.get("queryStringParameters") or {}).get("topic_id")
+    user = get_any_user(event, cur)
+
+    # GET topics list
+    if action == "disc-topics" and method == "GET":
+        cur.execute(f"""
+            SELECT t.id, t.title, t.category, t.views, t.created_at, t.updated_at,
+                   u.name as author_name, u.callsign as author_callsign,
+                   COUNT(r.id) as replies_count
+            FROM {q('topics')} t
+            JOIN {q('users')} u ON t.author_id = u.id
+            LEFT JOIN {q('topic_replies')} r ON r.topic_id = t.id
+            GROUP BY t.id, u.name, u.callsign
+            ORDER BY t.updated_at DESC
+        """)
+        topics = [dict(t) for t in cur.fetchall()]
+        return ok({"topics": topics, "categories": DISC_CATEGORIES})
+
+    # GET single topic + replies
+    if action == "disc-topic" and method == "GET":
+        if not topic_id:
+            return err("Укажите topic_id")
+        cur.execute(f"""
+            SELECT t.id, t.title, t.category, t.views, t.created_at,
+                   u.name as author_name, u.callsign as author_callsign
+            FROM {q('topics')} t JOIN {q('users')} u ON t.author_id = u.id
+            WHERE t.id = %s
+        """, (topic_id,))
+        topic = cur.fetchone()
+        if not topic:
+            return err("Топик не найден", 404)
+        cur.execute(f"UPDATE {q('topics')} SET views = views + 1 WHERE id = %s", (topic_id,))
+        conn.commit()
+        cur.execute(f"""
+            SELECT r.id, r.text, r.created_at,
+                   u.name as author_name, u.callsign as author_callsign
+            FROM {q('topic_replies')} r JOIN {q('users')} u ON r.author_id = u.id
+            WHERE r.topic_id = %s ORDER BY r.created_at ASC
+        """, (topic_id,))
+        replies = [dict(r) for r in cur.fetchall()]
+        return ok({"topic": dict(topic), "replies": replies})
+
+    # POST create topic
+    if action == "disc-create" and method == "POST":
+        if not user:
+            return err("Требуется авторизация", 401)
+        if not (user["is_admin"] or user.get("role") in ("инструктор", "администратор")):
+            return err("Создавать темы могут только инструкторы", 403)
+        title = body.get("title", "").strip()
+        category = body.get("category", "Общее")
+        text = body.get("text", "").strip()
+        if not title:
+            return err("Укажите заголовок")
+        if category not in DISC_CATEGORIES:
+            category = "Общее"
+        cur.execute(f"INSERT INTO {q('topics')} (title, category, author_id) VALUES (%s, %s, %s) RETURNING id", (title, category, user["id"]))
+        new_id = cur.fetchone()["id"]
+        if text:
+            cur.execute(f"INSERT INTO {q('topic_replies')} (topic_id, author_id, text) VALUES (%s, %s, %s)", (new_id, user["id"], text))
+        conn.commit()
+        return ok({"id": new_id})
+
+    # POST add reply
+    if action == "disc-reply" and method == "POST":
+        if not user:
+            return err("Требуется авторизация", 401)
+        if not topic_id:
+            return err("Укажите topic_id")
+        text = body.get("text", "").strip()
+        if not text:
+            return err("Текст не может быть пустым")
+        cur.execute(f"SELECT id FROM {q('topics')} WHERE id = %s", (topic_id,))
+        if not cur.fetchone():
+            return err("Топик не найден", 404)
+        cur.execute(f"INSERT INTO {q('topic_replies')} (topic_id, author_id, text) VALUES (%s, %s, %s) RETURNING id", (topic_id, user["id"], text))
+        reply_id = cur.fetchone()["id"]
+        cur.execute(f"UPDATE {q('topics')} SET updated_at = NOW() WHERE id = %s", (topic_id,))
+        conn.commit()
+        return ok({"id": reply_id})
+
+    return None

@@ -147,6 +147,17 @@ export const api = {
       }).then((r) => r.json()),
   },
 
+  discussions: {
+    topics: () =>
+      fetch(`${ADMIN_URL}/?action=disc-topics`).then((r) => r.json()),
+    topic: (id: number) =>
+      fetch(`${ADMIN_URL}/?action=disc-topic&topic_id=${id}`).then((r) => r.json()),
+    create: (data: { title: string; category: string; text: string }) =>
+      fetch(`${ADMIN_URL}/?action=disc-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()),
+    reply: (topic_id: number, text: string) =>
+      fetch(`${ADMIN_URL}/?action=disc-reply&topic_id=${topic_id}`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ text }) }).then((r) => r.json()),
+  },
+
   removal: {
     list: (): Promise<{ requests: RemovalRequest[] }> =>
       fetch(`${REMOVAL_URL}/`, { headers: authHeaders() }).then((r) => r.json()),
