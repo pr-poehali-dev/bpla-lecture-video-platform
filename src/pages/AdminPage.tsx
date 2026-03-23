@@ -23,6 +23,22 @@ interface Stats {
   by_role: Record<string, number>;
 }
 
+const sidebarItems: { key: Tab; label: string; icon: string }[] = [
+  { key: "dashboard", label: "Панель управления", icon: "LayoutDashboard" },
+  { key: "users", label: "Личный состав", icon: "Users" },
+  { key: "roles", label: "Доступы", icon: "Shield" },
+  { key: "files", label: "Файлы", icon: "Upload" },
+  { key: "removals", label: "Заявки на удаление", icon: "Trash2" },
+];
+
+const tabLabels: Record<Tab, string> = {
+  dashboard: "Панель управления",
+  users: "Личный состав",
+  roles: "Доступы",
+  files: "Файлы",
+  removals: "Заявки на удаление",
+};
+
 export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +46,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [msg, setMsg] = useState("");
   const [stats, setStats] = useState<Stats | null>(null);
+  const [removalPendingCount, setRemovalPendingCount] = useState(0);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -79,169 +96,182 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
   };
 
   const pendingCount = users.filter(u => u.status === "pending").length;
-  const [removalPendingCount, setRemovalPendingCount] = useState(0);
-
-  const tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: "dashboard", label: "ОБЗОР", icon: "LayoutDashboard" },
-    { key: "users", label: "ЛИЧНЫЙ СОСТАВ", icon: "Users" },
-    { key: "roles", label: "ДОСТУПЫ", icon: "Shield" },
-    { key: "files", label: "ФАЙЛЫ", icon: "Upload" },
-    { key: "removals", label: "ЗАЯВКИ", icon: "Trash2" },
-  ];
 
   return (
-    <div className="min-h-screen grid-bg" style={{ background: "#050810" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#f0f2f5", fontFamily: "sans-serif" }}>
       <AdminHeader currentUser={currentUser} onLogout={onLogout} onGoToSite={onGoToSite} />
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-
-        {/* Global msg */}
-        {msg && (
-          <div className="mb-5 p-3 font-plex text-sm text-[#00ff88] animate-fade-in" style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.2)" }}>
-            ✓ {msg}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-56 flex-shrink-0 flex flex-col" style={{ background: "#2c3e50", minHeight: "calc(100vh - 48px)" }}>
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid #3a4f63" }}>
+            <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#7a9bb5" }}>Основное меню</span>
           </div>
-        )}
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="flex items-center gap-2 font-mono text-xs px-4 py-2.5 tracking-wider transition-all whitespace-nowrap relative"
-              style={{
-                border: `1px solid ${activeTab === tab.key ? "#00f5ff" : "#1a2a3a"}`,
-                color: activeTab === tab.key ? "#050810" : "#3a5570",
-                background: activeTab === tab.key ? "#00f5ff" : "transparent",
-              }}
-            >
-              <Icon name={tab.icon as "LayoutDashboard"} size={13} />
-              {tab.label}
-              {tab.key === "users" && pendingCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: "#ff6b00", color: "#fff", marginLeft: 2 }}>
-                  {pendingCount}
-                </span>
-              )}
-              {tab.key === "removals" && removalPendingCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: "#ff2244", color: "#fff", marginLeft: 2 }}>
-                  {removalPendingCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+          <nav className="flex flex-col py-2">
+            {sidebarItems.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setActiveTab(item.key)}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-all relative"
+                style={{
+                  color: activeTab === item.key ? "#fff" : "#a0b8cc",
+                  background: activeTab === item.key ? "rgba(0,0,0,0.2)" : "transparent",
+                  borderLeft: activeTab === item.key ? "3px solid #00aaff" : "3px solid transparent",
+                }}
+              >
+                <Icon name={item.icon as "Users"} size={16} />
+                {item.label}
+                {item.key === "users" && pendingCount > 0 && (
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: "#ff6b00", color: "#fff" }}>
+                    {pendingCount}
+                  </span>
+                )}
+                {item.key === "removals" && removalPendingCount > 0 && (
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: "#cc2244", color: "#fff" }}>
+                    {removalPendingCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-        {/* Dashboard */}
-        {activeTab === "dashboard" && (
-          <div>
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-6 h-px bg-[#00f5ff]" />
-                <span className="font-mono text-xs text-[#00f5ff] tracking-[0.2em]">// ЦЕНТР УПРАВЛЕНИЯ</span>
+        {/* Main content */}
+        <main className="flex-1 overflow-auto">
+          {/* Breadcrumbs */}
+          <div className="px-6 py-2.5 flex items-center gap-2 text-sm" style={{ background: "#fff", borderBottom: "1px solid #dde3ea" }}>
+            <button onClick={() => setActiveTab("dashboard")} className="text-[#3a7bd5] hover:underline">Главная</button>
+            <span style={{ color: "#aaa" }}>/</span>
+            <span style={{ color: "#555" }}>{tabLabels[activeTab]}</span>
+          </div>
+
+          <div className="px-6 py-6">
+            {/* Page title */}
+            <h1 className="text-2xl font-normal mb-5" style={{ color: "#2c3e50" }}>{tabLabels[activeTab]}</h1>
+
+            {/* Global msg */}
+            {msg && (
+              <div className="mb-4 px-4 py-2.5 rounded text-sm flex items-center gap-2" style={{ background: "#d4edda", border: "1px solid #c3e6cb", color: "#155724" }}>
+                <Icon name="CheckCircle" size={16} />
+                {msg}
               </div>
-              <h1 className="font-orbitron text-2xl font-black text-white tracking-wider">ПАНЕЛЬ АДМИНИСТРАТОРА</h1>
-            </div>
+            )}
 
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {[
-                { label: "ВСЕГО БОЙЦОВ", value: stats?.total ?? "—", color: "#00f5ff", icon: "Users" },
-                { label: "ОЖИДАЮТ ДОПУСКА", value: stats?.pending ?? "—", color: "#ff6b00", icon: "Clock" },
-                { label: "ДОПУЩЕНЫ", value: stats?.approved ?? "—", color: "#00ff88", icon: "UserCheck" },
-                { label: "АДМИНИСТРАТОРЫ", value: stats?.admins ?? "—", color: "#ff6b00", icon: "Shield" },
-              ].map(s => (
-                <div key={s.label} className="card-drone p-5 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <Icon name={s.icon as "Users"} size={16} style={{ color: s.color }} />
-                    <div className="font-orbitron text-2xl font-black" style={{ color: s.color }}>{s.value}</div>
-                  </div>
-                  <div className="font-mono text-[10px] text-[#3a5570] tracking-wider">{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* By role */}
-            {stats?.by_role && Object.keys(stats.by_role).length > 0 && (
-              <div className="card-drone p-5 mb-8">
-                <div className="font-mono text-xs text-[#3a5570] tracking-wider mb-4">СОСТАВ ПО КАТЕГОРИЯМ</div>
-                <div className="flex flex-wrap gap-4">
-                  {Object.entries(stats.by_role).map(([role, cnt]) => (
-                    <div key={role} className="flex items-center gap-3">
-                      <div className="font-orbitron text-xl font-black" style={{ color: role === "инструктор" ? "#00ff88" : role === "администратор" ? "#ff6b00" : "#00f5ff" }}>{cnt}</div>
-                      <div className="font-mono text-xs text-[#5a7a95]">{role.toUpperCase()}</div>
+            {/* Dashboard */}
+            {activeTab === "dashboard" && (
+              <div>
+                {/* Stats cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: "Всего бойцов", value: stats?.total ?? "—", color: "#3a7bd5", icon: "Users", bg: "#e8f0fb" },
+                    { label: "Ожидают допуска", value: stats?.pending ?? "—", color: "#e67e22", icon: "Clock", bg: "#fef3e2" },
+                    { label: "Допущены", value: stats?.approved ?? "—", color: "#27ae60", icon: "UserCheck", bg: "#e9f7ef" },
+                    { label: "Администраторы", value: stats?.admins ?? "—", color: "#8e44ad", icon: "Shield", bg: "#f4ecfb" },
+                  ].map(s => (
+                    <div key={s.label} className="rounded p-4 flex items-center gap-4" style={{ background: "#fff", border: "1px solid #dde3ea", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                      <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ background: s.bg }}>
+                        <Icon name={s.icon as "Users"} size={20} style={{ color: s.color }} />
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                        <div className="text-xs" style={{ color: "#7a8a9a" }}>{s.label}</div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* By role */}
+                {stats?.by_role && Object.keys(stats.by_role).length > 0 && (
+                  <div className="rounded p-5 mb-5" style={{ background: "#fff", border: "1px solid #dde3ea", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                    <h3 className="text-sm font-semibold mb-4" style={{ color: "#555" }}>Состав по категориям</h3>
+                    <div className="flex flex-wrap gap-6">
+                      {Object.entries(stats.by_role).map(([role, cnt]) => (
+                        <div key={role} className="flex items-center gap-2">
+                          <span className="text-xl font-bold" style={{ color: role === "инструктор" ? "#27ae60" : role === "администратор" ? "#e67e22" : "#3a7bd5" }}>{cnt}</span>
+                          <span className="text-sm capitalize" style={{ color: "#777" }}>{role}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending alert */}
+                {pendingCount > 0 && (
+                  <div className="rounded p-4 flex items-center gap-4" style={{ background: "#fff8e1", border: "1px solid #ffe082" }}>
+                    <Icon name="AlertCircle" size={20} className="text-[#f59e0b] flex-shrink-0" />
+                    <div className="flex-1">
+                      <span className="text-sm" style={{ color: "#7a5800" }}>
+                        <strong>{pendingCount}</strong> {pendingCount === 1 ? "заявка ожидает" : "заявок ожидают"} рассмотрения
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => { setActiveTab("users"); setFilter("pending"); }}
+                      className="text-sm px-3 py-1.5 rounded font-medium transition-all"
+                      style={{ background: "#f59e0b", color: "#fff" }}
+                    >
+                      Рассмотреть
+                    </button>
+                  </div>
+                )}
+
+                {/* Quick nav */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                  {sidebarItems.slice(1).map(item => (
+                    <button
+                      key={item.key}
+                      onClick={() => setActiveTab(item.key)}
+                      className="p-4 rounded text-left transition-all hover:shadow-md"
+                      style={{ background: "#fff", border: "1px solid #dde3ea" }}
+                    >
+                      <Icon name={item.icon as "Users"} size={20} style={{ color: "#3a7bd5", marginBottom: 8 }} />
+                      <div className="text-sm font-medium" style={{ color: "#2c3e50" }}>{item.label}</div>
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Quick actions */}
-            {pendingCount > 0 && (
-              <div className="card-drone p-5 mb-6" style={{ borderColor: "rgba(255,107,0,0.3)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <Icon name="AlertCircle" size={16} className="text-[#ff6b00]" />
-                  <span className="font-mono text-xs text-[#ff6b00] tracking-wider">ТРЕБУЕТ ВНИМАНИЯ</span>
-                </div>
-                <p className="font-plex text-sm text-[#8aacbf] mb-4">
-                  <span className="font-bold text-white">{pendingCount}</span> {pendingCount === 1 ? "заявка ожидает" : "заявок ожидают"} рассмотрения
-                </p>
-                <button
-                  onClick={() => { setActiveTab("users"); setFilter("pending"); }}
-                  className="flex items-center gap-2 font-mono text-xs px-4 py-2 transition-all"
-                  style={{ border: "1px solid rgba(255,107,0,0.4)", color: "#ff6b00", background: "rgba(255,107,0,0.05)" }}
-                >
-                  <Icon name="ArrowRight" size={13} />
-                  РАССМОТРЕТЬ ЗАЯВКИ
-                </button>
+            {/* Users tab */}
+            {activeTab === "users" && (
+              <div className="rounded" style={{ background: "#fff", border: "1px solid #dde3ea", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <AdminUsersTab
+                  users={users}
+                  loading={loading}
+                  filter={filter}
+                  setFilter={setFilter}
+                  msg=""
+                  onApprove={approve}
+                  onReject={reject}
+                  onMakeAdmin={makeAdmin}
+                  onRemoveAdmin={removeAdmin}
+                  onSetRole={setRole}
+                />
               </div>
             )}
 
-            {/* Quick nav */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { tab: "users" as Tab, title: "Личный состав", desc: "Управление пользователями, одобрение заявок, назначение ролей", icon: "Users", color: "#00f5ff" },
-                { tab: "roles" as Tab, title: "Матрица доступа", desc: "Настройка прав доступа к разделам для курсантов и инструкторов", icon: "Shield", color: "#00ff88" },
-                { tab: "files" as Tab, title: "Файлы и медиа", desc: "Загрузка материалов, видео, документов и прошивок", icon: "Upload", color: "#a78bfa" },
-              ].map(item => (
-                <button
-                  key={item.tab}
-                  onClick={() => setActiveTab(item.tab)}
-                  className="card-drone p-5 text-left transition-all hover:opacity-90 group"
-                  style={{ borderColor: `${item.color}22` }}
-                >
-                  <Icon name={item.icon as "Users"} size={20} style={{ color: item.color }} className="mb-3" />
-                  <div className="font-orbitron text-sm font-bold text-white tracking-wider mb-1 group-hover:text-[#00f5ff] transition-colors">{item.title}</div>
-                  <div className="font-mono text-[10px] text-[#3a5570] leading-relaxed">{item.desc}</div>
-                </button>
-              ))}
-            </div>
+            {/* Roles tab */}
+            {activeTab === "roles" && (
+              <div className="rounded" style={{ background: "#fff", border: "1px solid #dde3ea", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <AdminRolesTab />
+              </div>
+            )}
+
+            {/* Files tab */}
+            {activeTab === "files" && (
+              <div className="rounded" style={{ background: "#fff", border: "1px solid #dde3ea", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <AdminFilesTab />
+              </div>
+            )}
+
+            {/* Removals tab */}
+            {activeTab === "removals" && (
+              <div className="rounded" style={{ background: "#fff", border: "1px solid #dde3ea", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <AdminRemovalTab onPendingCount={setRemovalPendingCount} />
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Users */}
-        {activeTab === "users" && (
-          <AdminUsersTab
-            users={users}
-            loading={loading}
-            filter={filter}
-            setFilter={setFilter}
-            msg=""
-            onApprove={approve}
-            onReject={reject}
-            onMakeAdmin={makeAdmin}
-            onRemoveAdmin={removeAdmin}
-            onSetRole={setRole}
-          />
-        )}
-
-        {/* Roles */}
-        {activeTab === "roles" && <AdminRolesTab />}
-
-        {/* Files */}
-        {activeTab === "files" && <AdminFilesTab isAdmin={true} />}
-
-        {/* Removal requests */}
-        {activeTab === "removals" && <AdminRemovalTab onPendingCount={setRemovalPendingCount} />}
+        </main>
       </div>
     </div>
   );
