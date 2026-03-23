@@ -283,6 +283,36 @@ def handle_discussions(event, method, action, body, conn, cur):
         conn.commit()
         return ok({"id": new_id})
 
+    # POST delete topic (только для админов)
+    if action == "disc-delete-topic" and method == "POST":
+        if not user or not user["is_admin"]:
+            return err("Доступ запрещён", 403)
+        if not topic_id:
+            return err("Укажите topic_id")
+        cur.execute(f"SELECT id FROM {q('topics')} WHERE id = %s", (topic_id,))
+        if not cur.fetchone():
+            return err("Топик не найден", 404)
+        cur.execute(f"DELETE FROM {q('topic_replies')} WHERE topic_id = %s", (topic_id,))
+        cur.execute(f"DELETE FROM {q('topics')} WHERE id = %s", (topic_id,))
+        conn.commit()
+        return ok({"ok": True})
+
+    # POST delete reply (только для админов)
+    if action == "disc-delete-reply" and method == "POST":
+        if not user or not user["is_admin"]:
+            return err("Доступ запрещён", 403)
+        reply_id = body.get("reply_id")
+        if not reply_id:
+            return err("Укажите reply_id")
+        cur.execute(f"SELECT id, topic_id FROM {q('topic_replies')} WHERE id = %s", (reply_id,))
+        row = cur.fetchone()
+        if not row:
+            return err("Ответ не найден", 404)
+        cur.execute(f"DELETE FROM {q('topic_replies')} WHERE id = %s", (reply_id,))
+        cur.execute(f"UPDATE {q('topics')} SET updated_at = NOW() WHERE id = %s", (row["topic_id"],))
+        conn.commit()
+        return ok({"ok": True})
+
     # POST add reply
     if action == "disc-reply" and method == "POST":
         if not user:

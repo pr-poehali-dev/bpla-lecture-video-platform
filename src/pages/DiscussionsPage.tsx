@@ -89,6 +89,21 @@ export default function DiscussionsPage({ user }: Props) {
     }
   };
 
+  const handleDeleteTopic = async (id: number) => {
+    if (!confirm("Удалить обсуждение со всеми ответами?")) return;
+    await api.discussions.deleteTopic(id);
+    setSelectedId(null);
+    setSelectedTopic(null);
+    setReplies([]);
+    loadTopics();
+  };
+
+  const handleDeleteReply = async (replyId: number) => {
+    if (!confirm("Удалить ответ?")) return;
+    await api.discussions.deleteReply(replyId);
+    if (selectedId) openTopic(selectedId);
+  };
+
   const handleCreate = async () => {
     if (!form.title.trim()) { setCreateError("Укажите заголовок"); return; }
     setCreating(true);
@@ -199,13 +214,22 @@ export default function DiscussionsPage({ user }: Props) {
               <button
                 key={t.id}
                 onClick={() => openTopic(t.id)}
-                className="w-full text-left p-4 transition-all duration-200"
+                className="w-full text-left p-4 transition-all duration-200 relative group"
                 style={
                   selectedId === t.id
                     ? { background: "rgba(0,245,255,0.06)", border: "1px solid rgba(0,245,255,0.3)" }
                     : { background: "#0a1520", border: "1px solid #1a2a3a" }
                 }
               >
+                {user?.is_admin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id); }}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-[#3a5570] hover:text-[#ff2244] transition-all"
+                    title="Удалить"
+                  >
+                    <Icon name="Trash2" size={13} />
+                  </button>
+                )}
                 <div className="flex items-start gap-2 mb-2">
                   <span className="font-mono text-[9px] px-1.5 py-0.5" style={{ border: "1px solid #1a2a3a", color: "#3a5570" }}>{t.category}</span>
                 </div>
@@ -269,6 +293,15 @@ export default function DiscussionsPage({ user }: Props) {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-mono text-xs text-[#00f5ff]">@{r.author_callsign || r.author_name}</span>
                           <span className="font-mono text-[10px] text-[#3a5570]">{timeAgo(r.created_at)}</span>
+                          {user?.is_admin && (
+                            <button
+                              onClick={() => handleDeleteReply(r.id)}
+                              className="ml-auto text-[#3a5570] hover:text-[#ff2244] transition-colors"
+                              title="Удалить ответ"
+                            >
+                              <Icon name="Trash2" size={12} />
+                            </button>
+                          )}
                         </div>
                         <div className="font-plex text-sm text-[#8ab0cc] leading-relaxed p-3" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)" }}>
                           {r.text}
