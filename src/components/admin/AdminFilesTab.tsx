@@ -36,7 +36,11 @@ function extractYoutubeId(url: string): string | null {
   return null;
 }
 
-export default function AdminFilesTab() {
+interface Props {
+  isAdmin?: boolean;
+}
+
+export default function AdminFilesTab({ isAdmin = false }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"file" | "youtube">("file");
   const [uploading, setUploading] = useState(false);
@@ -305,9 +309,11 @@ export default function AdminFilesTab() {
                 <div className="font-mono text-xs text-[#3a5570]">{f.category || "Без категории"} • {formatSize(f.file_size)}</div>
               </div>
               <span className="font-mono text-xs text-[#3a5570]">{f.mime_type === "youtube" ? "YOUTUBE" : f.file_type === "video" ? "ВИДЕО" : "ДОКУМЕНТ"}</span>
-              <button onClick={() => handleDelete(f.id)} className="text-[#3a5570] hover:text-[#ff2244] transition-colors flex-shrink-0">
-                <Icon name="Trash2" size={16} />
-              </button>
+              {isAdmin && (
+                <button onClick={() => handleDelete(f.id)} className="text-[#3a5570] hover:text-[#ff2244] transition-colors flex-shrink-0">
+                  <Icon name="Trash2" size={16} />
+                </button>
+              )}
             </div>
           ))
         )}

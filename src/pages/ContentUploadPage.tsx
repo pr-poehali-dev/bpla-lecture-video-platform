@@ -35,7 +35,7 @@ export default function ContentUploadPage({ user }: Props) {
         <span className="font-mono text-xs text-[#3a5570]">{user.callsign || user.name}</span>
       </div>
 
-      <AdminFilesTab />
+      <AdminFilesTab isAdmin={user.is_admin} />
     </div>
   );
 }

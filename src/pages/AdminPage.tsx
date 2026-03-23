@@ -230,7 +230,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
         {activeTab === "roles" && <AdminRolesTab />}
 
         {/* Files */}
-        {activeTab === "files" && <AdminFilesTab />}
+        {activeTab === "files" && <AdminFilesTab isAdmin={true} />}
       </div>
     </div>
   );

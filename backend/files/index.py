@@ -187,12 +187,12 @@ def handler(event: dict, context) -> dict:
 
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"id": new_id, "cdn_url": cdn_url, "file_type": file_type})}
 
-    # DELETE /files?id=X (для инструкторов и администраторов)
+    # DELETE /files?id=X (только для администраторов)
     if method == "DELETE":
         token = event.get("headers", {}).get("X-Authorization", "").replace("Bearer ", "")
         user = get_user_from_token(token)
-        if not user or not can_upload(user):
-            return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён"})}
+        if not user or not user["is_admin"]:
+            return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Удаление материалов доступно только администраторам"})}
 
         params = event.get("queryStringParameters") or {}
         file_id = params.get("id")
