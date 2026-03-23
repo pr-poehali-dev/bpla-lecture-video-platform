@@ -53,6 +53,11 @@ export default function App() {
       else localStorage.removeItem("drone_token");
       setChecking(false);
     }).catch(() => setChecking(false));
+
+    const ping = setInterval(() => {
+      if (localStorage.getItem("drone_token")) api.me().catch(() => {});
+    }, 30000);
+    return () => clearInterval(ping);
   }, []);
 
   const handleLogin = (u: object) => {
