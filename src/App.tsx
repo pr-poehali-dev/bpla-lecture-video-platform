@@ -13,7 +13,6 @@ import DiscussionsPage from "@/pages/DiscussionsPage";
 import FirmwarePage from "@/pages/FirmwarePage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
-import AdminPage from "@/pages/AdminPage";
 import ProfilePage from "@/pages/ProfilePage";
 import MessagesPage from "@/pages/MessagesPage";
 import ContentUploadPage from "@/pages/ContentUploadPage";
@@ -43,7 +42,7 @@ export default function App() {
   const [authPage, setAuthPage] = useState<AuthPage>("login");
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
-  const [adminViewSite, setAdminViewSite] = useState(false);
+
   const [introDone, setIntroDone] = useState(() => !!sessionStorage.getItem("intro_done"));
 
   useEffect(() => {
@@ -102,16 +101,6 @@ export default function App() {
     );
   }
 
-  if (user.is_admin && !adminViewSite) {
-    return (
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AdminPage currentUser={user} onLogout={handleLogout} onGoToSite={() => setAdminViewSite(true)} />
-      </TooltipProvider>
-    );
-  }
-
   const canAccess = (page: Page): boolean => {
     if (!user?.permissions) return true;
     if (user.is_admin) return true;
@@ -145,7 +134,7 @@ export default function App() {
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout} onBackToAdmin={user?.is_admin ? () => setAdminViewSite(false) : undefined}>
+      <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout}>
         {renderPage()}
       </Layout>
     </TooltipProvider>

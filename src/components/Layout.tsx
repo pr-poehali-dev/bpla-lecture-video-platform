@@ -20,10 +20,9 @@ interface LayoutProps {
   children: React.ReactNode;
   user?: User;
   onLogout?: () => void;
-  onBackToAdmin?: () => void;
 }
 
-export default function Layout({ currentPage, onNavigate, children, user, onLogout, onBackToAdmin }: LayoutProps) {
+export default function Layout({ currentPage, onNavigate, children, user, onLogout }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const visibleNavItems = navItems.filter(item => {
@@ -79,13 +78,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           <div className="hidden lg:flex items-center gap-3">
             {user && (
               <>
-                {onBackToAdmin && (
-                  <button onClick={onBackToAdmin} className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all" style={{ border: "1px solid rgba(255,107,0,0.4)", color: "#ff6b00", background: "rgba(255,107,0,0.05)" }}>
-                    <Icon name="Shield" size={12} />
-                    ПАНЕЛЬ
-                  </button>
-                )}
-                {(user.role === "инструктор") && (
+                {(user.role === "инструктор" || user.is_admin) && (
                   <button
                     onClick={() => onNavigate("content-upload")}
                     className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all"
@@ -165,7 +158,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 Личное Дело
               </button>
             )}
-            {user && user.role === "инструктор" && (
+            {user && (user.role === "инструктор" || user.is_admin) && (
               <button
                 onClick={() => { onNavigate("content-upload"); setMobileOpen(false); }}
                 className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
