@@ -129,7 +129,7 @@ export default function LecturesPage() {
               style={{ animationDelay: `${i * 0.04}s` }}
             >
               <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.04)" }}>
-                <Icon name={file.mime_type === "youtube" ? "Youtube" : tab === "video" ? "Play" : "FileText"} size={16} className="text-[#00f5ff]" />
+                <Icon name="FileText" size={16} className="text-[#00f5ff]" />
               </div>
 
               <div className="flex-1 min-w-0">
