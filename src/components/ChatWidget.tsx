@@ -32,7 +32,7 @@ interface Contact {
 
 function isOnline(lastSeen?: string | null): boolean {
   if (!lastSeen) return false;
-  return Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
+  return Date.now() - new Date(lastSeen).getTime() < 1 * 60 * 1000;
 }
 
 export default function ChatWidget({ user }: ChatWidgetProps) {
