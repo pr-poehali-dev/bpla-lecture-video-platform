@@ -9,8 +9,9 @@ from datetime import datetime
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Authorization, X-User-Id, X-Auth-Token",
+    "Access-Control-Max-Age": "86400",
 }
 
 PAGES = ["home", "lectures", "videos", "drone-types", "materials", "firmware", "discussions", "downloads"]
