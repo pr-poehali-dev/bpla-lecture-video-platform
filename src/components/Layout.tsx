@@ -143,7 +143,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 }`}
               >
                 <Icon name="User" size={15} />
-                Профиль
+                Личное Дело
               </button>
             )}
             {user && (

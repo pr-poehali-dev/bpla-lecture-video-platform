@@ -74,7 +74,7 @@ export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ЛИЧНЫЙ КАБИНЕТ</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-8 tracking-wider">ПРОФИЛЬ</h1>
+      <h1 className="font-orbitron text-3xl font-black text-white mb-8 tracking-wider">ЛИЧНОЕ ДЕЛО</h1>
 
       {/* Avatar + callsign block */}
       <div className="card-drone p-6 mb-6">
