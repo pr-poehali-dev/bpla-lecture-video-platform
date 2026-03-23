@@ -1,12 +1,12 @@
 {
   "tests": [
     {
-      "name": "Register new user",
+      "name": "Register duplicate user returns error",
       "method": "POST",
       "path": "/?action=register",
       "body": {"email": "test_drone_999@example.com", "password": "test1234", "name": "Test User 999", "callsign": "Сокол-999"},
-      "expectedStatus": 201,
-      "expectedBody": {"message": "Заявка отправлена. Ожидайте одобрения администратора."},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Email уже зарегистрирован"},
       "bodyMatcher": "partial"
     },
     {

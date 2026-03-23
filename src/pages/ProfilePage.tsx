@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Icon from "@/components/ui/icon";
+import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 import { User } from "@/App";
 
@@ -24,6 +25,9 @@ export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     if (!name.trim()) { setError("Имя не может быть пустым"); return; }
@@ -46,6 +50,24 @@ export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
     setEditing(false);
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setAvatarError("");
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const res = await api.uploadAvatar(dataUrl, ext);
+      setUploadingAvatar(false);
+      if (res.error) { setAvatarError(res.error); return; }
+      if (res.user) onUpdate(res.user as User);
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       <div className="flex items-center gap-4 mb-2">
@@ -57,16 +79,53 @@ export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
       {/* Avatar + callsign block */}
       <div className="card-drone p-6 mb-6">
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.06)", boxShadow: "0 0 20px rgba(0,245,255,0.1)" }}>
-            <Icon name="User" size={28} className="text-[#00f5ff]" />
+          {/* Avatar with upload */}
+          <div className="relative flex-shrink-0 group">
+            <Avatar
+              callsign={user.callsign}
+              avatarUrl={user.avatar_url}
+              size={72}
+            />
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed"
+              style={{ background: "rgba(0,0,0,0.7)" }}
+              title="Загрузить фото"
+            >
+              {uploadingAvatar
+                ? <Icon name="Loader" size={20} className="text-[#00f5ff] animate-spin" />
+                : <Icon name="Camera" size={20} className="text-white" />
+              }
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
-          <div>
+
+          <div className="flex-1">
             <div className="font-orbitron text-lg font-bold text-white tracking-wider">{user.callsign || "—"}</div>
             <div className="font-mono text-xs text-[#3a5570] mt-0.5">ПОЗЫВНОЙ</div>
             {user.rank && (
               <div className="font-mono text-xs text-[#00ff88] mt-1">{user.rank}</div>
             )}
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="font-mono text-[10px] text-[#3a5570] hover:text-[#00f5ff] transition-colors mt-2 flex items-center gap-1 disabled:opacity-40"
+            >
+              <Icon name="Camera" size={10} />
+              {uploadingAvatar ? "ЗАГРУЗКА..." : "СМЕНИТЬ ФОТО"}
+            </button>
+            {avatarError && (
+              <div className="font-mono text-[10px] text-[#ff2244] mt-1">{avatarError}</div>
+            )}
           </div>
+
           <div className="ml-auto">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />

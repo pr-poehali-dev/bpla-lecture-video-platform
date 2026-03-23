@@ -220,7 +220,8 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"""
             SELECT m.id, m.content, m.created_at, m.sender_id,
                 m.image_url, m.message_type,
-                u.name AS sender_name, u.callsign AS sender_callsign
+                u.name AS sender_name, u.callsign AS sender_callsign,
+                u.avatar_url AS sender_avatar_url
             FROM {t('messages')} m
             JOIN {t('users')} u ON u.id = m.sender_id
             WHERE m.chat_id = %s
@@ -256,7 +257,9 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"UPDATE {t('chat_members')} SET last_read_at = NOW() WHERE chat_id = %s AND user_id = %s", (chat_id, user["id"]))
         conn.commit()
 
-        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "content": content, "image_url": None, "message_type": "text", "created_at": msg["created_at"]}})
+        cur.execute(f"SELECT avatar_url FROM {t('users')} WHERE id = %s", (user["id"],))
+        urow = cur.fetchone()
+        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "sender_avatar_url": urow["avatar_url"] if urow else None, "content": content, "image_url": None, "message_type": "text", "created_at": msg["created_at"]}})
 
     # Отправить картинку
     if action == "image-send" and method == "POST":
@@ -301,6 +304,8 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"UPDATE {t('chat_members')} SET last_read_at = NOW() WHERE chat_id = %s AND user_id = %s", (chat_id, user["id"]))
         conn.commit()
 
-        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "content": content_text, "image_url": cdn_url, "message_type": "image", "created_at": msg["created_at"]}})
+        cur.execute(f"SELECT avatar_url FROM {t('users')} WHERE id = %s", (user["id"],))
+        urow2 = cur.fetchone()
+        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "sender_avatar_url": urow2["avatar_url"] if urow2 else None, "content": content_text, "image_url": cdn_url, "message_type": "image", "created_at": msg["created_at"]}})
 
     return err("Не найдено", 404)

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 
 interface Props {
@@ -61,9 +62,15 @@ export default function RegisterPage({ onBack }: Props) {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-1 h-5 bg-[#00ff88]" />
-                <h2 className="font-orbitron text-sm font-bold tracking-wider text-white">РЕГИСТРАЦИЯ</h2>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-1 h-5 bg-[#00ff88] flex-shrink-0" />
+                <h2 className="font-orbitron text-sm font-bold tracking-wider text-white flex-1">РЕГИСТРАЦИЯ</h2>
+                {callsign && (
+                  <div className="flex flex-col items-center gap-1">
+                    <Avatar callsign={callsign} size={48} />
+                    <span className="font-mono text-[9px] text-[#3a5570]">ВАША ИКОНКА</span>
+                  </div>
+                )}
               </div>
 
               {error && (

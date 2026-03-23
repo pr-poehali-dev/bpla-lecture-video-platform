@@ -1,12 +1,14 @@
 """
-Аутентификация пользователей: регистрация, вход, проверка сессии, выход.
-Роутинг через query param ?action=register|login|me|logout
+Аутентификация пользователей: регистрация, вход, проверка сессии, выход, загрузка аватара.
+Роутинг через query param ?action=register|login|me|logout|update-profile|upload-avatar
 Вход выполняется по позывному (callsign) и паролю.
 """
 import json
 import os
 import hashlib
 import secrets
+import base64
+import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -33,6 +35,9 @@ def ok(data: dict, status: int = 200) -> dict:
 
 def err(msg: str, status: int = 400) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"error": msg}, ensure_ascii=False)}
+
+def user_fields():
+    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url"
 
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
@@ -90,7 +95,7 @@ def handler(event: dict, context) -> dict:
 
         pw_hash = hash_password(password)
         cur.execute(
-            f"SELECT id, name, callsign, email, status, is_admin, rank, contacts FROM {q('users')} WHERE callsign = %s AND password_hash = %s",
+            f"SELECT {user_fields()} FROM {q('users')} WHERE callsign = %s AND password_hash = %s",
             (callsign, pw_hash)
         )
         user = cur.fetchone()
@@ -119,6 +124,7 @@ def handler(event: dict, context) -> dict:
                 "status": status,
                 "rank": user["rank"],
                 "contacts": user["contacts"],
+                "avatar_url": user["avatar_url"],
             }
         })
 
@@ -129,7 +135,7 @@ def handler(event: dict, context) -> dict:
         if not token:
             return err("Не авторизован", 401)
 
-        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, rank, contacts FROM {q('users')} WHERE session_token = %s", (token,))
+        cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE session_token = %s", (token,))
         user = cur.fetchone()
         if not user:
             return err("Сессия недействительна", 401)
@@ -161,9 +167,53 @@ def handler(event: dict, context) -> dict:
         )
         conn.commit()
 
-        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, rank, contacts FROM {q('users')} WHERE id = %s", (user["id"],))
+        cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE id = %s", (user["id"],))
         updated = cur.fetchone()
         return ok({"user": dict(updated)})
+
+    # upload-avatar
+    if action == "upload-avatar" and method == "POST":
+        auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
+        token = auth.replace("Bearer ", "").strip()
+        if not token:
+            return err("Не авторизован", 401)
+
+        cur.execute(f"SELECT id FROM {q('users')} WHERE session_token = %s", (token,))
+        user = cur.fetchone()
+        if not user:
+            return err("Сессия недействительна", 401)
+
+        image_data = body.get("image_data") or ""
+        image_ext = (body.get("image_ext") or "jpg").lower().strip(".")
+
+        if not image_data:
+            return err("Нет данных изображения")
+        if image_ext not in ("jpg", "jpeg", "png", "gif", "webp"):
+            return err("Недопустимый формат")
+
+        if "," in image_data:
+            image_data = image_data.split(",", 1)[1]
+        img_bytes = base64.b64decode(image_data)
+        if len(img_bytes) > 5 * 1024 * 1024:
+            return err("Изображение слишком большое (макс. 5 МБ)")
+
+        import boto3
+        s3 = boto3.client("s3",
+            endpoint_url="https://bucket.poehali.dev",
+            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]
+        )
+        key = f"avatars/{user['id']}_{uuid.uuid4().hex[:8]}.{image_ext}"
+        mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}
+        s3.put_object(Bucket="files", Key=key, Body=img_bytes, ContentType=mime_map.get(image_ext, "image/jpeg"))
+        cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+
+        cur.execute(f"UPDATE {q('users')} SET avatar_url = %s WHERE id = %s", (cdn_url, user["id"]))
+        conn.commit()
+
+        cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE id = %s", (user["id"],))
+        updated = cur.fetchone()
+        return ok({"user": dict(updated), "avatar_url": cdn_url})
 
     # logout
     if action == "logout" and method == "POST":

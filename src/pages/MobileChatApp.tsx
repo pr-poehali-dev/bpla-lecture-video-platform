@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
+import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 
 interface User {
   id: number; name: string; callsign?: string; email: string;
-  rank?: string; is_admin: boolean; status: string;
+  rank?: string; is_admin: boolean; status: string; avatar_url?: string | null;
 }
 interface Chat {
   id: number; type: "direct" | "group"; name?: string;
@@ -15,6 +16,7 @@ interface Message {
   id: number; sender_id: number; sender_name: string;
   sender_callsign: string; content: string; created_at: string;
   image_url?: string | null; message_type?: string;
+  sender_avatar_url?: string | null;
 }
 
 export default function MobileChatApp() {
@@ -359,8 +361,11 @@ export default function MobileChatApp() {
                 {group.msgs.map(msg => {
                   const isMine = msg.sender_id === user.id;
                   return (
-                    <div key={msg.id} className={`flex mb-2 ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[78%] flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
+                    <div key={msg.id} className={`flex mb-2 gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                      {!isMine && (
+                        <Avatar callsign={msg.sender_callsign || msg.sender_name} avatarUrl={msg.sender_avatar_url} size={30} className="mt-1 flex-shrink-0" />
+                      )}
+                      <div className={`max-w-[72%] flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
                         {!isMine && (
                           <span className="font-mono text-[10px] px-1" style={{ color: CYAN }}>
                             {msg.sender_callsign || msg.sender_name}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
+import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 import { User } from "@/App";
 
@@ -14,6 +15,7 @@ export interface Message {
   id: number; sender_id: number; sender_name: string;
   sender_callsign: string; content: string; created_at: string;
   image_url?: string | null; message_type?: string;
+  sender_avatar_url?: string | null;
 }
 
 export default function ChatWidget({ user }: ChatWidgetProps) {
@@ -226,8 +228,11 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
                 {messages.map(msg => {
                   const isMine = msg.sender_id === user.id;
                   return (
-                    <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[80%] flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
+                    <div key={msg.id} className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                      {!isMine && (
+                        <Avatar callsign={msg.sender_callsign || msg.sender_name} avatarUrl={msg.sender_avatar_url} size={24} className="mt-1 flex-shrink-0" />
+                      )}
+                      <div className={`max-w-[75%] flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
                         {!isMine && (
                           <span className="font-mono text-[9px] text-[#00f5ff] px-1">{msg.sender_callsign || msg.sender_name}</span>
                         )}
