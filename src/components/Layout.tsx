@@ -1,7 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type Page, type User } from "@/App";
 import Icon from "@/components/ui/icon";
 import ChatWidget from "@/components/ChatWidget";
+
+function useServerStatus() {
+  const [online, setOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const check = () => {
+      fetch("https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199/?action=me", {
+        method: "GET",
+        signal: AbortSignal.timeout(5000),
+      })
+        .then(() => setOnline(true))
+        .catch(() => setOnline(false));
+    };
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  return online;
+}
 
 const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "lectures", label: "Лекции", icon: "BookOpen" },
@@ -23,6 +43,7 @@ interface LayoutProps {
 export default function Layout({ currentPage, onNavigate, children, user, onLogout }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const serverOnline = useServerStatus();
 
   const visibleNavItems = navItems.filter(item => {
     if (!user?.permissions) return true;
@@ -47,6 +68,15 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("home")}>
             <div className="w-8 h-8 relative flex items-center justify-center" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
               <Icon name="Crosshair" size={18} className="text-[#00f5ff]" />
+              <div
+                className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-[#050810]"
+                title={serverOnline === null ? "Проверка..." : serverOnline ? "Сервер работает" : "Сервер недоступен"}
+                style={{
+                  background: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244",
+                  boxShadow: serverOnline === null ? "none" : serverOnline ? "0 0 6px #00ff88" : "0 0 6px #ff2244",
+                  animation: serverOnline === true ? "pulse 2s infinite" : "none",
+                }}
+              />
             </div>
             <div>
               <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">DRONE</div>
