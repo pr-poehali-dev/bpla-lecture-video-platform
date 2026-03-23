@@ -45,6 +45,10 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
   const [mode, setMode] = useState<"file" | "youtube">("file");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSpeed, setUploadSpeed] = useState(0);
+  const [uploadEta, setUploadEta] = useState(0);
+  const uploadStartRef = useRef<number>(0);
+  const uploadLoadedRef = useRef<number>(0);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [form, setForm] = useState({ title: "", description: "", category: "", section: "general" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -79,6 +83,10 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
     if (!selectedFile || !form.title.trim()) return;
     setUploading(true);
     setUploadProgress(0);
+    setUploadSpeed(0);
+    setUploadEta(0);
+    uploadStartRef.current = Date.now();
+    uploadLoadedRef.current = 0;
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1];
@@ -96,11 +104,20 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
       xhr.setRequestHeader("Content-Type", "application/json");
       xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("drone_token") || ""}`);
       xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        if (!e.lengthComputable) return;
+        const pct = Math.round((e.loaded / e.total) * 100);
+        setUploadProgress(pct);
+        const elapsed = (Date.now() - uploadStartRef.current) / 1000;
+        const speed = elapsed > 0 ? e.loaded / elapsed : 0;
+        setUploadSpeed(speed);
+        const remaining = speed > 0 ? (e.total - e.loaded) / speed : 0;
+        setUploadEta(remaining);
       };
       xhr.onload = () => {
         setUploading(false);
         setUploadProgress(0);
+        setUploadSpeed(0);
+        setUploadEta(0);
         const res = JSON.parse(xhr.responseText);
         if (res.id) {
           showMsg("Файл загружен успешно!");
@@ -112,7 +129,7 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
           showMsg(res.error || "Ошибка загрузки", false);
         }
       };
-      xhr.onerror = () => { setUploading(false); setUploadProgress(0); showMsg("Ошибка сети", false); };
+      xhr.onerror = () => { setUploading(false); setUploadProgress(0); setUploadSpeed(0); setUploadEta(0); showMsg("Ошибка сети", false); };
       xhr.send(body);
     };
     reader.readAsDataURL(selectedFile);
@@ -313,16 +330,20 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         </div>
 
         {uploading && mode === "file" && (
-          <div className="space-y-1">
-            <div className="flex justify-between font-mono text-xs text-[#3a5570]">
-              <span>ЗАГРУЗКА...</span>
-              <span>{uploadProgress}%</span>
+          <div className="space-y-1.5">
+            <div className="flex justify-between font-mono text-xs">
+              <span className="text-[#00f5ff]">ЗАГРУЗКА...</span>
+              <span className="text-white">{uploadProgress}%</span>
             </div>
-            <div className="w-full h-1" style={{ background: "#0d1a28" }}>
+            <div className="w-full h-1.5 rounded-sm overflow-hidden" style={{ background: "#0d1a28" }}>
               <div
-                className="h-full transition-all duration-200"
-                style={{ width: `${uploadProgress}%`, background: "linear-gradient(90deg, #00f5ff, #00ff88)", boxShadow: "0 0 8px rgba(0,245,255,0.6)" }}
+                className="h-full transition-all duration-150 rounded-sm"
+                style={{ width: `${uploadProgress}%`, background: "linear-gradient(90deg, #00f5ff, #00ff88)", boxShadow: "0 0 10px rgba(0,245,255,0.7)" }}
               />
+            </div>
+            <div className="flex justify-between font-mono text-[10px] text-[#3a5570]">
+              <span>{uploadSpeed > 0 ? uploadSpeed >= 1024 * 1024 ? `${(uploadSpeed / 1024 / 1024).toFixed(1)} МБ/с` : `${(uploadSpeed / 1024).toFixed(0)} КБ/с` : "—"}</span>
+              <span>{uploadEta > 0 ? uploadEta >= 60 ? `~${Math.ceil(uploadEta / 60)} мин` : `~${Math.ceil(uploadEta)} сек` : ""}</span>
             </div>
           </div>
         )}
