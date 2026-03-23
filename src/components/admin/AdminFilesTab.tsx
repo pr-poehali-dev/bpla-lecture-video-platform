@@ -88,7 +88,11 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
     uploadStartRef.current = Date.now();
     uploadLoadedRef.current = 0;
     const reader = new FileReader();
+    reader.onprogress = (e) => {
+      if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 40));
+    };
     reader.onload = () => {
+      setUploadProgress(40);
       const base64 = (reader.result as string).split(",")[1];
       const body = JSON.stringify({
         title: form.title.trim(),
@@ -99,26 +103,16 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         mime_type: selectedFile.type,
         file_data: base64,
       });
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559/");
-      xhr.timeout = 300000;
-      xhr.setRequestHeader("Content-Type", "application/json");
-      xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("drone_token") || ""}`);
-      xhr.upload.onprogress = (e) => {
-        if (!e.lengthComputable) return;
-        const pct = Math.round((e.loaded / e.total) * 100);
-        setUploadProgress(pct);
-        const elapsed = (Date.now() - uploadStartRef.current) / 1000;
-        const speed = elapsed > 0 ? e.loaded / elapsed : 0;
-        setUploadSpeed(speed);
-        const remaining = speed > 0 ? (e.total - e.loaded) / speed : 0;
-        setUploadEta(remaining);
-      };
       const resetState = () => { setUploading(false); setUploadProgress(0); setUploadSpeed(0); setUploadEta(0); };
-      xhr.onload = () => {
-        resetState();
-        try {
-          const res = JSON.parse(xhr.responseText);
+      setUploadProgress(50);
+      fetch("https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("drone_token") || ""}` },
+        body,
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          resetState();
           if (res.id) {
             showMsg("Файл загружен успешно!");
             setSelectedFile(null);
@@ -126,15 +120,10 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
             if (fileRef.current) fileRef.current.value = "";
             loadFiles();
           } else {
-            showMsg(res.error || `Ошибка загрузки (${xhr.status})`, false);
+            showMsg(res.error || "Ошибка загрузки", false);
           }
-        } catch {
-          showMsg(`Ошибка сервера (${xhr.status})`, false);
-        }
-      };
-      xhr.ontimeout = () => { resetState(); showMsg("Превышено время ожидания — файл слишком большой или медленное соединение", false); };
-      xhr.onerror = () => { resetState(); showMsg("Ошибка соединения с сервером", false); };
-      xhr.send(body);
+        })
+        .catch(() => { resetState(); showMsg("Ошибка загрузки", false); });
     };
     reader.readAsDataURL(selectedFile);
   };
@@ -336,18 +325,14 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         {uploading && mode === "file" && (
           <div className="space-y-1.5">
             <div className="flex justify-between font-mono text-xs">
-              <span className="text-[#00f5ff]">ЗАГРУЗКА...</span>
+              <span className="text-[#00f5ff]">{uploadProgress < 40 ? "ЧТЕНИЕ ФАЙЛА..." : "ОТПРАВКА НА СЕРВЕР..."}</span>
               <span className="text-white">{uploadProgress}%</span>
             </div>
             <div className="w-full h-1.5 rounded-sm overflow-hidden" style={{ background: "#0d1a28" }}>
               <div
-                className="h-full transition-all duration-150 rounded-sm"
+                className="h-full transition-all duration-300 rounded-sm"
                 style={{ width: `${uploadProgress}%`, background: "linear-gradient(90deg, #00f5ff, #00ff88)", boxShadow: "0 0 10px rgba(0,245,255,0.7)" }}
               />
-            </div>
-            <div className="flex justify-between font-mono text-[10px] text-[#3a5570]">
-              <span>{uploadSpeed > 0 ? uploadSpeed >= 1024 * 1024 ? `${(uploadSpeed / 1024 / 1024).toFixed(1)} МБ/с` : `${(uploadSpeed / 1024).toFixed(0)} КБ/с` : "—"}</span>
-              <span>{uploadEta > 0 ? uploadEta >= 60 ? `~${Math.ceil(uploadEta / 60)} мин` : `~${Math.ceil(uploadEta)} сек` : ""}</span>
             </div>
           </div>
         )}
@@ -358,7 +343,7 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
           className="w-full font-mono text-sm py-3 tracking-wider transition-all disabled:opacity-40"
           style={{ border: "1px solid #00f5ff", color: uploading ? "#3a5570" : "#00f5ff", background: "rgba(0,245,255,0.05)" }}
         >
-          {uploading ? `ЗАГРУЗКА... ${uploadProgress}%` : mode === "file" ? "ЗАГРУЗИТЬ" : "ДОБАВИТЬ ВИДЕО"}
+          {uploading ? "ЗАГРУЗКА..." : mode === "file" ? "ЗАГРУЗИТЬ" : "ДОБАВИТЬ ВИДЕО"}
         </button>
       </div>
 
