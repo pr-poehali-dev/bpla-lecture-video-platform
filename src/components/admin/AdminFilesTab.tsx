@@ -101,6 +101,7 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
       });
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559/");
+      xhr.timeout = 300000;
       xhr.setRequestHeader("Content-Type", "application/json");
       xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("drone_token") || ""}`);
       xhr.upload.onprogress = (e) => {
@@ -113,23 +114,26 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         const remaining = speed > 0 ? (e.total - e.loaded) / speed : 0;
         setUploadEta(remaining);
       };
+      const resetState = () => { setUploading(false); setUploadProgress(0); setUploadSpeed(0); setUploadEta(0); };
       xhr.onload = () => {
-        setUploading(false);
-        setUploadProgress(0);
-        setUploadSpeed(0);
-        setUploadEta(0);
-        const res = JSON.parse(xhr.responseText);
-        if (res.id) {
-          showMsg("Файл загружен успешно!");
-          setSelectedFile(null);
-          setForm({ title: "", description: "", category: "", section: "general" });
-          if (fileRef.current) fileRef.current.value = "";
-          loadFiles();
-        } else {
-          showMsg(res.error || "Ошибка загрузки", false);
+        resetState();
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (res.id) {
+            showMsg("Файл загружен успешно!");
+            setSelectedFile(null);
+            setForm({ title: "", description: "", category: "", section: "general" });
+            if (fileRef.current) fileRef.current.value = "";
+            loadFiles();
+          } else {
+            showMsg(res.error || `Ошибка загрузки (${xhr.status})`, false);
+          }
+        } catch {
+          showMsg(`Ошибка сервера (${xhr.status})`, false);
         }
       };
-      xhr.onerror = () => { setUploading(false); setUploadProgress(0); setUploadSpeed(0); setUploadEta(0); showMsg("Ошибка сети", false); };
+      xhr.ontimeout = () => { resetState(); showMsg("Превышено время ожидания — файл слишком большой или медленное соединение", false); };
+      xhr.onerror = () => { resetState(); showMsg("Ошибка соединения с сервером", false); };
       xhr.send(body);
     };
     reader.readAsDataURL(selectedFile);
