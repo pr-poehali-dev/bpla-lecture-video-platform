@@ -23,6 +23,7 @@ interface LayoutProps {
 
 export default function Layout({ currentPage, onNavigate, children, user, onLogout }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const visibleNavItems = navItems.filter(item => {
     if (!user?.permissions) return true;
@@ -106,18 +107,87 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 >
                   <Icon name="Smartphone" size={13} />
                 </a>
-                <button
-                  onClick={() => onNavigate("profile")}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                <div
+                  className="relative"
+                  onMouseEnter={() => setProfileOpen(true)}
+                  onMouseLeave={() => setProfileOpen(false)}
                 >
-                  <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
-                  <span className="font-mono text-xs text-[#5a7a95]">{user.callsign || user.name}</span>
-                </button>
-                {onLogout && (
-                  <button onClick={onLogout} className="flex items-center gap-1 font-mono text-xs text-[#3a5570] hover:text-[#ff2244] transition-colors">
-                    <Icon name="LogOut" size={12} />
+                  <button className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                    <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
+                    <span className="font-mono text-xs text-[#5a7a95]">{user.callsign || user.name}</span>
+                    <Icon name="ChevronDown" size={11} className="text-[#3a5570]" />
                   </button>
-                )}
+
+                  {profileOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2 w-64 z-50"
+                      style={{ background: "rgba(5,8,16,0.98)", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 0 30px rgba(0,245,255,0.1)" }}
+                    >
+                      {/* Header дропдауна */}
+                      <div className="p-4 border-b" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.3)", background: "rgba(0,245,255,0.05)" }}>
+                            {user.avatar_url
+                              ? <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                              : <Icon name="User" size={16} className="text-[#00f5ff]" />
+                            }
+                          </div>
+                          <div>
+                            <div className="font-orbitron text-xs font-bold text-white leading-tight">{user.callsign || user.name}</div>
+                            {user.callsign && <div className="font-plex text-[10px] text-[#5a7a95] mt-0.5">{user.name}</div>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Инфо */}
+                      <div className="p-4 space-y-2.5">
+                        {user.rank && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-mono text-[10px] text-[#3a5570] tracking-wider uppercase">Звание</span>
+                            <span className="font-mono text-[10px] text-[#00f5ff]">{user.rank}</span>
+                          </div>
+                        )}
+                        {user.role && (
+                          <div className="flex justify-between items-center">
+                            <span className="font-mono text-[10px] text-[#3a5570] tracking-wider uppercase">Роль</span>
+                            <span className="font-mono text-[10px] text-[#00ff88]">{user.role}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono text-[10px] text-[#3a5570] tracking-wider uppercase">Статус</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88]" style={{ boxShadow: "0 0 4px #00ff88" }} />
+                            <span className="font-mono text-[10px] text-[#00ff88]">ONLINE</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono text-[10px] text-[#3a5570] tracking-wider uppercase">Email</span>
+                          <span className="font-mono text-[10px] text-[#5a7a95] truncate max-w-[130px]">{user.email}</span>
+                        </div>
+                      </div>
+
+                      {/* Кнопки */}
+                      <div className="border-t" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
+                        <button
+                          onClick={() => { onNavigate("profile"); setProfileOpen(false); }}
+                          className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs text-[#7a9bb5] hover:text-[#00f5ff] hover:bg-[rgba(0,245,255,0.05)] transition-all"
+                        >
+                          <Icon name="User" size={12} />
+                          ЛИЧНОЕ ДЕЛО
+                        </button>
+                        {onLogout && (
+                          <button
+                            onClick={onLogout}
+                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs text-[#3a5570] hover:text-[#ff2244] hover:bg-[rgba(255,34,68,0.05)] transition-all"
+                          >
+                            <Icon name="LogOut" size={12} />
+                            ВЫЙТИ
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
