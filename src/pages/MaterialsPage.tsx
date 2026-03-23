@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
+import { type User } from "@/App";
 
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
@@ -19,7 +20,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
 
-function DocViewerModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
+function DocViewerModal({ file, onClose, canDownload }: { file: FileItem; onClose: () => void; canDownload: boolean }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
@@ -51,14 +52,16 @@ function DocViewerModal({ file, onClose }: { file: FileItem; onClose: () => void
             <span className="font-mono text-sm text-white truncate">{file.title}</span>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-            <a
-              href={file.cdn_url}
-              download={file.original_name}
-              className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors flex items-center gap-1"
-            >
-              <Icon name="Download" size={14} />
-              Скачать
-            </a>
+            {canDownload && (
+              <a
+                href={file.cdn_url}
+                download={file.original_name}
+                className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors flex items-center gap-1"
+              >
+                <Icon name="Download" size={14} />
+                Скачать
+              </a>
+            )}
             <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff]">
               <Icon name="X" size={20} />
             </button>
@@ -81,14 +84,18 @@ function DocViewerModal({ file, onClose }: { file: FileItem; onClose: () => void
               <div className="font-mono text-sm text-[#3a5570] text-center">
                 Формат {MIME_LABELS[file.mime_type]?.label || "документа"} не поддерживает предпросмотр
               </div>
-              <a
-                href={file.cdn_url}
-                download={file.original_name}
-                className="font-mono text-xs px-4 py-2 transition-all"
-                style={{ border: "1px solid #00f5ff", color: "#00f5ff", background: "rgba(0,245,255,0.05)" }}
-              >
-                СКАЧАТЬ ФАЙЛ
-              </a>
+              {canDownload ? (
+                <a
+                  href={file.cdn_url}
+                  download={file.original_name}
+                  className="font-mono text-xs px-4 py-2 transition-all"
+                  style={{ border: "1px solid #00f5ff", color: "#00f5ff", background: "rgba(0,245,255,0.05)" }}
+                >
+                  СКАЧАТЬ ФАЙЛ
+                </a>
+              ) : (
+                <div className="font-mono text-xs text-[#3a5570]">Скачивание недоступно для курсантов</div>
+              )}
             </div>
           )}
         </div>
@@ -118,11 +125,17 @@ function TxtViewer({ url }: { url: string }) {
   );
 }
 
-export default function MaterialsPage() {
+interface Props {
+  user: User | null;
+}
+
+export default function MaterialsPage({ user }: Props) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [viewing, setViewing] = useState<FileItem | null>(null);
+
+  const canDownload = !user || user.is_admin || user.role !== "курсант";
 
   useEffect(() => {
     api.files.list("document").then((res) => {
@@ -137,7 +150,7 @@ export default function MaterialsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {viewing && <DocViewerModal file={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <DocViewerModal file={viewing} onClose={() => setViewing(null)} canDownload={canDownload} />}
 
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 flex items-center justify-center" style={{ border: "1px solid #ff6b00" }}>
@@ -224,14 +237,16 @@ export default function MaterialsPage() {
                     >
                       <Icon name="Eye" size={16} />
                     </button>
-                    <a
-                      href={file.cdn_url}
-                      download={file.original_name}
-                      className="font-mono text-xs text-[#3a5570] hover:text-[#ff6b00] transition-colors"
-                      title="Скачать"
-                    >
-                      <Icon name="Download" size={16} />
-                    </a>
+                    {canDownload && (
+                      <a
+                        href={file.cdn_url}
+                        download={file.original_name}
+                        className="font-mono text-xs text-[#3a5570] hover:text-[#ff6b00] transition-colors"
+                        title="Скачать"
+                      >
+                        <Icon name="Download" size={16} />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

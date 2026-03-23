@@ -129,7 +129,7 @@ export default function App() {
       case "home": return <HomePage onNavigate={navigate} />;
       case "lectures": return <LecturesPage />;
       case "videos": return <VideosPage />;
-      case "materials": return <MaterialsPage />;
+      case "materials": return <MaterialsPage user={user} />;
       case "drone-types": return <DroneTypesPage />;
       case "downloads": return <DownloadsPage />;
       case "discussions": return <DiscussionsPage user={user} />;
