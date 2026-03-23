@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import Avatar from "@/components/Avatar";
 import { api } from "@/api";
@@ -40,7 +40,7 @@ function AdminPanel({ user }: { user: User }) {
     setLoading(false);
   };
 
-  useState(() => { loadUsers(); });
+  useEffect(() => { loadUsers(); }, []);
 
   const showMsg = (text: string) => {
     setMsg(text);
@@ -142,6 +142,14 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onLogout }: Pr
   const [contacts, setContacts] = useState(user.contacts || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!editing) {
+      setName(user.name || "");
+      setRank(user.rank || "");
+      setContacts(user.contacts || "");
+    }
+  }, [user]);
   const [success, setSuccess] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");

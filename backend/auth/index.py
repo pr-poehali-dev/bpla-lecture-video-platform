@@ -187,7 +187,10 @@ def handler(event: dict, context) -> dict:
 
         cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE id = %s", (user["id"],))
         updated = cur.fetchone()
-        return ok({"user": dict(updated)})
+        updated_dict = dict(updated)
+        perms = get_permissions(cur, updated_dict.get("role")) if not updated_dict.get("is_admin") else {p: True for p in PAGES}
+        updated_dict["permissions"] = perms
+        return ok({"user": updated_dict})
 
     # upload-avatar
     if action == "upload-avatar" and method == "POST":
@@ -231,7 +234,10 @@ def handler(event: dict, context) -> dict:
 
         cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE id = %s", (user["id"],))
         updated = cur.fetchone()
-        return ok({"user": dict(updated), "avatar_url": cdn_url})
+        updated_dict = dict(updated)
+        perms = get_permissions(cur, updated_dict.get("role")) if not updated_dict.get("is_admin") else {p: True for p in PAGES}
+        updated_dict["permissions"] = perms
+        return ok({"user": updated_dict, "avatar_url": cdn_url})
 
     # logout
     if action == "logout" and method == "POST":

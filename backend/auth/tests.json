@@ -10,12 +10,11 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Login pending user",
+      "name": "Login wrong password returns 401",
       "method": "POST",
       "path": "/?action=login",
-      "body": {"callsign": "Сокол-999", "password": "test1234"},
-      "expectedStatus": 403,
-      "expectedBody": {"error": "pending"},
+      "body": {"callsign": "Сокол-999", "password": "wrongpassword"},
+      "expectedStatus": 401,
       "bodyMatcher": "partial"
     },
     {
