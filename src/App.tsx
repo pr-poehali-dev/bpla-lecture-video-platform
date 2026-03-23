@@ -8,7 +8,6 @@ import LecturesPage from "@/pages/LecturesPage";
 import VideosPage from "@/pages/VideosPage";
 import MaterialsPage from "@/pages/MaterialsPage";
 import DroneTypesPage from "@/pages/DroneTypesPage";
-import DownloadsPage from "@/pages/DownloadsPage";
 import DiscussionsPage from "@/pages/DiscussionsPage";
 import FirmwarePage from "@/pages/FirmwarePage";
 import LoginPage from "@/pages/LoginPage";
@@ -20,7 +19,7 @@ import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import { api } from "@/api";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware" | "profile" | "messages" | "content-upload";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "profile" | "messages" | "content-upload";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -125,7 +124,6 @@ export default function App() {
       case "videos": return <VideosPage />;
       case "materials": return <MaterialsPage user={user} />;
       case "drone-types": return <DroneTypesPage />;
-      case "downloads": return <DownloadsPage />;
       case "discussions": return <DiscussionsPage user={user} />;
       case "content-upload": return <ContentUploadPage user={user} />;
       case "firmware": return <FirmwarePage />;

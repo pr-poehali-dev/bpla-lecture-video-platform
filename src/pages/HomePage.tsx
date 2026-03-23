@@ -14,7 +14,7 @@ const features = [
   { icon: "BookOpen", title: "Лекции", desc: "Структурированные учебные материалы по тактике и применению БпЛА", page: "lectures" as Page },
   { icon: "Play", title: "Видео", desc: "Практические видеоразборы, полётные миссии, технические обзоры", page: "videos" as Page },
   { icon: "Plane", title: "Типы БпЛА", desc: "Каталог беспилотников: FPV, мультироторы, самолётного типа", page: "drone-types" as Page },
-  { icon: "Download", title: "Загрузки", desc: "Руководства, схемы, прошивки и обновления для скачивания", page: "downloads" as Page },
+  { icon: "Download", title: "Загрузки и прошивки", desc: "Руководства, схемы, прошивки FPV-КТ и обновления для скачивания", page: "firmware" as Page },
   { icon: "FileText", title: "Материалы", desc: "Тактические карты, регламенты, технические спецификации", page: "materials" as Page },
   { icon: "MessageSquare", title: "Обсуждения", desc: "Форум для обмена опытом и разбора боевых ситуаций", page: "discussions" as Page },
 ];
