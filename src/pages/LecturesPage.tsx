@@ -1,124 +1,227 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import { api, FileItem } from "@/api";
 
-const categories = ["Все", "Тактика", "Технические", "Боевое применение", "Разведка", "FPV"];
+const VIDEO_CATEGORIES = ["Все", "Боевые", "Учебные", "Технические", "Разбор миссий"];
+const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
-const lectures = [
-  { id: 1, title: "Основы тактического применения FPV дронов", category: "FPV", duration: "2ч 15мин", level: "Базовый", views: 1240, new: true },
-  { id: 2, title: "Навигация и ориентирование в условиях РЭБ", category: "Тактика", duration: "1ч 45мин", level: "Продвинутый", views: 890, new: false },
-  { id: 3, title: "Технические характеристики ударных дронов", category: "Технические", duration: "3ч 10мин", level: "Базовый", views: 2100, new: false },
-  { id: 4, title: "Разведывательные операции с БпЛА", category: "Разведка", duration: "2ч 30мин", level: "Средний", views: 760, new: true },
-  { id: 5, title: "Противодронная защита и контрмеры", category: "Тактика", duration: "1ч 55мин", level: "Продвинутый", views: 1450, new: false },
-  { id: 6, title: "Поражение бронетехники с БпЛА", category: "Боевое применение", duration: "2ч 40мин", level: "Продвинутый", views: 980, new: false },
-  { id: 7, title: "Программирование полётных контроллеров", category: "Технические", duration: "4ч 00мин", level: "Продвинутый", views: 540, new: true },
-  { id: 8, title: "Групповые атаки роем дронов", category: "Боевое применение", duration: "2ч 20мин", level: "Средний", views: 1720, new: false },
-  { id: 9, title: "Ночные операции с тепловизорами", category: "Разведка", duration: "1ч 35мин", level: "Средний", views: 830, new: false },
-];
+function formatSize(bytes: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
 
-const levelColor: Record<string, string> = {
-  "Базовый": "#00ff88",
-  "Средний": "#00f5ff",
-  "Продвинутый": "#ff6b00",
-};
+function VideoModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const isYoutube = file.mime_type === "youtube";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(5,8,16,0.97)" }} onClick={onClose}>
+      <div className="w-full max-w-4xl flex flex-col" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
+          <span className="font-mono text-sm text-white truncate">{file.title}</span>
+          <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff] ml-4 flex-shrink-0">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+        <div className="flex-1" style={{ background: "#000", minHeight: 0 }}>
+          {isYoutube ? (
+            <iframe
+              src={file.cdn_url}
+              className="w-full"
+              style={{ height: "60vh", border: "none" }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={file.title}
+            />
+          ) : (
+            <video
+              src={file.cdn_url}
+              controls
+              autoPlay
+              className="w-full"
+              style={{ maxHeight: "60vh" }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DocModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const isPdf = file.mime_type === "application/pdf";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(5,8,16,0.97)" }} onClick={onClose}>
+      <div className="w-full max-w-4xl flex flex-col" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
+          <span className="font-mono text-sm text-white truncate">{file.title}</span>
+          <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff] ml-4 flex-shrink-0">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-hidden" style={{ background: "#050810", minHeight: 0 }}>
+          {isPdf ? (
+            <iframe src={`${file.cdn_url}#toolbar=1`} className="w-full" style={{ minHeight: "70vh", border: "none" }} title={file.title} />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Icon name="FileText" size={48} className="text-[#3a5570]" />
+              <div className="font-mono text-sm text-[#3a5570]">Предпросмотр недоступен</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LecturesPage() {
+  const [tab, setTab] = useState<"video" | "document">("video");
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [search, setSearch] = useState("");
+  const [viewing, setViewing] = useState<FileItem | null>(null);
 
-  const filtered = lectures.filter((l) => {
-    const matchCat = activeCategory === "Все" || l.category === activeCategory;
-    const matchSearch = l.title.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    setLoading(true);
+    setActiveCategory("Все");
+    api.files.list(tab, undefined, "general").then((res) => {
+      setFiles(res.files || []);
+      setLoading(false);
+    });
+  }, [tab]);
+
+  const categories = tab === "video" ? VIDEO_CATEGORIES : DOC_CATEGORIES;
+
+  const filtered = files.filter((f) => {
+    const matchCat = activeCategory === "Все" || f.category === activeCategory;
+    const matchSearch = f.title.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
-      {/* Header */}
+      {viewing && viewing.file_type === "video" && <VideoModal file={viewing} onClose={() => setViewing(null)} />}
+      {viewing && viewing.file_type === "document" && <DocModal file={viewing} onClose={() => setViewing(null)} />}
+
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// УЧЕБНЫЙ ЦЕНТР</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-8 tracking-wider">ЛЕКЦИИ</h1>
+      <h1 className="font-orbitron text-3xl font-black text-white mb-6 tracking-wider">ЛЕКЦИИ</h1>
 
-      {/* Search + filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-1">
-          <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a5570]" />
-          <input
-            type="text"
-            placeholder="ПОИСК ЛЕКЦИЙ..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-mono text-sm pl-9 pr-4 py-2.5 rounded-sm outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060] tracking-widest"
-          />
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6">
+        {([
+          { key: "video", label: "ВИДЕО", icon: "Play" },
+          { key: "document", label: "ДОКУМЕНТЫ", icon: "FileText" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className="flex items-center gap-1.5 font-mono text-xs px-4 py-2 transition-all"
+            style={{
+              border: `1px solid ${tab === t.key ? "#00f5ff" : "#1a2a3a"}`,
+              color: tab === t.key ? "#050810" : "#3a5570",
+              background: tab === t.key ? "#00f5ff" : "transparent",
+            }}
+          >
+            <Icon name={t.icon} size={12} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-6">
+        <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a5570]" />
+        <input
+          type="text"
+          placeholder="ПОИСК..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-mono text-sm pl-9 pr-4 py-2.5 outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060] tracking-widest"
+        />
       </div>
 
       {/* Categories */}
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex flex-wrap gap-2 mb-6">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`font-mono text-xs px-4 py-2 tracking-wider transition-all duration-200 ${
-              activeCategory === cat
-                ? "text-[#050810] font-bold"
-                : "text-[#5a7a95] border border-[rgba(0,245,255,0.15)] hover:border-[rgba(0,245,255,0.4)] hover:text-[#00f5ff]"
-            }`}
-            style={activeCategory === cat ? { background: "#00f5ff", boxShadow: "0 0 15px rgba(0,245,255,0.4)" } : {}}
+            className="font-mono text-xs px-4 py-2 tracking-wider transition-all"
+            style={{
+              border: `1px solid ${activeCategory === cat ? "#00f5ff" : "rgba(0,245,255,0.15)"}`,
+              color: activeCategory === cat ? "#050810" : "#5a7a95",
+              background: activeCategory === cat ? "#00f5ff" : "transparent",
+              boxShadow: activeCategory === cat ? "0 0 15px rgba(0,245,255,0.4)" : "none",
+            }}
           >
             {cat.toUpperCase()}
           </button>
         ))}
       </div>
 
-      {/* Count */}
-      <div className="font-mono text-xs text-[#3a5570] mb-6">НАЙДЕНО: {filtered.length} ЛЕКЦИЙ</div>
+      <div className="font-mono text-xs text-[#3a5570] mb-6">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
 
-      {/* Lectures list */}
-      <div className="space-y-3">
-        {filtered.map((lecture, i) => (
-          <div
-            key={lecture.id}
-            className="card-drone flex items-center gap-4 p-4 cursor-pointer animate-fade-in"
-            style={{ animationDelay: `${i * 0.05}s` }}
-          >
-            {/* Number */}
-            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 font-orbitron text-xs font-bold text-[#3a5570]" style={{ border: "1px solid rgba(0,245,255,0.1)" }}>
-              {String(lecture.id).padStart(2, "0")}
+      {/* List */}
+      {loading ? (
+        <div className="text-center py-20 font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20" style={{ border: "1px solid #1a2a3a" }}>
+          <Icon name={tab === "video" ? "Play" : "FileText"} size={32} className="text-[#3a5570] mx-auto mb-3" />
+          <div className="font-mono text-xs text-[#3a5570]">Материалы не найдены</div>
+          <div className="font-mono text-xs text-[#1a2a3a] mt-1">Инструктор ещё не добавил материалы</div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((file, i) => (
+            <div
+              key={file.id}
+              onClick={() => setViewing(file)}
+              className="card-drone flex items-center gap-4 p-4 cursor-pointer hover:border-[rgba(0,245,255,0.3)] transition-all animate-fade-in"
+              style={{ animationDelay: `${i * 0.04}s` }}
+            >
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.04)" }}>
+                <Icon name={file.mime_type === "youtube" ? "Youtube" : tab === "video" ? "Play" : "FileText"} size={16} className="text-[#00f5ff]" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                {file.category && (
+                  <div className="font-mono text-[10px] text-[#3a5570] mb-1">{file.category}</div>
+                )}
+                <div className="font-plex text-sm text-white truncate">{file.title}</div>
+                {file.description && (
+                  <div className="font-mono text-xs text-[#3a5570] truncate mt-0.5">{file.description}</div>
+                )}
+              </div>
+
+              <div className="hidden md:flex items-center gap-4 flex-shrink-0 text-[#3a5570]">
+                {file.uploader && <span className="font-mono text-xs">{file.uploader}</span>}
+                {file.file_size > 0 && <span className="font-mono text-xs">{formatSize(file.file_size)}</span>}
+              </div>
+
+              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors">
+                <Icon name={tab === "video" ? "PlayCircle" : "Eye"} size={18} />
+              </div>
             </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                {lecture.new && <span className="tag-badge-green text-[10px]">NEW</span>}
-                <span className="tag-badge text-[10px]">{lecture.category}</span>
-              </div>
-              <h3 className="font-plex text-sm text-white truncate group-hover:text-[#00f5ff]">{lecture.title}</h3>
-            </div>
-
-            {/* Meta */}
-            <div className="hidden md:flex items-center gap-6 flex-shrink-0">
-              <div className="text-right">
-                <div className="font-mono text-xs" style={{ color: levelColor[lecture.level] || "#00f5ff" }}>{lecture.level.toUpperCase()}</div>
-              </div>
-              <div className="flex items-center gap-1.5 text-[#3a5570]">
-                <Icon name="Clock" size={12} />
-                <span className="font-mono text-xs">{lecture.duration}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[#3a5570]">
-                <Icon name="Eye" size={12} />
-                <span className="font-mono text-xs">{lecture.views.toLocaleString()}</span>
-              </div>
-            </div>
-
-            {/* Action */}
-            <button className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors">
-              <Icon name="PlayCircle" size={18} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
