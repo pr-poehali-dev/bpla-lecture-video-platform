@@ -109,7 +109,7 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
           <div className="mt-6 pt-5 text-center" style={{ borderTop: "1px solid rgba(0,245,255,0.08)" }}>
             <span className="font-plex text-xs text-[#3a5570]">Нет доступа? </span>
             <button onClick={onRegister} className="font-plex text-xs text-[#00f5ff] hover:text-white transition-colors">
-              Подать заявку на регистрацию
+              Подать заявку на доступ
             </button>
           </div>
         </div>

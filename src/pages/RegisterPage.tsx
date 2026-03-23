@@ -138,7 +138,7 @@ export default function RegisterPage({ onBack }: Props) {
                   className="w-full flex items-center justify-center gap-2 py-2.5 font-orbitron text-sm font-bold tracking-wider transition-all"
                   style={{ background: "rgba(0,255,136,0.1)", border: "1px solid #00ff88", color: "#00ff88", boxShadow: loading ? "none" : "0 0 15px rgba(0,255,136,0.15)" }}
                 >
-                  {loading ? <><Icon name="Loader" size={14} className="animate-spin" />ОТПРАВКА...</> : <><Icon name="Send" size={14} />ПОДАТЬ ЗАЯВКУ</>}
+                  {loading ? <><Icon name="Loader" size={14} className="animate-spin" />ОТПРАВКА...</> : <><Icon name="Send" size={14} />ПОДАТЬ ЗАЯВКУ НА ДОСТУП</>}
                 </button>
               </form>
 
