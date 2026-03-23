@@ -53,11 +53,14 @@ export default function AdminRolesTab() {
         setPermissions(res.permissions);
         setPages(res.pages || []);
         setRoles(res.roles || []);
+      } else if (res.error) {
+        setError(res.error);
       } else {
-        setError(res.error || "Не удалось загрузить права доступа");
+        setError("Не удалось загрузить права доступа");
       }
-    } catch {
-      setError("Ошибка соединения с сервером");
+    } catch (e) {
+      console.error("getPermissions error:", e);
+      setError(`Ошибка: ${e instanceof Error ? e.message : String(e)}`);
     }
     setLoading(false);
   };
