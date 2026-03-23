@@ -2,6 +2,7 @@ const AUTH_URL = "https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1
 const ADMIN_URL = "https://functions.poehali.dev/5407bcc9-7143-4278-8422-e2a603eb0135";
 const FILES_URL = "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559";
 const MSG_URL = "https://functions.poehali.dev/64d88e88-79a2-48b8-8ac8-d37bfa8eb51e";
+const REMOVAL_URL = "https://functions.poehali.dev/c72247bf-756d-4755-9c5d-88a1c31e0f01";
 
 function getToken(): string {
   return localStorage.getItem("drone_token") || "";
@@ -23,6 +24,20 @@ export interface FileItem {
   cdn_url: string;
   created_at: string;
   uploader: string;
+}
+
+export interface RemovalRequest {
+  id: number;
+  file_id: number;
+  file_title: string;
+  file_type: string;
+  mime_type: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  requester: string;
+  callsign: string;
+  reviewer: string | null;
 }
 
 export const api = {
@@ -129,6 +144,25 @@ export const api = {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ ...data, mime_type: "youtube" }),
+      }).then((r) => r.json()),
+  },
+
+  removal: {
+    list: (): Promise<{ requests: RemovalRequest[] }> =>
+      fetch(`${REMOVAL_URL}/`, { headers: authHeaders() }).then((r) => r.json()),
+
+    create: (file_id: number, reason: string): Promise<{ id?: number; error?: string }> =>
+      fetch(`${REMOVAL_URL}/`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ file_id, reason }),
+      }).then((r) => r.json()),
+
+    review: (id: number, action: "approve" | "reject"): Promise<{ ok?: boolean; error?: string }> =>
+      fetch(`${REMOVAL_URL}/`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ id, action }),
       }).then((r) => r.json()),
   },
 };

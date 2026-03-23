@@ -132,6 +132,23 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
     loadFiles();
   };
 
+  const [requestingId, setRequestingId] = useState<number | null>(null);
+  const [requestReason, setRequestReason] = useState("");
+  const [requestMsg, setRequestMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const handleRequestRemoval = async (fileId: number) => {
+    const res = await api.removal.create(fileId, requestReason.trim());
+    if (res.id) {
+      setRequestingId(null);
+      setRequestReason("");
+      setRequestMsg({ text: "Заявка отправлена администратору", ok: true });
+      setTimeout(() => setRequestMsg(null), 4000);
+    } else {
+      setRequestMsg({ text: res.error || "Ошибка", ok: false });
+      setTimeout(() => setRequestMsg(null), 4000);
+    }
+  };
+
   const detectedType = selectedFile ? ACCEPTED_MIME[selectedFile.type] : null;
   const isFirmware = form.section === "firmware";
   const categories = isFirmware
@@ -291,6 +308,13 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         </button>
       </div>
 
+      {/* Request removal notification */}
+      {requestMsg && (
+        <div className="p-3 font-mono text-xs" style={{ border: `1px solid ${requestMsg.ok ? "rgba(0,255,136,0.3)" : "rgba(255,34,68,0.3)"}`, color: requestMsg.ok ? "#00ff88" : "#ff2244", background: requestMsg.ok ? "rgba(0,255,136,0.05)" : "rgba(255,34,68,0.05)" }}>
+          {requestMsg.text}
+        </div>
+      )}
+
       {/* Files list */}
       <div style={{ border: "1px solid #1a2a3a" }}>
         <div className="px-4 py-3 font-mono text-xs text-[#00f5ff] tracking-wider" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
@@ -302,17 +326,57 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
           <div className="p-8 text-center font-mono text-xs text-[#3a5570]">Файлы ещё не загружены</div>
         ) : (
           uploadedFiles.map((f, i) => (
-            <div key={f.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: i < uploadedFiles.length - 1 ? "1px solid #0d1a28" : "none" }}>
-              <Icon name={f.file_type === "video" ? (f.mime_type === "youtube" ? "Youtube" : "Video") : "FileText"} size={16} className={f.file_type === "video" ? "text-[#00f5ff]" : "text-[#ff6b00]"} />
-              <div className="flex-1 min-w-0">
-                <div className="font-mono text-sm text-white truncate">{f.title}</div>
-                <div className="font-mono text-xs text-[#3a5570]">{f.category || "Без категории"} • {formatSize(f.file_size)}</div>
+            <div key={f.id} style={{ borderBottom: i < uploadedFiles.length - 1 ? "1px solid #0d1a28" : "none" }}>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Icon name={f.file_type === "video" ? (f.mime_type === "youtube" ? "Youtube" : "Video") : "FileText"} size={16} className={f.file_type === "video" ? "text-[#00f5ff]" : "text-[#ff6b00]"} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-mono text-sm text-white truncate">{f.title}</div>
+                  <div className="font-mono text-xs text-[#3a5570]">{f.category || "Без категории"} • {formatSize(f.file_size)}</div>
+                </div>
+                <span className="font-mono text-xs text-[#3a5570]">{f.mime_type === "youtube" ? "YOUTUBE" : f.file_type === "video" ? "ВИДЕО" : "ДОКУМЕНТ"}</span>
+                {isAdmin ? (
+                  <button onClick={() => handleDelete(f.id)} className="text-[#3a5570] hover:text-[#ff2244] transition-colors flex-shrink-0">
+                    <Icon name="Trash2" size={16} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setRequestingId(requestingId === f.id ? null : f.id); setRequestReason(""); }}
+                    className="font-mono text-[10px] px-2 py-1 transition-all flex-shrink-0"
+                    style={{ border: "1px solid #1a2a3a", color: "#3a5570" }}
+                    title="Запросить удаление"
+                  >
+                    <Icon name="Trash2" size={13} />
+                  </button>
+                )}
               </div>
-              <span className="font-mono text-xs text-[#3a5570]">{f.mime_type === "youtube" ? "YOUTUBE" : f.file_type === "video" ? "ВИДЕО" : "ДОКУМЕНТ"}</span>
-              {isAdmin && (
-                <button onClick={() => handleDelete(f.id)} className="text-[#3a5570] hover:text-[#ff2244] transition-colors flex-shrink-0">
-                  <Icon name="Trash2" size={16} />
-                </button>
+              {/* Inline form for removal request */}
+              {!isAdmin && requestingId === f.id && (
+                <div className="px-4 pb-3 space-y-2" style={{ background: "rgba(255,34,68,0.03)", borderTop: "1px solid #1a2a3a" }}>
+                  <div className="font-mono text-xs text-[#ff6b00] pt-2">ЗАЯВКА НА УДАЛЕНИЕ: {f.title}</div>
+                  <input
+                    className="w-full font-mono text-xs bg-transparent px-3 py-2 text-white focus:outline-none"
+                    style={{ border: "1px solid #1a2a3a" }}
+                    placeholder="Причина (необязательно)"
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleRequestRemoval(f.id)}
+                      className="font-mono text-xs px-4 py-1.5 transition-all"
+                      style={{ border: "1px solid rgba(255,107,0,0.5)", color: "#ff6b00", background: "rgba(255,107,0,0.05)" }}
+                    >
+                      ОТПРАВИТЬ ЗАЯВКУ
+                    </button>
+                    <button
+                      onClick={() => setRequestingId(null)}
+                      className="font-mono text-xs px-3 py-1.5 transition-all"
+                      style={{ border: "1px solid #1a2a3a", color: "#3a5570" }}
+                    >
+                      ОТМЕНА
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           ))

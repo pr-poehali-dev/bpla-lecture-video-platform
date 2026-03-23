@@ -4,6 +4,7 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import AdminUsersTab, { User } from "@/components/admin/AdminUsersTab";
 import AdminFilesTab from "@/components/admin/AdminFilesTab";
 import AdminRolesTab from "@/components/admin/AdminRolesTab";
+import AdminRemovalTab from "@/components/admin/AdminRemovalTab";
 import Icon from "@/components/ui/icon";
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files";
+type Tab = "dashboard" | "users" | "roles" | "files" | "removals";
 
 interface Stats {
   total: number;
@@ -78,12 +79,14 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
   };
 
   const pendingCount = users.filter(u => u.status === "pending").length;
+  const [removalPendingCount, setRemovalPendingCount] = useState(0);
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "dashboard", label: "ОБЗОР", icon: "LayoutDashboard" },
     { key: "users", label: "ЛИЧНЫЙ СОСТАВ", icon: "Users" },
     { key: "roles", label: "ДОСТУПЫ", icon: "Shield" },
     { key: "files", label: "ФАЙЛЫ", icon: "Upload" },
+    { key: "removals", label: "ЗАЯВКИ", icon: "Trash2" },
   ];
 
   return (
@@ -117,6 +120,11 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
               {tab.key === "users" && pendingCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: "#ff6b00", color: "#fff", marginLeft: 2 }}>
                   {pendingCount}
+                </span>
+              )}
+              {tab.key === "removals" && removalPendingCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: "#ff2244", color: "#fff", marginLeft: 2 }}>
+                  {removalPendingCount}
                 </span>
               )}
             </button>
@@ -231,6 +239,9 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
 
         {/* Files */}
         {activeTab === "files" && <AdminFilesTab isAdmin={true} />}
+
+        {/* Removal requests */}
+        {activeTab === "removals" && <AdminRemovalTab onPendingCount={setRemovalPendingCount} />}
       </div>
     </div>
   );
