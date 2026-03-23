@@ -56,6 +56,9 @@ export const api = {
 
     makeAdmin: (user_id: number) =>
       fetch(`${ADMIN_URL}/?action=make-admin`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
+
+    setRole: (user_id: number, role: string) =>
+      fetch(`${ADMIN_URL}/?action=set-role`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id, role }) }).then((r) => r.json()),
   },
 
   msg: {

@@ -3,9 +3,11 @@ import Icon from "@/components/ui/icon";
 export interface User {
   id: number;
   name: string;
+  callsign?: string;
   email: string;
   status: string;
   is_admin: boolean;
+  role: string;
   created_at: string;
   approved_at: string | null;
 }
@@ -22,6 +24,14 @@ const statusLabel: Record<string, string> = {
   rejected: "ОТКЛОНЁН",
 };
 
+const roleColor: Record<string, string> = {
+  "курсант": "#00f5ff",
+  "инструктор": "#00ff88",
+  "администратор": "#ff6b00",
+};
+
+const ROLES = ["курсант", "инструктор", "администратор"];
+
 interface Props {
   users: User[];
   loading: boolean;
@@ -31,9 +41,10 @@ interface Props {
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
   onMakeAdmin: (id: number) => void;
+  onSetRole: (id: number, role: string) => void;
 }
 
-export default function AdminUsersTab({ users, loading, filter, setFilter, msg, onApprove, onReject, onMakeAdmin }: Props) {
+export default function AdminUsersTab({ users, loading, filter, setFilter, msg, onApprove, onReject, onMakeAdmin, onSetRole }: Props) {
   const filtered = users.filter((u) => filter === "all" || u.status === filter);
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
@@ -99,20 +110,42 @@ export default function AdminUsersTab({ users, loading, filter, setFilter, msg, 
             >
               {/* Avatar */}
               <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 font-orbitron text-sm font-bold" style={{ background: "rgba(0,245,255,0.06)", border: "1px solid rgba(0,245,255,0.15)", color: "#00f5ff" }}>
-                {user.name[0].toUpperCase()}
+                {(user.callsign || user.name)[0].toUpperCase()}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-plex text-sm text-white">{user.name}</span>
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <span className="font-plex text-sm text-white">{user.callsign || user.name}</span>
+                  {user.callsign && <span className="font-mono text-xs text-[#3a5570]">{user.name}</span>}
                   {user.is_admin && <span className="tag-badge text-[9px]">ADMIN</span>}
+                  {user.role && (
+                    <span className="font-mono text-[9px] px-1.5 py-0.5" style={{ background: "rgba(0,245,255,0.06)", border: `1px solid ${roleColor[user.role] || "#3a5570"}44`, color: roleColor[user.role] || "#5a7a95" }}>
+                      {user.role.toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="font-mono text-xs text-[#5a7a95]">{user.email}</div>
                 <div className="font-mono text-[10px] text-[#2a4060] mt-0.5">
                   Заявка: {new Date(user.created_at).toLocaleDateString("ru-RU")}
                 </div>
               </div>
+
+              {/* Role selector — только для одобренных */}
+              {user.status === "approved" && (
+                <div className="flex-shrink-0">
+                  <select
+                    value={user.role || "курсант"}
+                    onChange={(e) => onSetRole(user.id, e.target.value)}
+                    className="font-mono text-xs px-2 py-1.5 bg-transparent outline-none cursor-pointer"
+                    style={{ border: "1px solid rgba(0,245,255,0.2)", color: roleColor[user.role] || "#00f5ff" }}
+                  >
+                    {ROLES.map(r => (
+                      <option key={r} value={r} style={{ background: "#050810", color: "#fff" }}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Status */}
               <div className="flex-shrink-0">

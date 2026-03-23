@@ -37,7 +37,7 @@ def err(msg: str, status: int = 400) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"error": msg}, ensure_ascii=False)}
 
 def user_fields():
-    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url"
+    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role"
 
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
@@ -125,6 +125,7 @@ def handler(event: dict, context) -> dict:
                 "rank": user["rank"],
                 "contacts": user["contacts"],
                 "avatar_url": user["avatar_url"],
+                "role": user["role"],
             }
         })
 

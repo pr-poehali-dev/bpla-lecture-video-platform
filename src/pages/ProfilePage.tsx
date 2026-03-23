@@ -113,6 +113,11 @@ export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
             {user.rank && (
               <div className="font-mono text-xs text-[#00ff88] mt-1">{user.rank}</div>
             )}
+            {user.role && (
+              <div className="font-mono text-[10px] mt-1 px-2 py-0.5 inline-block" style={{ background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.2)", color: "#00f5ff" }}>
+                {user.role.toUpperCase()}
+              </div>
+            )}
             <button
               onClick={() => avatarInputRef.current?.click()}
               disabled={uploadingAvatar}

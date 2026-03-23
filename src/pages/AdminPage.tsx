@@ -47,6 +47,11 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
     if (res.message) { showMsg(res.message); load(); }
   };
 
+  const setRole = async (id: number, role: string) => {
+    const res = await api.admin.setRole(id, role);
+    if (res.message) { showMsg(res.message); load(); }
+  };
+
   return (
     <div className="min-h-screen grid-bg" style={{ background: "#050810" }}>
       <AdminHeader currentUser={currentUser} onLogout={onLogout} onGoToSite={onGoToSite} />
@@ -86,6 +91,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
             onApprove={approve}
             onReject={reject}
             onMakeAdmin={makeAdmin}
+            onSetRole={setRole}
           />
         )}
       </div>

@@ -64,9 +64,24 @@ def handler(event: dict, context) -> dict:
 
     # GET ?action=users
     if action == "users" and method == "GET":
-        cur.execute(f"SELECT id, name, email, status, is_admin, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
+        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, role, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
         users = [dict(u) for u in cur.fetchall()]
         return ok({"users": users})
+
+    # POST ?action=set-role
+    if action == "set-role" and method == "POST":
+        user_id = body.get("user_id")
+        role = body.get("role")
+        if not user_id:
+            return err("user_id обязателен")
+        if role not in ("курсант", "инструктор", "администратор"):
+            return err("Недопустимая роль")
+        cur.execute(f"UPDATE {q('users')} SET role = %s WHERE id = %s RETURNING id, name, callsign", (role, user_id))
+        user = cur.fetchone()
+        conn.commit()
+        if not user:
+            return err("Пользователь не найден", 404)
+        return ok({"message": f"Роль пользователя {user['callsign'] or user['name']} изменена на «{role}»"})
 
     # POST ?action=approve
     if action == "approve" and method == "POST":
