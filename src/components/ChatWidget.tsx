@@ -25,6 +25,26 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const [totalUnread, setTotalUnread] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevUnreadRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const playNotify = () => {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) { void e; }
+  };
 
   useEffect(() => {
     loadChats();
@@ -48,7 +68,10 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
     const res = await api.msg.chatsList();
     if (res.chats) {
       setChats(res.chats);
-      setTotalUnread(res.chats.reduce((s: number, c: Chat) => s + (c.unread_count || 0), 0));
+      const newTotal = res.chats.reduce((s: number, c: Chat) => s + (c.unread_count || 0), 0);
+      if (newTotal > prevUnreadRef.current) playNotify();
+      prevUnreadRef.current = newTotal;
+      setTotalUnread(newTotal);
     }
   };
 
