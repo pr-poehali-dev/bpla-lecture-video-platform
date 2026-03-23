@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { type Page } from "@/App";
+import { type Page, type User } from "@/App";
 import Icon from "@/components/ui/icon";
+import ChatWidget from "@/components/ChatWidget";
 
 const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "home", label: "Главная", icon: "Crosshair" },
@@ -17,7 +18,7 @@ interface LayoutProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   children: React.ReactNode;
-  user?: { name: string; email: string; callsign?: string };
+  user?: User;
   onLogout?: () => void;
   onBackToAdmin?: () => void;
 }
@@ -145,6 +146,9 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
       <main className="pt-16">
         {children}
       </main>
+
+      {/* Chat widget */}
+      {user && currentPage !== "messages" && <ChatWidget user={user} />}
 
       {/* Footer */}
       <footer className="mt-20 border-t py-8" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(5,8,16,0.8)" }}>
