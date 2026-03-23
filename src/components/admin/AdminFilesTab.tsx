@@ -191,26 +191,28 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         )}
 
         {mode === "file" ? (
-          <div
-            className="flex flex-col items-center justify-center p-8 cursor-pointer transition-all"
-            style={{ border: `2px dashed ${selectedFile ? "#00ff88" : "#1a2a3a"}`, background: selectedFile ? "rgba(0,255,136,0.03)" : "transparent" }}
-            onClick={() => fileRef.current?.click()}
-          >
-            <input ref={fileRef} type="file" className="hidden" accept="video/mp4,video/webm,video/x-matroska,video/quicktime,application/pdf,text/plain,application/msword,.docx,application/vnd.ms-powerpoint,.pptx" onChange={handleFileChange} />
-            {selectedFile ? (
-              <>
-                <Icon name="CheckCircle" size={32} className="text-[#00ff88] mb-2" />
-                <div className="font-mono text-sm text-white">{selectedFile.name}</div>
-                <div className="font-mono text-xs text-[#3a5570]">{formatSize(selectedFile.size)} • {detectedType === "video" ? "Видео" : "Документ"}</div>
-              </>
-            ) : (
-              <>
-                <Icon name="Upload" size={32} className="text-[#3a5570] mb-2" />
-                <div className="font-mono text-sm text-[#3a5570]">Выберите файл</div>
-                <div className="font-mono text-xs text-[#1a2a3a] mt-1">MP4, WebM, MKV, PDF, DOCX, TXT, PPT</div>
-              </>
-            )}
-          </div>
+          <>
+            <input ref={fileRef} type="file" style={{ position: "fixed", top: -9999, left: -9999, opacity: 0 }} accept="video/mp4,video/webm,video/x-matroska,video/quicktime,application/pdf,text/plain,application/msword,.docx,application/vnd.ms-powerpoint,.pptx" onChange={handleFileChange} />
+            <div
+              className="flex flex-col items-center justify-center p-8 cursor-pointer transition-all"
+              style={{ border: `2px dashed ${selectedFile ? "#00ff88" : "#1a2a3a"}`, background: selectedFile ? "rgba(0,255,136,0.03)" : "transparent" }}
+              onClick={() => fileRef.current?.click()}
+            >
+              {selectedFile ? (
+                <>
+                  <Icon name="CheckCircle" size={32} className="text-[#00ff88] mb-2" />
+                  <div className="font-mono text-sm text-white">{selectedFile.name}</div>
+                  <div className="font-mono text-xs text-[#3a5570]">{formatSize(selectedFile.size)} • {detectedType === "video" ? "Видео" : "Документ"}</div>
+                </>
+              ) : (
+                <>
+                  <Icon name="Upload" size={32} className="text-[#3a5570] mb-2" />
+                  <div className="font-mono text-sm text-[#3a5570]">Выберите файл</div>
+                  <div className="font-mono text-xs text-[#1a2a3a] mt-1">MP4, WebM, MKV, PDF, DOCX, TXT, PPT</div>
+                </>
+              )}
+            </div>
+          </>
         ) : (
           <div className="space-y-3">
             <div>
