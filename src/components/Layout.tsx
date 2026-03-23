@@ -26,6 +26,11 @@ interface LayoutProps {
 export default function Layout({ currentPage, onNavigate, children, user, onLogout, onBackToAdmin }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const visibleNavItems = navItems.filter(item => {
+    if (!user?.permissions) return true;
+    return user.permissions[item.id] !== false;
+  });
+
   return (
     <div className="min-h-screen grid-bg" style={{ background: "#050810" }}>
       {/* Scan line effect */}
@@ -53,7 +58,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
@@ -123,7 +128,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
         {/* Mobile Nav */}
         {mobileOpen && (
           <div className="lg:hidden border-t" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(5,8,16,0.98)" }}>
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => { onNavigate(item.id); setMobileOpen(false); }}

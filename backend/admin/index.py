@@ -1,5 +1,5 @@
 """
-Админ-панель: список пользователей, одобрение/отклонение заявок.
+Админ-панель: список пользователей, одобрение/отклонение заявок, управление ролями и правами доступа.
 """
 import json
 import os
@@ -12,6 +12,9 @@ CORS = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
 }
+
+PAGES = ["home", "lectures", "videos", "drone-types", "materials", "firmware", "discussions", "downloads"]
+ROLES = ["курсант", "инструктор"]
 
 def get_schema():
     return os.environ.get("MAIN_DB_SCHEMA", "public")
@@ -67,6 +70,44 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"SELECT id, name, callsign, email, status, is_admin, role, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
         users = [dict(u) for u in cur.fetchall()]
         return ok({"users": users})
+
+    # GET ?action=get-permissions
+    if action == "get-permissions" and method == "GET":
+        cur.execute(f"SELECT role, page, allowed FROM {q('role_permissions')} ORDER BY role, page")
+        rows = cur.fetchall()
+        result = {}
+        for row in rows:
+            r = row["role"]
+            if r not in result:
+                result[r] = {}
+            result[r][row["page"]] = row["allowed"]
+        # заполнить пропущенные страницы дефолтом True
+        for role in ROLES:
+            if role not in result:
+                result[role] = {}
+            for page in PAGES:
+                if page not in result[role]:
+                    result[role][page] = True
+        return ok({"permissions": result, "pages": PAGES, "roles": ROLES})
+
+    # POST ?action=set-permissions
+    if action == "set-permissions" and method == "POST":
+        role = body.get("role")
+        permissions = body.get("permissions")  # dict page -> bool
+        if not role or role not in ROLES:
+            return err("Недопустимая роль")
+        if not isinstance(permissions, dict):
+            return err("permissions должен быть объектом")
+        for page, allowed in permissions.items():
+            if page not in PAGES:
+                continue
+            cur.execute(
+                f"INSERT INTO {q('role_permissions')} (role, page, allowed, updated_at) VALUES (%s, %s, %s, NOW()) "
+                f"ON CONFLICT (role, page) DO UPDATE SET allowed = EXCLUDED.allowed, updated_at = NOW()",
+                (role, page, bool(allowed))
+            )
+        conn.commit()
+        return ok({"message": f"Права для роли «{role}» обновлены"})
 
     # POST ?action=set-role
     if action == "set-role" and method == "POST":
@@ -124,5 +165,33 @@ def handler(event: dict, context) -> dict:
         if not user:
             return err("Пользователь не найден", 404)
         return ok({"message": f"{user['email']} назначен администратором"})
+
+    # POST ?action=remove-admin
+    if action == "remove-admin" and method == "POST":
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        if user_id == admin["id"]:
+            return err("Нельзя снять права с себя")
+        cur.execute(f"UPDATE {q('users')} SET is_admin = FALSE WHERE id = %s RETURNING id, email", (user_id,))
+        user = cur.fetchone()
+        conn.commit()
+        if not user:
+            return err("Пользователь не найден", 404)
+        return ok({"message": f"Права администратора сняты с {user['email']}"})
+
+    # GET ?action=stats
+    if action == "stats" and method == "GET":
+        cur.execute(f"SELECT COUNT(*) as total FROM {q('users')}")
+        total = cur.fetchone()["total"]
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('users')} WHERE status = 'pending'")
+        pending = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('users')} WHERE status = 'approved'")
+        approved = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('users')} WHERE is_admin = TRUE")
+        admins = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT role, COUNT(*) as cnt FROM {q('users')} WHERE status = 'approved' GROUP BY role")
+        by_role = {row["role"]: row["cnt"] for row in cur.fetchall()}
+        return ok({"total": total, "pending": pending, "approved": approved, "admins": admins, "by_role": by_role})
 
     return err("Не найдено", 404)

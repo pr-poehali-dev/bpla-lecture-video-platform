@@ -30,6 +30,18 @@ def q(table: str) -> str:
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
+PAGES = ["home", "lectures", "videos", "drone-types", "materials", "firmware", "discussions", "downloads"]
+
+def get_permissions(cur, role: str) -> dict:
+    if not role:
+        return {p: True for p in PAGES}
+    cur.execute(f'SELECT page, allowed FROM "{get_schema()}".role_permissions WHERE role = %s', (role,))
+    rows = cur.fetchall()
+    perms = {p: True for p in PAGES}
+    for row in rows:
+        perms[row["page"]] = row["allowed"]
+    return perms
+
 def ok(data: dict, status: int = 200) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps(data, ensure_ascii=False)}
 
@@ -113,6 +125,7 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"UPDATE {q('users')} SET session_token = %s WHERE id = %s", (token, user["id"]))
         conn.commit()
 
+        perms = get_permissions(cur, user["role"]) if not user["is_admin"] else {p: True for p in PAGES}
         return ok({
             "token": token,
             "user": {
@@ -126,6 +139,7 @@ def handler(event: dict, context) -> dict:
                 "contacts": user["contacts"],
                 "avatar_url": user["avatar_url"],
                 "role": user["role"],
+                "permissions": perms,
             }
         })
 
@@ -141,7 +155,10 @@ def handler(event: dict, context) -> dict:
         if not user:
             return err("Сессия недействительна", 401)
 
-        return ok({"user": dict(user)})
+        perms = get_permissions(cur, user["role"]) if not user["is_admin"] else {p: True for p in PAGES}
+        user_dict = dict(user)
+        user_dict["permissions"] = perms
+        return ok({"user": user_dict})
 
     # update-profile
     if action == "update-profile" and method == "POST":

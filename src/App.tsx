@@ -34,6 +34,7 @@ export interface User {
   is_admin: boolean;
   status: string;
   role?: string;
+  permissions?: Record<string, boolean>;
 }
 
 export default function App() {
@@ -110,9 +111,21 @@ export default function App() {
     );
   }
 
+  const canAccess = (page: Page): boolean => {
+    if (!user?.permissions) return true;
+    if (user.is_admin) return true;
+    return user.permissions[page] !== false;
+  };
+
+  const navigate = (page: Page) => {
+    if (canAccess(page)) setCurrentPage(page);
+    else setCurrentPage("home");
+  };
+
   const renderPage = () => {
+    if (!canAccess(currentPage)) return <HomePage onNavigate={navigate} />;
     switch (currentPage) {
-      case "home": return <HomePage onNavigate={setCurrentPage} />;
+      case "home": return <HomePage onNavigate={navigate} />;
       case "lectures": return <LecturesPage />;
       case "videos": return <VideosPage />;
       case "materials": return <MaterialsPage />;
@@ -122,7 +135,7 @@ export default function App() {
       case "firmware": return <FirmwarePage />;
       case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} />;
       case "messages": return <MessagesPage user={user} />;
-      default: return <HomePage onNavigate={setCurrentPage} />;
+      default: return <HomePage onNavigate={navigate} />;
     }
   };
 
@@ -130,7 +143,7 @@ export default function App() {
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Layout currentPage={currentPage} onNavigate={setCurrentPage} user={user} onLogout={handleLogout} onBackToAdmin={user?.is_admin ? () => setAdminViewSite(false) : undefined}>
+      <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout} onBackToAdmin={user?.is_admin ? () => setAdminViewSite(false) : undefined}>
         {renderPage()}
       </Layout>
     </TooltipProvider>

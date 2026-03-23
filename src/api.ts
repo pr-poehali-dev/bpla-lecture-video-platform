@@ -59,6 +59,18 @@ export const api = {
 
     setRole: (user_id: number, role: string) =>
       fetch(`${ADMIN_URL}/?action=set-role`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id, role }) }).then((r) => r.json()),
+
+    getPermissions: () =>
+      fetch(`${ADMIN_URL}/?action=get-permissions`, { headers: authHeaders() }).then((r) => r.json()),
+
+    setPermissions: (role: string, permissions: Record<string, boolean>) =>
+      fetch(`${ADMIN_URL}/?action=set-permissions`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ role, permissions }) }).then((r) => r.json()),
+
+    removeAdmin: (user_id: number) =>
+      fetch(`${ADMIN_URL}/?action=remove-admin`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
+
+    stats: () =>
+      fetch(`${ADMIN_URL}/?action=stats`, { headers: authHeaders() }).then((r) => r.json()),
   },
 
   msg: {

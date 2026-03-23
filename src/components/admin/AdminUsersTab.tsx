@@ -41,10 +41,11 @@ interface Props {
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
   onMakeAdmin: (id: number) => void;
+  onRemoveAdmin: (id: number) => void;
   onSetRole: (id: number, role: string) => void;
 }
 
-export default function AdminUsersTab({ users, loading, filter, setFilter, msg, onApprove, onReject, onMakeAdmin, onSetRole }: Props) {
+export default function AdminUsersTab({ users, loading, filter, setFilter, msg, onApprove, onReject, onMakeAdmin, onRemoveAdmin, onSetRole }: Props) {
   const filtered = users.filter((u) => filter === "all" || u.status === filter);
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
@@ -155,6 +156,18 @@ export default function AdminUsersTab({ users, loading, filter, setFilter, msg, 
               </div>
 
               {/* Actions */}
+              {user.is_admin && (
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => onRemoveAdmin(user.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-all"
+                    style={{ border: "1px solid rgba(255,34,68,0.3)", color: "#ff2244", background: "rgba(255,34,68,0.04)" }}
+                  >
+                    <Icon name="ShieldOff" size={11} />
+                    СНЯТЬ ADMIN
+                  </button>
+                </div>
+              )}
               {!user.is_admin && (
                 <div className="flex gap-2 flex-shrink-0">
                   {user.status !== "approved" && (
@@ -177,7 +190,7 @@ export default function AdminUsersTab({ users, loading, filter, setFilter, msg, 
                       ОТКЛОНИТЬ
                     </button>
                   )}
-                  {user.status === "approved" && (
+                  {user.status === "approved" && !user.is_admin && (
                     <button
                       onClick={() => onMakeAdmin(user.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-all"
