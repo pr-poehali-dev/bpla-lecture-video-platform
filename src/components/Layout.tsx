@@ -4,7 +4,6 @@ import Icon from "@/components/ui/icon";
 import ChatWidget from "@/components/ChatWidget";
 
 const navItems: { id: Page; label: string; icon: string }[] = [
-  { id: "home", label: "Главная", icon: "Crosshair" },
   { id: "lectures", label: "Лекции", icon: "BookOpen" },
   { id: "videos", label: "Видео", icon: "Play" },
   { id: "drone-types", label: "Типы БпЛА", icon: "Plane" },
