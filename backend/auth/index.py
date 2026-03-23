@@ -90,7 +90,7 @@ def handler(event: dict, context) -> dict:
 
         pw_hash = hash_password(password)
         cur.execute(
-            f"SELECT id, name, callsign, email, status, is_admin FROM {q('users')} WHERE callsign = %s AND password_hash = %s",
+            f"SELECT id, name, callsign, email, status, is_admin, rank, contacts FROM {q('users')} WHERE callsign = %s AND password_hash = %s",
             (callsign, pw_hash)
         )
         user = cur.fetchone()
@@ -117,6 +117,8 @@ def handler(event: dict, context) -> dict:
                 "email": user["email"],
                 "is_admin": user["is_admin"],
                 "status": status,
+                "rank": user["rank"],
+                "contacts": user["contacts"],
             }
         })
 
@@ -127,12 +129,41 @@ def handler(event: dict, context) -> dict:
         if not token:
             return err("Не авторизован", 401)
 
-        cur.execute(f"SELECT id, name, callsign, email, status, is_admin FROM {q('users')} WHERE session_token = %s", (token,))
+        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, rank, contacts FROM {q('users')} WHERE session_token = %s", (token,))
         user = cur.fetchone()
         if not user:
             return err("Сессия недействительна", 401)
 
         return ok({"user": dict(user)})
+
+    # update-profile
+    if action == "update-profile" and method == "POST":
+        auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
+        token = auth.replace("Bearer ", "").strip()
+        if not token:
+            return err("Не авторизован", 401)
+
+        cur.execute(f"SELECT id FROM {q('users')} WHERE session_token = %s", (token,))
+        user = cur.fetchone()
+        if not user:
+            return err("Сессия недействительна", 401)
+
+        name = (body.get("name") or "").strip()
+        rank = (body.get("rank") or "").strip()
+        contacts = (body.get("contacts") or "").strip()
+
+        if not name:
+            return err("Имя не может быть пустым")
+
+        cur.execute(
+            f"UPDATE {q('users')} SET name = %s, rank = %s, contacts = %s WHERE id = %s",
+            (name, rank or None, contacts or None, user["id"])
+        )
+        conn.commit()
+
+        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, rank, contacts FROM {q('users')} WHERE id = %s", (user["id"],))
+        updated = cur.fetchone()
+        return ok({"user": dict(updated)})
 
     # logout
     if action == "logout" and method == "POST":

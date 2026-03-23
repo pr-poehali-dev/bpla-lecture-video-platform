@@ -14,17 +14,21 @@ import FirmwarePage from "@/pages/FirmwarePage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AdminPage from "@/pages/AdminPage";
+import ProfilePage from "@/pages/ProfilePage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import { api } from "@/api";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware" | "profile";
 type AuthPage = "login" | "register";
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  callsign?: string;
+  rank?: string;
+  contacts?: string;
   is_admin: boolean;
   status: string;
 }
@@ -113,6 +117,7 @@ export default function App() {
       case "downloads": return <DownloadsPage />;
       case "discussions": return <DiscussionsPage />;
       case "firmware": return <FirmwarePage />;
+      case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} />;
       default: return <HomePage onNavigate={setCurrentPage} />;
     }
   };

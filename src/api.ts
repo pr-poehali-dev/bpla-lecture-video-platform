@@ -37,6 +37,9 @@ export const api = {
   logout: () =>
     fetch(`${AUTH_URL}/?action=logout`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
 
+  updateProfile: (data: { name: string; rank: string; contacts: string }) =>
+    fetch(`${AUTH_URL}/?action=update-profile`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()),
+
   admin: {
     users: () =>
       fetch(`${ADMIN_URL}/?action=users`, { headers: authHeaders() }).then((r) => r.json()),

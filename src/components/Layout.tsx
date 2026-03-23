@@ -17,7 +17,7 @@ interface LayoutProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   children: React.ReactNode;
-  user?: { name: string; email: string };
+  user?: { name: string; email: string; callsign?: string };
   onLogout?: () => void;
   onBackToAdmin?: () => void;
 }
@@ -79,10 +79,13 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     ПАНЕЛЬ
                   </button>
                 )}
-                <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onNavigate("profile")}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
                   <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
-                  <span className="font-mono text-xs text-[#5a7a95]">{user.name}</span>
-                </div>
+                  <span className="font-mono text-xs text-[#5a7a95]">{user.callsign || user.name}</span>
+                </button>
                 {onLogout && (
                   <button onClick={onLogout} className="flex items-center gap-1 font-mono text-xs text-[#3a5570] hover:text-[#ff2244] transition-colors">
                     <Icon name="LogOut" size={12} />
@@ -116,6 +119,17 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 {item.label}
               </button>
             ))}
+            {user && (
+              <button
+                onClick={() => { onNavigate("profile"); setMobileOpen(false); }}
+                className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
+                  currentPage === "profile" ? "text-[#00f5ff] bg-[rgba(0,245,255,0.06)]" : "text-[#7a9bb5]"
+                }`}
+              >
+                <Icon name="User" size={15} />
+                Профиль
+              </button>
+            )}
           </div>
         )}
       </header>
