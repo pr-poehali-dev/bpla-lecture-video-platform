@@ -135,7 +135,7 @@ export default function App() {
       case "discussions": return <DiscussionsPage user={user} />;
       case "content-upload": return <ContentUploadPage user={user} />;
       case "firmware": return <FirmwarePage />;
-      case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} />;
+      case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} onNavigate={navigate} />;
       case "messages": return <MessagesPage user={user} />;
       default: return <HomePage onNavigate={navigate} />;
     }

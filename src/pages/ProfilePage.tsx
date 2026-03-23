@@ -2,11 +2,12 @@ import { useState, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import Avatar from "@/components/Avatar";
 import { api } from "@/api";
-import { User } from "@/App";
+import { User, Page } from "@/App";
 
 interface ProfilePageProps {
   user: User;
   onUpdate: (user: User) => void;
+  onNavigate: (page: Page) => void;
 }
 
 const RANKS = [
@@ -17,7 +18,7 @@ const RANKS = [
   "Генерал-майор", "Генерал-лейтенант", "Генерал-полковник", "Генерал армии",
 ];
 
-export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
+export default function ProfilePage({ user, onUpdate, onNavigate }: ProfilePageProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name || "");
   const [rank, setRank] = useState(user.rank || "");
@@ -239,6 +240,24 @@ export default function ProfilePage({ user, onUpdate }: ProfilePageProps) {
           <div>Позывной и email изменить нельзя — обратитесь к администратору</div>
         </div>
       </div>
+
+      {/* Кнопка загрузки материалов — только для инструкторов и администраторов */}
+      {(user.is_admin || user.role === "инструктор") && (
+        <button
+          onClick={() => onNavigate("content-upload")}
+          className="w-full flex items-center gap-3 px-5 py-4 transition-all group"
+          style={{ border: "1px solid rgba(0,255,136,0.25)", background: "rgba(0,255,136,0.04)" }}
+        >
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,255,136,0.3)", background: "rgba(0,255,136,0.08)" }}>
+            <Icon name="Upload" size={16} className="text-[#00ff88]" />
+          </div>
+          <div className="text-left flex-1">
+            <div className="font-orbitron text-sm font-bold text-[#00ff88] tracking-wider group-hover:text-white transition-colors">ЗАГРУЗИТЬ МАТЕРИАЛЫ</div>
+            <div className="font-mono text-xs text-[#3a5570] mt-0.5">Видео, документы, прошивки</div>
+          </div>
+          <Icon name="ChevronRight" size={16} className="text-[#3a5570] group-hover:text-[#00ff88] transition-colors" />
+        </button>
+      )}
     </div>
   );
 }
