@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
-import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 import { User } from "@/App";
+import ChatContactsTab from "@/components/chat/ChatContactsTab";
+import ChatChatsTab from "@/components/chat/ChatChatsTab";
+import ChatMessages from "@/components/chat/ChatMessages";
 
 interface ChatWidgetProps { user: User; }
 
@@ -30,11 +32,6 @@ interface Contact {
   last_seen?: string | null;
 }
 
-function isOnline(lastSeen?: string | null): boolean {
-  if (!lastSeen) return false;
-  return Date.now() - new Date(lastSeen).getTime() < 1 * 60 * 1000;
-}
-
 export default function ChatWidget({ user }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"chats" | "contacts">("chats");
@@ -49,7 +46,6 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevUnreadRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   // Contacts
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactsLoaded, setContactsLoaded] = useState(false);
@@ -204,11 +200,6 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const getChatTitle = (chat: Chat) =>
     chat.type === "direct" ? (chat.partner?.callsign || chat.partner?.name || "Чат") : (chat.name || "Группа");
 
-  const formatTime = (dt: string) => {
-    const d = new Date(dt);
-    return d.toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
-  };
-
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
       {/* Lightbox */}
@@ -283,197 +274,42 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
 
           {/* Contacts tab */}
           {!activeChat && tab === "contacts" && (
-            <div className="flex-1 overflow-y-auto flex flex-col">
-              {/* Search */}
-              <div className="p-3 border-b" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
-                <div className="relative">
-                  <Icon name="Search" size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#3a5570]" />
-                  <input
-                    className="w-full bg-[#0a1520] font-mono text-xs text-white pl-7 pr-3 py-2 outline-none"
-                    style={{ border: "1px solid #1a2a3a" }}
-                    placeholder="Найти бойца по позывному..."
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Search results */}
-              {searchQuery && (
-                <div className="border-b" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
-                  {searching ? (
-                    <div className="px-4 py-3 font-mono text-[10px] text-[#3a5570] animate-pulse">Поиск...</div>
-                  ) : searchResults.length === 0 ? (
-                    <div className="px-4 py-3 font-mono text-[10px] text-[#3a5570]">Не найдено</div>
-                  ) : searchResults.map((u) => (
-                    <div key={u.id} className="flex items-center gap-3 px-4 py-2.5 border-b" style={{ borderColor: "rgba(0,245,255,0.05)" }}>
-                      <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 font-orbitron text-[10px] text-[#00f5ff]" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
-                        {(u.callsign || u.name || "?")[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-mono text-xs text-white truncate">{u.callsign || u.name}</div>
-                        {u.rank && <div className="font-mono text-[10px] text-[#3a5570] truncate">{u.rank}</div>}
-                      </div>
-                      <button
-                        onClick={() => handleAddContact(u.id)}
-                        className="font-mono text-[10px] px-2 py-1 flex-shrink-0 transition-all"
-                        style={{ border: "1px solid rgba(0,255,136,0.3)", color: "#00ff88", background: "rgba(0,255,136,0.05)" }}
-                      >
-                        + ДОБАВИТЬ
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Contacts list - search results отдельно */}
-              <div className="flex-1 overflow-y-auto">
-                {!contactsLoaded ? (
-                  <div className="flex items-center justify-center h-24 font-mono text-[10px] text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>
-                ) : contacts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-center">
-                    <Icon name="Users" size={24} className="text-[#2a4060]" />
-                    <div className="font-mono text-xs text-[#3a5570]">Контактов нет</div>
-                    <div className="font-mono text-[10px] text-[#2a4060]">Найдите бойцов через поиск</div>
-                  </div>
-                ) : contacts.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => openContactChat(c)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(0,245,255,0.04)] transition-colors border-b"
-                    style={{ borderColor: "rgba(0,245,255,0.06)" }}
-                  >
-                    <div className="relative w-8 h-8 flex-shrink-0">
-                      <div className="w-8 h-8 flex items-center justify-center font-orbitron text-xs text-[#00f5ff]" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
-                        {(c.callsign || c.name || "?")[0].toUpperCase()}
-                      </div>
-                      {isOnline(c.last_seen) && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#050810]" style={{ background: "#00ff88", boxShadow: "0 0 6px #00ff88" }} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-mono text-xs text-white truncate">{c.callsign || c.name}</div>
-                      <div className="font-mono text-[10px]" style={{ color: isOnline(c.last_seen) ? "#00ff88" : "#3a5570" }}>
-                        {isOnline(c.last_seen) ? "онлайн" : "не в сети"}
-                      </div>
-                    </div>
-                    <Icon name="MessageSquare" size={12} className="text-[#3a5570] flex-shrink-0" />
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ChatContactsTab
+              contacts={contacts}
+              contactsLoaded={contactsLoaded}
+              searchQuery={searchQuery}
+              searchResults={searchResults}
+              searching={searching}
+              onSearch={handleSearch}
+              onAddContact={handleAddContact}
+              onOpenContactChat={openContactChat}
+            />
           )}
 
-          {/* Chats list */}
+          {/* Chats tab */}
           {!activeChat && tab === "chats" && (
-            <div className="flex-1 overflow-y-auto">
-              {chats.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
-                  <Icon name="MessageSquare" size={28} className="text-[#2a4060]" />
-                  <div className="font-mono text-xs text-[#3a5570]">Нет активных чатов</div>
-                  <div className="font-mono text-[10px] text-[#2a4060]">Найдите бойцов во вкладке «Контакты»</div>
-                </div>
-              ) : chats.map(chat => (
-                <button key={chat.id} onClick={() => openChat(chat)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(0,245,255,0.04)] transition-colors border-b"
-                  style={{ borderColor: "rgba(0,245,255,0.06)" }}>
-                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0"
-                    style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
-                    <Icon name={chat.type === "direct" ? "User" : "Users"} size={13} className="text-[#00f5ff]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-mono text-xs text-white truncate">{getChatTitle(chat)}</div>
-                    <div className="font-plex text-[11px] text-[#5a7a95] truncate mt-0.5">{chat.last_message || "нет сообщений"}</div>
-                  </div>
-                  {chat.unread_count > 0 && (
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center font-mono text-[9px] text-black flex-shrink-0"
-                      style={{ background: "#00f5ff" }}>{chat.unread_count}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+            <ChatChatsTab
+              chats={chats}
+              onOpenChat={openChat}
+              getChatTitle={getChatTitle}
+            />
           )}
 
           {/* Messages */}
           {activeChat && (
-            <>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {messages.length === 0 && (
-                  <div className="text-center py-6 font-mono text-[11px] text-[#2a4060]">начните переписку</div>
-                )}
-                {messages.map(msg => {
-                  const isMine = msg.sender_id === user.id;
-                  return (
-                    <div key={msg.id} className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
-                      {!isMine && (
-                        <Avatar callsign={msg.sender_callsign || msg.sender_name} avatarUrl={msg.sender_avatar_url} size={24} className="mt-1 flex-shrink-0" />
-                      )}
-                      <div className={`max-w-[75%] flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
-                        {!isMine && (
-                          <span className="font-mono text-[9px] text-[#00f5ff] px-1">{msg.sender_callsign || msg.sender_name}</span>
-                        )}
-                        {msg.message_type === "image" && msg.image_url ? (
-                          <div className="cursor-pointer" onClick={() => setLightbox(msg.image_url!)}>
-                            <img src={msg.image_url} className="max-w-[200px] max-h-[160px] object-cover rounded-sm border border-[rgba(0,245,255,0.2)]" />
-                            {msg.content && msg.content !== "📷 Изображение" && (
-                              <div className="font-plex text-[11px] text-[#8aacbf] px-1 mt-0.5">{msg.content}</div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="px-3 py-2 font-plex text-[12px] leading-relaxed"
-                            style={{
-                              background: isMine ? "rgba(0,245,255,0.12)" : "rgba(255,255,255,0.04)",
-                              border: `1px solid ${isMine ? "rgba(0,245,255,0.25)" : "rgba(255,255,255,0.08)"}`,
-                              color: isMine ? "#e0f8ff" : "#c0d4e0",
-                            }}>
-                            {msg.content}
-                          </div>
-                        )}
-                        <span className="font-mono text-[9px] text-[#3a5570] px-1">{formatTime(msg.created_at)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input */}
-              <div className="flex-shrink-0 border-t p-2 flex gap-2 items-end"
-                style={{ borderColor: "rgba(0,245,255,0.12)" }}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={sending}
-                  className="text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0 disabled:opacity-40"
-                  title="Отправить изображение"
-                >
-                  <Icon name="Image" size={16} />
-                </button>
-                <input
-                  className="flex-1 bg-transparent border-b font-plex text-[12px] text-white placeholder-[#3a5570] outline-none py-1"
-                  style={{ borderColor: "rgba(0,245,255,0.2)" }}
-                  placeholder="Сообщение..."
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKey}
-                  onPaste={handlePaste}
-                  disabled={sending}
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || sending}
-                  className="text-[#00f5ff] hover:text-white disabled:text-[#2a4060] transition-colors flex-shrink-0"
-                >
-                  <Icon name={sending ? "Loader" : "Send"} size={15} className={sending ? "animate-spin" : ""} />
-                </button>
-              </div>
-            </>
+            <ChatMessages
+              messages={messages}
+              userId={user.id}
+              input={input}
+              sending={sending}
+              onInputChange={setInput}
+              onSend={sendMessage}
+              onKey={handleKey}
+              onPaste={handlePaste}
+              onFileChange={handleFileChange}
+              onLightbox={setLightbox}
+              messagesEndRef={messagesEndRef}
+            />
           )}
         </div>
       )}
