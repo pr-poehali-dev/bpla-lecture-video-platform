@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { api, FileItem } from "@/api";
 
-const VIDEO_CATEGORIES = ["Все", "Боевые", "Учебные", "Технические", "Разбор миссий"];
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
 function formatSize(bytes: number): string {
@@ -11,48 +10,6 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
 
-function VideoModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [onClose]);
-
-  const isYoutube = file.mime_type === "youtube";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(5,8,16,0.97)" }} onClick={onClose}>
-      <div className="w-full max-w-4xl flex flex-col" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
-          <span className="font-mono text-sm text-white truncate">{file.title}</span>
-          <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff] ml-4 flex-shrink-0">
-            <Icon name="X" size={20} />
-          </button>
-        </div>
-        <div className="flex-1" style={{ background: "#000", minHeight: 0 }}>
-          {isYoutube ? (
-            <iframe
-              src={file.cdn_url}
-              className="w-full"
-              style={{ height: "60vh", border: "none" }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={file.title}
-            />
-          ) : (
-            <video
-              src={file.cdn_url}
-              controls
-              autoPlay
-              className="w-full"
-              style={{ maxHeight: "60vh" }}
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function DocModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
   useEffect(() => {
@@ -88,7 +45,6 @@ function DocModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
 }
 
 export default function LecturesPage() {
-  const [tab, setTab] = useState<"video" | "document">("video");
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
@@ -97,14 +53,13 @@ export default function LecturesPage() {
 
   useEffect(() => {
     setLoading(true);
-    setActiveCategory("Все");
-    api.files.list(tab, undefined, "general").then((res) => {
+    api.files.list("document", undefined, "general").then((res) => {
       setFiles(res.files || []);
       setLoading(false);
     });
-  }, [tab]);
+  }, []);
 
-  const categories = tab === "video" ? VIDEO_CATEGORIES : DOC_CATEGORIES;
+  const categories = DOC_CATEGORIES;
 
   const filtered = files.filter((f) => {
     const matchCat = activeCategory === "Все" || f.category === activeCategory;
@@ -114,36 +69,13 @@ export default function LecturesPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
-      {viewing && viewing.file_type === "video" && <VideoModal file={viewing} onClose={() => setViewing(null)} />}
-      {viewing && viewing.file_type === "document" && <DocModal file={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <DocModal file={viewing} onClose={() => setViewing(null)} />}
 
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// УЧЕБНЫЙ ЦЕНТР</span>
       </div>
       <h1 className="font-orbitron text-3xl font-black text-white mb-6 tracking-wider">ЛЕКЦИИ</h1>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        {([
-          { key: "video", label: "ВИДЕО", icon: "Play" },
-          { key: "document", label: "ДОКУМЕНТЫ", icon: "FileText" },
-        ] as const).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className="flex items-center gap-1.5 font-mono text-xs px-4 py-2 transition-all"
-            style={{
-              border: `1px solid ${tab === t.key ? "#00f5ff" : "#1a2a3a"}`,
-              color: tab === t.key ? "#050810" : "#3a5570",
-              background: tab === t.key ? "#00f5ff" : "transparent",
-            }}
-          >
-            <Icon name={t.icon} size={12} />
-            {t.label}
-          </button>
-        ))}
-      </div>
 
       {/* Search */}
       <div className="relative mb-6">
@@ -216,7 +148,7 @@ export default function LecturesPage() {
               </div>
 
               <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors">
-                <Icon name={tab === "video" ? "PlayCircle" : "Eye"} size={18} />
+                <Icon name="Eye" size={18} />
               </div>
             </div>
           ))}
