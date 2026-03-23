@@ -55,37 +55,32 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
               <div className="font-orbitron font-bold text-base tracking-[0.2em] text-white leading-none">ACADEMY</div>
             </div>
           </div>
-          {/* Индикатор статуса — полоска */}
+
+        </div>
+
+        {/* Form */}
+        <div className="card-drone p-8" style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
           <div
-            className="relative mt-4 mx-auto"
-            style={{ width: "180px" }}
+            className="flex items-center gap-2 mb-6 relative group cursor-default"
             onMouseEnter={() => setHintVisible(true)}
             onMouseLeave={() => setHintVisible(false)}
           >
-            {/* Полоска */}
-            <div className="w-full h-1 rounded-full overflow-hidden cursor-pointer" style={{ background: "#0d1a28" }}>
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: serverOnline === null ? "40%" : "100%",
-                  background: serverOnline === null
-                    ? "linear-gradient(90deg, #3a5570, #1a3050)"
-                    : serverOnline
-                    ? "linear-gradient(90deg, #00ff88, #00f5ff)"
-                    : "linear-gradient(90deg, #ff2244, #ff6b00)",
-                  boxShadow: serverOnline === null ? "none" : serverOnline ? "0 0 8px rgba(0,255,136,0.6)" : "0 0 8px rgba(255,34,68,0.6)",
-                  animation: serverOnline === null ? "pulse 1.5s infinite" : "none",
-                }}
-              />
-            </div>
+            <div
+              className="w-1 h-5 flex-shrink-0 transition-all duration-500"
+              style={{
+                background: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244",
+                boxShadow: serverOnline === null ? "none" : serverOnline ? "0 0 8px #00ff88" : "0 0 8px #ff2244",
+                animation: serverOnline === null ? "pulse 1.5s infinite" : "none",
+              }}
+            />
+            <h2 className="font-orbitron text-sm font-bold tracking-wider text-white">ВХОД В СИСТЕМУ</h2>
 
-            {/* Тултип */}
             {hintVisible && (
               <div
-                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-56 p-3 z-50"
+                className="absolute left-0 top-full mt-2 w-56 p-3 z-50"
                 style={{ background: "rgba(5,8,16,0.98)", border: `1px solid ${serverOnline === null ? "#1a2a3a" : serverOnline ? "rgba(0,255,136,0.3)" : "rgba(255,34,68,0.3)"}`, boxShadow: "0 0 20px rgba(0,0,0,0.5)" }}
               >
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ background: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244" }} />
                   <span className="font-mono text-xs font-bold" style={{ color: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244" }}>
                     {serverOnline === null ? "ПРОВЕРКА СВЯЗИ" : serverOnline ? "СИСТЕМА АКТИВНА" : "СЕРВЕР НЕДОСТУПЕН"}
@@ -93,23 +88,13 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
                 </div>
                 <p className="font-plex text-[10px] text-[#5a7a95] leading-relaxed">
                   {serverOnline === null
-                    ? "Устанавливается соединение с сервером авторизации..."
+                    ? "Устанавливается соединение с сервером..."
                     : serverOnline
-                    ? "Сервер авторизации работает в штатном режиме. Вход доступен."
-                    : "Нет связи с сервером. Вход временно невозможен. Попробуйте позже."}
+                    ? "Сервер работает в штатном режиме. Вход доступен."
+                    : "Нет связи с сервером. Вход временно невозможен."}
                 </p>
-                {/* Стрелка */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0" style={{ borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: `5px solid ${serverOnline === null ? "#1a2a3a" : serverOnline ? "rgba(0,255,136,0.3)" : "rgba(255,34,68,0.3)"}` }} />
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Form */}
-        <div className="card-drone p-8" style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-1 h-5 bg-[#00f5ff]" />
-            <h2 className="font-orbitron text-sm font-bold tracking-wider text-white">ВХОД В СИСТЕМУ</h2>
           </div>
 
           {error === "pending" && (
