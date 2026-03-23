@@ -16,11 +16,12 @@ import RegisterPage from "@/pages/RegisterPage";
 import AdminPage from "@/pages/AdminPage";
 import ProfilePage from "@/pages/ProfilePage";
 import MessagesPage from "@/pages/MessagesPage";
+import ContentUploadPage from "@/pages/ContentUploadPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import { api } from "@/api";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware" | "profile" | "messages";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware" | "profile" | "messages" | "content-upload";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -131,7 +132,8 @@ export default function App() {
       case "materials": return <MaterialsPage />;
       case "drone-types": return <DroneTypesPage />;
       case "downloads": return <DownloadsPage />;
-      case "discussions": return <DiscussionsPage />;
+      case "discussions": return <DiscussionsPage user={user} />;
+      case "content-upload": return <ContentUploadPage user={user} />;
       case "firmware": return <FirmwarePage />;
       case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} />;
       case "messages": return <MessagesPage user={user} />;

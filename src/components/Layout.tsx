@@ -85,6 +85,20 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     ПАНЕЛЬ
                   </button>
                 )}
+                {(user.role === "инструктор") && (
+                  <button
+                    onClick={() => onNavigate("content-upload")}
+                    className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all"
+                    style={{
+                      border: `1px solid ${currentPage === "content-upload" ? "rgba(0,255,136,0.6)" : "rgba(0,255,136,0.25)"}`,
+                      color: "#00ff88",
+                      background: currentPage === "content-upload" ? "rgba(0,255,136,0.12)" : "rgba(0,255,136,0.04)",
+                    }}
+                  >
+                    <Icon name="Upload" size={12} />
+                    ЗАГРУЗИТЬ
+                  </button>
+                )}
                 <button
                   onClick={() => onNavigate("messages")}
                   className={`flex items-center justify-center w-7 h-7 transition-all ${currentPage === "messages" ? "text-[#00f5ff]" : "text-[#5a7a95] hover:text-[#00f5ff]"}`}
@@ -149,6 +163,17 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               >
                 <Icon name="User" size={15} />
                 Личное Дело
+              </button>
+            )}
+            {user && user.role === "инструктор" && (
+              <button
+                onClick={() => { onNavigate("content-upload"); setMobileOpen(false); }}
+                className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
+                  currentPage === "content-upload" ? "text-[#00ff88] bg-[rgba(0,255,136,0.06)]" : "text-[#7a9bb5]"
+                }`}
+              >
+                <Icon name="Upload" size={15} />
+                Загрузить материал
               </button>
             )}
             {user && (

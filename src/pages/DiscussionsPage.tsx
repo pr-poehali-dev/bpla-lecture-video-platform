@@ -1,5 +1,10 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import { type User } from "@/App";
+
+interface Props {
+  user?: User;
+}
 
 const topics = [
   {
@@ -65,7 +70,8 @@ const comments = [
   { id: 3, author: "TechSpec_33", time: "12:04", text: "Ребята, посмотрите видео #5 на платформе — там конкретно разобрали кейс потери связи и как от него защититься." },
 ];
 
-export default function DiscussionsPage() {
+export default function DiscussionsPage({ user }: Props) {
+  const canCreate = user?.is_admin || user?.role === "инструктор";
   const [selectedTopic, setSelectedTopic] = useState<number | null>(1);
   const [newComment, setNewComment] = useState("");
   const [commentsList, setCommentsList] = useState(comments);
@@ -94,10 +100,12 @@ export default function DiscussionsPage() {
         <div className="lg:col-span-2 space-y-2">
           <div className="flex items-center justify-between mb-4">
             <span className="font-mono text-xs text-[#3a5570]">{topics.length} ТОПИКОВ</span>
-            <button className="btn-neon text-[10px] px-3 py-1.5 flex items-center gap-1">
-              <Icon name="Plus" size={10} />
-              СОЗДАТЬ
-            </button>
+            {canCreate && (
+              <button className="btn-neon text-[10px] px-3 py-1.5 flex items-center gap-1">
+                <Icon name="Plus" size={10} />
+                СОЗДАТЬ
+              </button>
+            )}
           </div>
 
           {topics.map((topic) => (

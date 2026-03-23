@@ -36,14 +36,17 @@ def get_user_from_token(token: str):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        f"SELECT id, name, is_admin FROM {schema}.users WHERE session_token = %s AND status = 'approved'",
+        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = %s AND status = 'approved'",
         (token,),
     )
     row = cur.fetchone()
     conn.close()
     if not row:
         return None
-    return {"id": row[0], "name": row[1], "is_admin": row[2]}
+    return {"id": row[0], "name": row[1], "is_admin": row[2], "role": row[3]}
+
+def can_upload(user: dict) -> bool:
+    return user["is_admin"] or user.get("role") in ("инструктор", "администратор")
 
 
 def get_s3():
@@ -113,12 +116,12 @@ def handler(event: dict, context) -> dict:
             })
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"files": files})}
 
-    # POST /files - загрузка файла (только для админов)
+    # POST /files - загрузка файла (для инструкторов и администраторов)
     if method == "POST":
         token = event.get("headers", {}).get("X-Authorization", "").replace("Bearer ", "")
         user = get_user_from_token(token)
-        if not user or not user["is_admin"]:
-            return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён"})}
+        if not user or not can_upload(user):
+            return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён. Загрузка доступна только инструкторам."})}
 
         body = json.loads(event.get("body") or "{}")
         title = body.get("title", "").strip()
@@ -184,11 +187,11 @@ def handler(event: dict, context) -> dict:
 
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"id": new_id, "cdn_url": cdn_url, "file_type": file_type})}
 
-    # DELETE /files?id=X (только для админов)
+    # DELETE /files?id=X (для инструкторов и администраторов)
     if method == "DELETE":
         token = event.get("headers", {}).get("X-Authorization", "").replace("Bearer ", "")
         user = get_user_from_token(token)
-        if not user or not user["is_admin"]:
+        if not user or not can_upload(user):
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён"})}
 
         params = event.get("queryStringParameters") or {}
