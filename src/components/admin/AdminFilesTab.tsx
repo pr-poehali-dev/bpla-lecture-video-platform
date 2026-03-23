@@ -44,6 +44,7 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"file" | "youtube">("file");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [form, setForm] = useState({ title: "", description: "", category: "", section: "general" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -74,13 +75,14 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
     if (!form.title) setForm((prev) => ({ ...prev, title: f.name.replace(/\.[^.]+$/, "") }));
   };
 
-  const handleUploadFile = async () => {
+  const handleUploadFile = () => {
     if (!selectedFile || !form.title.trim()) return;
     setUploading(true);
+    setUploadProgress(0);
     const reader = new FileReader();
-    reader.onload = async () => {
+    reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1];
-      const res = await api.files.upload({
+      const body = JSON.stringify({
         title: form.title.trim(),
         description: form.description,
         category: form.category,
@@ -89,16 +91,29 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
         mime_type: selectedFile.type,
         file_data: base64,
       });
-      setUploading(false);
-      if (res.id) {
-        showMsg("Файл загружен успешно!");
-        setSelectedFile(null);
-        setForm({ title: "", description: "", category: "", section: "general" });
-        if (fileRef.current) fileRef.current.value = "";
-        loadFiles();
-      } else {
-        showMsg(res.error || "Ошибка загрузки", false);
-      }
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559/");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("Authorization", `Bearer ${localStorage.getItem("drone_token") || ""}`);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        setUploading(false);
+        setUploadProgress(0);
+        const res = JSON.parse(xhr.responseText);
+        if (res.id) {
+          showMsg("Файл загружен успешно!");
+          setSelectedFile(null);
+          setForm({ title: "", description: "", category: "", section: "general" });
+          if (fileRef.current) fileRef.current.value = "";
+          loadFiles();
+        } else {
+          showMsg(res.error || "Ошибка загрузки", false);
+        }
+      };
+      xhr.onerror = () => { setUploading(false); setUploadProgress(0); showMsg("Ошибка сети", false); };
+      xhr.send(body);
     };
     reader.readAsDataURL(selectedFile);
   };
@@ -297,13 +312,28 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
           />
         </div>
 
+        {uploading && mode === "file" && (
+          <div className="space-y-1">
+            <div className="flex justify-between font-mono text-xs text-[#3a5570]">
+              <span>ЗАГРУЗКА...</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="w-full h-1" style={{ background: "#0d1a28" }}>
+              <div
+                className="h-full transition-all duration-200"
+                style={{ width: `${uploadProgress}%`, background: "linear-gradient(90deg, #00f5ff, #00ff88)", boxShadow: "0 0 8px rgba(0,245,255,0.6)" }}
+              />
+            </div>
+          </div>
+        )}
+
         <button
           onClick={mode === "file" ? handleUploadFile : handleAddYoutube}
           disabled={uploading || (mode === "file" ? !selectedFile || !form.title.trim() : !ytId || !form.title.trim())}
           className="w-full font-mono text-sm py-3 tracking-wider transition-all disabled:opacity-40"
           style={{ border: "1px solid #00f5ff", color: uploading ? "#3a5570" : "#00f5ff", background: "rgba(0,245,255,0.05)" }}
         >
-          {uploading ? "ЗАГРУЗКА..." : mode === "file" ? "ЗАГРУЗИТЬ" : "ДОБАВИТЬ ВИДЕО"}
+          {uploading ? `ЗАГРУЗКА... ${uploadProgress}%` : mode === "file" ? "ЗАГРУЗИТЬ" : "ДОБАВИТЬ ВИДЕО"}
         </button>
       </div>
 
