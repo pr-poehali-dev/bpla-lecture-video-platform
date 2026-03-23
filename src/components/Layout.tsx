@@ -174,6 +174,16 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                           <Icon name="User" size={12} />
                           ЛИЧНОЕ ДЕЛО
                         </button>
+                        {user.is_admin && (
+                          <button
+                            onClick={() => { onNavigate("content-upload"); setProfileOpen(false); }}
+                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs hover:bg-[rgba(255,170,0,0.05)] transition-all"
+                            style={{ color: "#ffaa00" }}
+                          >
+                            <Icon name="ShieldCheck" size={12} />
+                            ПАНЕЛЬ АДМИНИСТРАТОРА
+                          </button>
+                        )}
                         {onLogout && (
                           <button
                             onClick={onLogout}
