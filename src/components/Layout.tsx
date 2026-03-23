@@ -119,8 +119,8 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                   </button>
 
                   {profileOpen && (
+                    <div className="absolute right-0 top-full pt-2 w-64 z-50">
                     <div
-                      className="absolute right-0 top-full mt-2 w-64 z-50"
                       style={{ background: "rgba(5,8,16,0.98)", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 0 30px rgba(0,245,255,0.1)" }}
                     >
                       {/* Header дропдауна */}
@@ -185,6 +185,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                           </button>
                         )}
                       </div>
+                    </div>
                     </div>
                   )}
                 </div>
