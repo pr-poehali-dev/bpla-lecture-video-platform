@@ -66,7 +66,7 @@ const PIE_COLORS = ["#00f5ff", "#00ff88", "#ff6b00", "#a855f7"];
 
 function StatCard({ label, value, icon, color, change }: { label: string; value: string | number; icon: string; color: string; change?: string }) {
   return (
-    <div className="flex flex-col gap-3 p-5" style={{ background: "rgba(13,27,46,0.8)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 8 }}>
+    <div className="admin-card flex flex-col gap-3 p-5">
       <div className="flex items-center justify-between">
         <div className="font-orbitron text-2xl font-black text-white">{value}</div>
         <div className="w-9 h-9 flex items-center justify-center" style={{ background: `${color}18`, borderRadius: 6 }}>
@@ -87,7 +87,7 @@ function CircleProgress({ pct, color, label, sub }: { pct: number; color: string
   const circ = 2 * Math.PI * r;
   const offset = circ - (Math.min(pct, 100) / 100) * circ;
   return (
-    <div className="flex items-center gap-4 p-4 flex-1" style={{ background: "rgba(13,27,46,0.8)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 8 }}>
+    <div className="admin-card flex items-center gap-4 p-4 flex-1">
       <div className="relative flex-shrink-0">
         <svg width="68" height="68" viewBox="0 0 68 68">
           <circle cx="34" cy="34" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
@@ -241,7 +241,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Area chart */}
-                <div className="lg:col-span-2 p-5" style={{ background: "rgba(13,27,46,0.8)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 8 }}>
+                <div className="admin-card lg:col-span-2 p-5">
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-orbitron text-sm font-bold text-white">Активность состава</div>
                     <Icon name="MoreHorizontal" size={16} className="text-[#3a5570]" />
@@ -283,7 +283,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                 </div>
 
                 {/* Pie */}
-                <div className="p-5" style={{ background: "rgba(13,27,46,0.8)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 8 }}>
+                <div className="admin-card p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="font-orbitron text-sm font-bold text-white">По ролям</div>
                     <Icon name="MoreHorizontal" size={16} className="text-[#3a5570]" />

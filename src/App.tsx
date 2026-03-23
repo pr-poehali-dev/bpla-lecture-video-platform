@@ -1,23 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
-import HomePage from "@/pages/HomePage";
-import LecturesPage from "@/pages/LecturesPage";
-import VideosPage from "@/pages/VideosPage";
-import MaterialsPage from "@/pages/MaterialsPage";
-import DroneTypesPage from "@/pages/DroneTypesPage";
-import DiscussionsPage from "@/pages/DiscussionsPage";
-import FirmwarePage from "@/pages/FirmwarePage";
-import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
-import ProfilePage from "@/pages/ProfilePage";
-import MessagesPage from "@/pages/MessagesPage";
-import ContentUploadPage from "@/pages/ContentUploadPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import { api } from "@/api";
+
+const HomePage = lazy(() => import("@/pages/HomePage"));
+const LecturesPage = lazy(() => import("@/pages/LecturesPage"));
+const VideosPage = lazy(() => import("@/pages/VideosPage"));
+const MaterialsPage = lazy(() => import("@/pages/MaterialsPage"));
+const DroneTypesPage = lazy(() => import("@/pages/DroneTypesPage"));
+const DiscussionsPage = lazy(() => import("@/pages/DiscussionsPage"));
+const FirmwarePage = lazy(() => import("@/pages/FirmwarePage"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const MessagesPage = lazy(() => import("@/pages/MessagesPage"));
+const ContentUploadPage = lazy(() => import("@/pages/ContentUploadPage"));
 
 export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "profile" | "messages" | "content-upload";
 type AuthPage = "login" | "register";
@@ -97,10 +98,12 @@ export default function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {authPage === "register"
-          ? <RegisterPage onBack={() => setAuthPage("login")} />
-          : <LoginPage onLogin={handleLogin} onRegister={() => setAuthPage("register")} />
-        }
+        <Suspense fallback={null}>
+          {authPage === "register"
+            ? <RegisterPage onBack={() => setAuthPage("login")} />
+            : <LoginPage onLogin={handleLogin} onRegister={() => setAuthPage("register")} />
+          }
+        </Suspense>
       </TooltipProvider>
     );
   }
@@ -138,7 +141,7 @@ export default function App() {
       <Toaster />
       <Sonner />
       <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout}>
-        {renderPage()}
+        <Suspense fallback={null}>{renderPage()}</Suspense>
       </Layout>
     </TooltipProvider>
   );
