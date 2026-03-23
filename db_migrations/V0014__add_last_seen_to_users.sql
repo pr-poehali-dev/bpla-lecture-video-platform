@@ -1,0 +1,1 @@
+ALTER TABLE t_p1589553_bpla_lecture_video_p.users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP;

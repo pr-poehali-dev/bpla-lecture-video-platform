@@ -155,6 +155,9 @@ def handler(event: dict, context) -> dict:
         if not user:
             return err("Сессия недействительна", 401)
 
+        cur.execute(f"UPDATE {q('users')} SET last_seen = NOW() WHERE id = %s", (user["id"],))
+        conn.commit()
+
         perms = get_permissions(cur, user["role"]) if not user["is_admin"] else {p: True for p in PAGES}
         user_dict = dict(user)
         user_dict["permissions"] = perms

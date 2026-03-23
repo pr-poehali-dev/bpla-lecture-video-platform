@@ -80,7 +80,7 @@ def handler(event: dict, context) -> dict:
             SELECT c.id, c.status, c.created_at,
                 CASE WHEN c.requester_id = %s THEN c.target_id ELSE c.requester_id END AS contact_user_id,
                 c.requester_id, c.target_id,
-                u.name, u.callsign, u.rank
+                u.name, u.callsign, u.rank, u.last_seen
             FROM {t('contacts')} c
             JOIN {t('users')} u ON u.id = CASE WHEN c.requester_id = %s THEN c.target_id ELSE c.requester_id END
             WHERE c.requester_id = %s OR c.target_id = %s

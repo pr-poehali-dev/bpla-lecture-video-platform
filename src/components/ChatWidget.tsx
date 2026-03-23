@@ -21,11 +21,18 @@ export interface Message {
 interface Contact {
   id: number;
   contact_id: number;
+  contact_user_id: number;
   name: string;
   callsign: string;
   avatar_url?: string | null;
   status: string;
   chat_id?: number | null;
+  last_seen?: string | null;
+}
+
+function isOnline(lastSeen?: string | null): boolean {
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < 3 * 60 * 1000;
 }
 
 export default function ChatWidget({ user }: ChatWidgetProps) {
@@ -336,12 +343,19 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
                     className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(0,245,255,0.04)] transition-colors border-b"
                     style={{ borderColor: "rgba(0,245,255,0.06)" }}
                   >
-                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 font-orbitron text-xs text-[#00f5ff]" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
-                      {(c.callsign || c.name || "?")[0].toUpperCase()}
+                    <div className="relative w-8 h-8 flex-shrink-0">
+                      <div className="w-8 h-8 flex items-center justify-center font-orbitron text-xs text-[#00f5ff]" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
+                        {(c.callsign || c.name || "?")[0].toUpperCase()}
+                      </div>
+                      {isOnline(c.last_seen) && (
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#050810]" style={{ background: "#00ff88", boxShadow: "0 0 6px #00ff88" }} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-mono text-xs text-white truncate">{c.callsign || c.name}</div>
-                      <div className="font-mono text-[10px] text-[#3a5570]">нажмите чтобы написать</div>
+                      <div className="font-mono text-[10px]" style={{ color: isOnline(c.last_seen) ? "#00ff88" : "#3a5570" }}>
+                        {isOnline(c.last_seen) ? "онлайн" : "не в сети"}
+                      </div>
                     </div>
                     <Icon name="MessageSquare" size={12} className="text-[#3a5570] flex-shrink-0" />
                   </button>
