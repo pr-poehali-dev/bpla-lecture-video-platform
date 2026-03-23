@@ -72,6 +72,8 @@ export const api = {
       fetch(`${MSG_URL}/?action=chat-messages&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()),
     messageSend: (chat_id: number, content: string) =>
       fetch(`${MSG_URL}/?action=message-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, content }) }).then(r => r.json()),
+    imageSend: (chat_id: number, image_data: string, image_ext: string, caption?: string) =>
+      fetch(`${MSG_URL}/?action=image-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, image_data, image_ext, caption }) }).then(r => r.json()),
   },
 
   files: {

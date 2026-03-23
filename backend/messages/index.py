@@ -1,10 +1,13 @@
 """
-Личные сообщения: контакты, чаты, переписка.
+Личные сообщения: контакты, чаты, переписка, отправка картинок.
 Действия: contacts-list, contact-request, contact-respond,
-          chats-list, chat-create, chat-messages, message-send, users-search
+          chats-list, chat-create, chat-messages, message-send,
+          image-send, users-search
 """
 import json
 import os
+import base64
+import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -216,12 +219,13 @@ def handler(event: dict, context) -> dict:
 
         cur.execute(f"""
             SELECT m.id, m.content, m.created_at, m.sender_id,
+                m.image_url, m.message_type,
                 u.name AS sender_name, u.callsign AS sender_callsign
             FROM {t('messages')} m
             JOIN {t('users')} u ON u.id = m.sender_id
             WHERE m.chat_id = %s
             ORDER BY m.created_at ASC
-            LIMIT 100
+            LIMIT 200
         """, (chat_id,))
         messages = [dict(m) for m in cur.fetchall()]
 
@@ -245,13 +249,58 @@ def handler(event: dict, context) -> dict:
             return err("Нет доступа", 403)
 
         cur.execute(
-            f"INSERT INTO {t('messages')} (chat_id, sender_id, content) VALUES (%s, %s, %s) RETURNING id, created_at",
+            f"INSERT INTO {t('messages')} (chat_id, sender_id, content, message_type) VALUES (%s, %s, %s, 'text') RETURNING id, created_at",
             (chat_id, user["id"], content)
         )
         msg = cur.fetchone()
         cur.execute(f"UPDATE {t('chat_members')} SET last_read_at = NOW() WHERE chat_id = %s AND user_id = %s", (chat_id, user["id"]))
         conn.commit()
 
-        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "content": content, "created_at": msg["created_at"]}})
+        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "content": content, "image_url": None, "message_type": "text", "created_at": msg["created_at"]}})
+
+    # Отправить картинку
+    if action == "image-send" and method == "POST":
+        chat_id = body.get("chat_id")
+        image_data = body.get("image_data")  # base64
+        image_ext = body.get("image_ext", "jpg").lower().strip(".")
+        caption = (body.get("caption") or "").strip()[:500]
+        if not chat_id or not image_data:
+            return err("Укажите чат и изображение")
+        if image_ext not in ("jpg", "jpeg", "png", "gif", "webp"):
+            return err("Недопустимый формат изображения")
+
+        cur.execute(f"SELECT id FROM {t('chat_members')} WHERE chat_id = %s AND user_id = %s", (chat_id, user["id"]))
+        if not cur.fetchone():
+            return err("Нет доступа", 403)
+
+        # Декодируем base64
+        if "," in image_data:
+            image_data = image_data.split(",", 1)[1]
+        img_bytes = base64.b64decode(image_data)
+        if len(img_bytes) > 10 * 1024 * 1024:
+            return err("Изображение слишком большое (макс. 10 МБ)")
+
+        # Загружаем в S3
+        import boto3
+        s3 = boto3.client("s3",
+            endpoint_url="https://bucket.poehali.dev",
+            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]
+        )
+        key = f"chat-images/{uuid.uuid4().hex}.{image_ext}"
+        mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}
+        s3.put_object(Bucket="files", Key=key, Body=img_bytes, ContentType=mime_map.get(image_ext, "image/jpeg"))
+        cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+
+        content_text = caption if caption else "📷 Изображение"
+        cur.execute(
+            f"INSERT INTO {t('messages')} (chat_id, sender_id, content, image_url, message_type) VALUES (%s, %s, %s, %s, 'image') RETURNING id, created_at",
+            (chat_id, user["id"], content_text, cdn_url)
+        )
+        msg = cur.fetchone()
+        cur.execute(f"UPDATE {t('chat_members')} SET last_read_at = NOW() WHERE chat_id = %s AND user_id = %s", (chat_id, user["id"]))
+        conn.commit()
+
+        return ok({"message": {"id": msg["id"], "chat_id": chat_id, "sender_id": user["id"], "sender_name": user["name"], "sender_callsign": user["callsign"], "content": content_text, "image_url": cdn_url, "message_type": "image", "created_at": msg["created_at"]}})
 
     return err("Не найдено", 404)

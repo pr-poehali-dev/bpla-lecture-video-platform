@@ -1,0 +1,18 @@
+{
+  "name": "DRONE ACADEMY — Связь",
+  "short_name": "БПЛА Связь",
+  "description": "Защищённый мессенджер для операторов БПЛА",
+  "start_url": "/?mobile=1",
+  "display": "standalone",
+  "background_color": "#050810",
+  "theme_color": "#050810",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

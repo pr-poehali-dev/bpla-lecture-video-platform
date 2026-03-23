@@ -10,9 +10,10 @@ interface Chat {
   last_message?: string; unread_count: number;
   partner?: { id: number; name: string; callsign: string };
 }
-interface Message {
+export interface Message {
   id: number; sender_id: number; sender_name: string;
   sender_callsign: string; content: string; created_at: string;
+  image_url?: string | null; message_type?: string;
 }
 
 export default function ChatWidget({ user }: ChatWidgetProps) {
@@ -23,10 +24,12 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevUnreadRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const playNotify = () => {
     try {
@@ -100,8 +103,33 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
     }
   };
 
+  const sendImage = async (file: File) => {
+    if (!activeChat || sending) return;
+    setSending(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result as string;
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const res = await api.msg.imageSend(activeChat.id, dataUrl, ext);
+      setSending(false);
+      if (res.message) setMessages(prev => [...prev, res.message]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) sendImage(file);
+    e.target.value = "";
+  };
+
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const file = Array.from(e.clipboardData.items).find(i => i.type.startsWith("image/"))?.getAsFile();
+    if (file) { e.preventDefault(); sendImage(file); }
   };
 
   const getChatTitle = (chat: Chat) =>
@@ -114,6 +142,14 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90" onClick={() => setLightbox(null)}>
+          <img src={lightbox} className="max-w-[90vw] max-h-[90vh] object-contain" />
+          <button className="absolute top-4 right-4 text-white/60 hover:text-white"><Icon name="X" size={24} /></button>
+        </div>
+      )}
+
       {/* Chat panel */}
       {open && (
         <div
@@ -195,13 +231,24 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
                         {!isMine && (
                           <span className="font-mono text-[9px] text-[#00f5ff] px-1">{msg.sender_callsign || msg.sender_name}</span>
                         )}
-                        <div className="px-3 py-1.5 font-plex text-xs text-white" style={{
-                          background: isMine ? "rgba(0,245,255,0.12)" : "rgba(255,255,255,0.05)",
-                          border: `1px solid ${isMine ? "rgba(0,245,255,0.3)" : "rgba(255,255,255,0.08)"}`,
-                        }}>
-                          {msg.content}
-                        </div>
-                        <span className="font-mono text-[9px] text-[#2a4060] px-1">{formatTime(msg.created_at)}</span>
+                        {msg.message_type === "image" && msg.image_url ? (
+                          <div className="cursor-pointer" onClick={() => setLightbox(msg.image_url!)}>
+                            <img src={msg.image_url} className="max-w-[200px] max-h-[160px] object-cover rounded-sm border border-[rgba(0,245,255,0.2)]" />
+                            {msg.content && msg.content !== "📷 Изображение" && (
+                              <div className="font-plex text-[11px] text-[#8aacbf] px-1 mt-0.5">{msg.content}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="px-3 py-2 font-plex text-[12px] leading-relaxed"
+                            style={{
+                              background: isMine ? "rgba(0,245,255,0.12)" : "rgba(255,255,255,0.04)",
+                              border: `1px solid ${isMine ? "rgba(0,245,255,0.25)" : "rgba(255,255,255,0.08)"}`,
+                              color: isMine ? "#e0f8ff" : "#c0d4e0",
+                            }}>
+                            {msg.content}
+                          </div>
+                        )}
+                        <span className="font-mono text-[9px] text-[#3a5570] px-1">{formatTime(msg.created_at)}</span>
                       </div>
                     </div>
                   );
@@ -210,19 +257,39 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
               </div>
 
               {/* Input */}
-              <div className="flex gap-2 p-3 border-t flex-shrink-0" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
+              <div className="flex-shrink-0 border-t p-2 flex gap-2 items-end"
+                style={{ borderColor: "rgba(0,245,255,0.12)" }}>
                 <input
-                  className="flex-1 bg-transparent border font-plex text-xs text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sending}
+                  className="text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0 disabled:opacity-40"
+                  title="Отправить изображение"
+                >
+                  <Icon name="Image" size={16} />
+                </button>
+                <input
+                  className="flex-1 bg-transparent border-b font-plex text-[12px] text-white placeholder-[#3a5570] outline-none py-1"
                   style={{ borderColor: "rgba(0,245,255,0.2)" }}
                   placeholder="Сообщение..."
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKey}
+                  onPaste={handlePaste}
+                  disabled={sending}
                 />
-                <button onClick={sendMessage} disabled={!input.trim() || sending}
-                  className="w-8 h-8 flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-30"
-                  style={{ border: "1px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.08)", color: "#00f5ff" }}>
-                  <Icon name={sending ? "Loader" : "Send"} size={13} className={sending ? "animate-spin" : ""} />
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim() || sending}
+                  className="text-[#00f5ff] hover:text-white disabled:text-[#2a4060] transition-colors flex-shrink-0"
+                >
+                  <Icon name={sending ? "Loader" : "Send"} size={15} className={sending ? "animate-spin" : ""} />
                 </button>
               </div>
             </>
@@ -232,19 +299,18 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
 
       {/* Toggle button */}
       <button
-        onClick={() => setOpen(o => !o)}
-        className="relative w-12 h-12 flex items-center justify-center transition-all duration-200"
+        onClick={() => setOpen(!open)}
+        className="relative w-12 h-12 flex items-center justify-center transition-all hover:scale-105"
         style={{
           background: open ? "rgba(0,245,255,0.15)" : "rgba(5,8,16,0.95)",
-          border: "1px solid rgba(0,245,255,0.4)",
-          boxShadow: "0 0 20px rgba(0,245,255,0.2)",
-          color: "#00f5ff",
+          border: `1px solid ${open ? "rgba(0,245,255,0.6)" : "rgba(0,245,255,0.3)"}`,
+          boxShadow: open ? "0 0 20px rgba(0,245,255,0.3)" : "0 0 10px rgba(0,245,255,0.1)",
         }}
       >
-        <Icon name={open ? "X" : "MessageSquare"} size={20} />
+        <Icon name={open ? "X" : "MessageSquare"} size={20} className="text-[#00f5ff]" />
         {!open && totalUnread > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-mono text-[9px] text-black"
-            style={{ background: "#00f5ff" }}>
+          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center font-mono text-[9px] text-black"
+            style={{ background: "#00f5ff", boxShadow: "0 0 8px rgba(0,245,255,0.6)" }}>
             {totalUnread > 9 ? "9+" : totalUnread}
           </span>
         )}
