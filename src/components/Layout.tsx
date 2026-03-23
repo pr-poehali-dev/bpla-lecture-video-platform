@@ -87,6 +87,14 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 >
                   <Icon name="MessageSquare" size={13} />
                 </button>
+                <a
+                  href="/?mobile=1"
+                  title="Мобильное приложение"
+                  className="flex items-center justify-center w-7 h-7 transition-all text-[#5a7a95] hover:text-[#00ff88]"
+                  style={{ border: "1px solid rgba(0,255,136,0.15)" }}
+                >
+                  <Icon name="Smartphone" size={13} />
+                </a>
                 <button
                   onClick={() => onNavigate("profile")}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -137,6 +145,16 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 <Icon name="User" size={15} />
                 Профиль
               </button>
+            )}
+            {user && (
+              <a
+                href="/?mobile=1"
+                className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase border-t"
+                style={{ borderColor: "rgba(0,245,255,0.1)", color: "#00ff88" }}
+              >
+                <Icon name="Smartphone" size={15} />
+                Мобильное приложение
+              </a>
             )}
           </div>
         )}
