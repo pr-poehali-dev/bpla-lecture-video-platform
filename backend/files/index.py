@@ -31,19 +31,23 @@ def get_db():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
+def esc(val):
+    return str(val).replace("'", "''")
+
+
 def get_user_from_token(token: str):
     schema = os.environ["MAIN_DB_SCHEMA"]
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = %s AND status = 'approved'",
-        (token,),
+        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = '{esc(token)}' AND status = 'approved'"
     )
     row = cur.fetchone()
     conn.close()
     if not row:
         return None
     return {"id": row[0], "name": row[1], "is_admin": row[2], "role": row[3]}
+
 
 def can_upload(user: dict) -> bool:
     return user["is_admin"] or user.get("role") in ("инструктор", "администратор")
@@ -63,38 +67,34 @@ def handler(event: dict, context) -> dict:
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
     method = event.get("httpMethod", "GET")
-    path = event.get("path", "/")
     schema = os.environ["MAIN_DB_SCHEMA"]
 
     # GET /files - список файлов
-    if method == "GET" and (path == "/" or path == ""):
+    if method == "GET":
         params = event.get("queryStringParameters") or {}
         file_type = params.get("type")
         category = params.get("category")
         section = params.get("section")
 
+        where = "WHERE 1=1"
+        if file_type:
+            where += f" AND f.file_type = '{esc(file_type)}'"
+        if category:
+            where += f" AND f.category = '{esc(category)}'"
+        if section:
+            where += f" AND f.section = '{esc(section)}'"
+
         conn = get_db()
         cur = conn.cursor()
-        query = f"""
+        cur.execute(f"""
             SELECT f.id, f.title, f.description, f.file_type, f.category,
                    f.original_name, f.mime_type, f.file_size, f.cdn_url,
                    f.created_at, u.name as uploader, f.section
             FROM {schema}.files f
             LEFT JOIN {schema}.users u ON f.uploaded_by = u.id
-            WHERE 1=1
-        """
-        args = []
-        if file_type:
-            query += " AND f.file_type = %s"
-            args.append(file_type)
-        if category:
-            query += " AND f.category = %s"
-            args.append(category)
-        if section:
-            query += " AND f.section = %s"
-            args.append(section)
-        query += " ORDER BY f.created_at DESC"
-        cur.execute(query, args)
+            {where}
+            ORDER BY f.created_at DESC
+        """)
         rows = cur.fetchall()
         conn.close()
 
@@ -144,12 +144,13 @@ def handler(event: dict, context) -> dict:
             s3_key = f"youtube/{youtube_id}"
             conn = get_db()
             cur = conn.cursor()
-            cur.execute(
-                f"""INSERT INTO {schema}.files
+            cur.execute(f"""
+                INSERT INTO {schema}.files
                     (title, description, file_type, category, section, original_name, mime_type, file_size, s3_key, cdn_url, uploaded_by)
-                    VALUES (%s, %s, 'video', %s, %s, %s, 'youtube', 0, %s, %s, %s) RETURNING id""",
-                (title, description, category, section, youtube_id, s3_key, cdn_url, user["id"]),
-            )
+                VALUES ('{esc(title)}', '{esc(description)}', 'video', '{esc(category)}', '{esc(section)}',
+                        '{esc(youtube_id)}', 'youtube', 0, '{esc(s3_key)}', '{esc(cdn_url)}', {user['id']})
+                RETURNING id
+            """)
             new_id = cur.fetchone()[0]
             conn.commit()
             conn.close()
@@ -175,12 +176,13 @@ def handler(event: dict, context) -> dict:
 
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            f"""INSERT INTO {schema}.files
+        cur.execute(f"""
+            INSERT INTO {schema}.files
                 (title, description, file_type, category, section, original_name, mime_type, file_size, s3_key, cdn_url, uploaded_by)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
-            (title, description, file_type, category, section, original_name, mime_type, file_size, s3_key, cdn_url, user["id"]),
-        )
+            VALUES ('{esc(title)}', '{esc(description)}', '{esc(file_type)}', '{esc(category)}', '{esc(section)}',
+                    '{esc(original_name)}', '{esc(mime_type)}', {file_size}, '{esc(s3_key)}', '{esc(cdn_url)}', {user['id']})
+            RETURNING id
+        """)
         new_id = cur.fetchone()[0]
         conn.commit()
         conn.close()
@@ -201,7 +203,7 @@ def handler(event: dict, context) -> dict:
 
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(f"SELECT s3_key, mime_type FROM {schema}.files WHERE id = %s", (file_id,))
+        cur.execute(f"SELECT s3_key, mime_type FROM {schema}.files WHERE id = {int(file_id)}")
         row = cur.fetchone()
         if not row:
             conn.close()
@@ -212,7 +214,7 @@ def handler(event: dict, context) -> dict:
             s3 = get_s3()
             s3.delete_object(Bucket="files", Key=s3_key)
 
-        cur.execute(f"DELETE FROM {schema}.files WHERE id = %s", (file_id,))
+        cur.execute(f"DELETE FROM {schema}.files WHERE id = {int(file_id)}")
         conn.commit()
         conn.close()
 
