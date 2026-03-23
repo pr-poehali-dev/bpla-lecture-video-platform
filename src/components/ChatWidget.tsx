@@ -18,8 +18,19 @@ export interface Message {
   sender_avatar_url?: string | null;
 }
 
+interface Contact {
+  id: number;
+  contact_id: number;
+  name: string;
+  callsign: string;
+  avatar_url?: string | null;
+  status: string;
+  chat_id?: number | null;
+}
+
 export default function ChatWidget({ user }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"chats" | "contacts">("chats");
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,6 +43,12 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const prevUnreadRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Contacts
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactsLoaded, setContactsLoaded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{id: number; name: string; callsign: string; rank?: string}[]>([]);
+  const [searching, setSearching] = useState(false);
 
   const playNotify = () => {
     try {
@@ -68,6 +85,49 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
       return () => { if (pollRef.current) clearInterval(pollRef.current); };
     }
   }, [activeChat]);
+
+  const loadContacts = async () => {
+    const res = await api.msg.contactsList();
+    if (res.contacts) {
+      setContacts(res.contacts.filter((c: Contact) => c.status === "accepted"));
+      setContactsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "contacts" && !contactsLoaded) loadContacts();
+  }, [tab]);
+
+  const handleSearch = async (q: string) => {
+    setSearchQuery(q);
+    if (!q.trim()) { setSearchResults([]); return; }
+    setSearching(true);
+    const res = await api.msg.searchUsers(q);
+    setSearchResults(res.users || []);
+    setSearching(false);
+  };
+
+  const handleAddContact = async (targetId: number) => {
+    await api.msg.contactRequest(targetId);
+    setSearchQuery("");
+    setSearchResults([]);
+    loadContacts();
+  };
+
+  const openContactChat = async (contact: Contact) => {
+    if (contact.chat_id) {
+      const chat = chats.find(c => c.id === contact.chat_id);
+      if (chat) { setTab("chats"); openChat(chat); return; }
+    }
+    const res = await api.msg.chatCreate("", [contact.contact_id]);
+    if (res.chat_id) {
+      await loadChats();
+      setTab("chats");
+      const res2 = await api.msg.chatsList();
+      const newChat = (res2.chats || []).find((c: Chat) => c.id === res.chat_id);
+      if (newChat) openChat(newChat);
+    }
+  };
 
   const loadChats = async () => {
     const res = await api.msg.chatsList();
@@ -164,38 +224,140 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
           }}
         >
           {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b flex-shrink-0"
-            style={{ borderColor: "rgba(0,245,255,0.15)", background: "rgba(0,245,255,0.04)" }}>
-            {activeChat ? (
-              <>
-                <button onClick={() => setActiveChat(null)} className="text-[#5a7a95] hover:text-[#00f5ff] transition-colors mr-1">
-                  <Icon name="ChevronLeft" size={15} />
-                </button>
-                <div className="w-6 h-6 flex items-center justify-center flex-shrink-0"
-                  style={{ border: "1px solid rgba(0,245,255,0.3)" }}>
-                  <Icon name={activeChat.type === "direct" ? "User" : "Users"} size={11} className="text-[#00f5ff]" />
-                </div>
-                <span className="font-orbitron text-xs text-white tracking-wider truncate flex-1">{getChatTitle(activeChat)}</span>
-              </>
-            ) : (
-              <>
-                <div className="w-2 h-2 rounded-full bg-[#00f5ff] animate-pulse" />
-                <span className="font-orbitron text-xs text-[#00f5ff] tracking-wider flex-1">СВЯЗЬ</span>
-              </>
+          <div className="flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,245,255,0.04)" }}>
+            <div className="flex items-center gap-2 px-4 py-3">
+              {activeChat ? (
+                <>
+                  <button onClick={() => setActiveChat(null)} className="text-[#5a7a95] hover:text-[#00f5ff] transition-colors mr-1">
+                    <Icon name="ChevronLeft" size={15} />
+                  </button>
+                  <div className="w-6 h-6 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.3)" }}>
+                    <Icon name={activeChat.type === "direct" ? "User" : "Users"} size={11} className="text-[#00f5ff]" />
+                  </div>
+                  <span className="font-orbitron text-xs text-white tracking-wider truncate flex-1">{getChatTitle(activeChat)}</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-[#00f5ff] animate-pulse" />
+                  <span className="font-orbitron text-xs text-[#00f5ff] tracking-wider flex-1">СВЯЗЬ</span>
+                </>
+              )}
+              <button onClick={() => setOpen(false)} className="text-[#3a5570] hover:text-white transition-colors">
+                <Icon name="X" size={14} />
+              </button>
+            </div>
+            {/* Tabs — только когда нет открытого чата */}
+            {!activeChat && (
+              <div className="flex border-t" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
+                {([
+                  { key: "chats", label: "ЧАТЫ", icon: "MessageSquare" },
+                  { key: "contacts", label: "КОНТАКТЫ", icon: "Users" },
+                ] as const).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 font-mono text-[10px] transition-all"
+                    style={{
+                      color: tab === t.key ? "#00f5ff" : "#3a5570",
+                      borderBottom: tab === t.key ? "1px solid #00f5ff" : "1px solid transparent",
+                      background: tab === t.key ? "rgba(0,245,255,0.04)" : "transparent",
+                    }}
+                  >
+                    <Icon name={t.icon as "MessageSquare"} size={11} />
+                    {t.label}
+                    {t.key === "chats" && totalUnread > 0 && (
+                      <span className="px-1 rounded-full text-[9px] font-bold" style={{ background: "#ff2244", color: "#fff" }}>{totalUnread}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
-            <button onClick={() => setOpen(false)} className="text-[#3a5570] hover:text-white transition-colors">
-              <Icon name="X" size={14} />
-            </button>
           </div>
 
+          {/* Contacts tab */}
+          {!activeChat && tab === "contacts" && (
+            <div className="flex-1 overflow-y-auto flex flex-col">
+              {/* Search */}
+              <div className="p-3 border-b" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
+                <div className="relative">
+                  <Icon name="Search" size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#3a5570]" />
+                  <input
+                    className="w-full bg-[#0a1520] font-mono text-xs text-white pl-7 pr-3 py-2 outline-none"
+                    style={{ border: "1px solid #1a2a3a" }}
+                    placeholder="Найти бойца по позывному..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Search results */}
+              {searchQuery && (
+                <div className="border-b" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
+                  {searching ? (
+                    <div className="px-4 py-3 font-mono text-[10px] text-[#3a5570] animate-pulse">Поиск...</div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="px-4 py-3 font-mono text-[10px] text-[#3a5570]">Не найдено</div>
+                  ) : searchResults.map((u) => (
+                    <div key={u.id} className="flex items-center gap-3 px-4 py-2.5 border-b" style={{ borderColor: "rgba(0,245,255,0.05)" }}>
+                      <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 font-orbitron text-[10px] text-[#00f5ff]" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
+                        {(u.callsign || u.name || "?")[0].toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-mono text-xs text-white truncate">{u.callsign || u.name}</div>
+                        {u.rank && <div className="font-mono text-[10px] text-[#3a5570] truncate">{u.rank}</div>}
+                      </div>
+                      <button
+                        onClick={() => handleAddContact(u.id)}
+                        className="font-mono text-[10px] px-2 py-1 flex-shrink-0 transition-all"
+                        style={{ border: "1px solid rgba(0,255,136,0.3)", color: "#00ff88", background: "rgba(0,255,136,0.05)" }}
+                      >
+                        + ДОБАВИТЬ
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Contacts list - search results отдельно */}
+              <div className="flex-1 overflow-y-auto">
+                {!contactsLoaded ? (
+                  <div className="flex items-center justify-center h-24 font-mono text-[10px] text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>
+                ) : contacts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-center">
+                    <Icon name="Users" size={24} className="text-[#2a4060]" />
+                    <div className="font-mono text-xs text-[#3a5570]">Контактов нет</div>
+                    <div className="font-mono text-[10px] text-[#2a4060]">Найдите бойцов через поиск</div>
+                  </div>
+                ) : contacts.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => openContactChat(c)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(0,245,255,0.04)] transition-colors border-b"
+                    style={{ borderColor: "rgba(0,245,255,0.06)" }}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 font-orbitron text-xs text-[#00f5ff]" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
+                      {(c.callsign || c.name || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-xs text-white truncate">{c.callsign || c.name}</div>
+                      <div className="font-mono text-[10px] text-[#3a5570]">нажмите чтобы написать</div>
+                    </div>
+                    <Icon name="MessageSquare" size={12} className="text-[#3a5570] flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Chats list */}
-          {!activeChat && (
+          {!activeChat && tab === "chats" && (
             <div className="flex-1 overflow-y-auto">
               {chats.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
                   <Icon name="MessageSquare" size={28} className="text-[#2a4060]" />
                   <div className="font-mono text-xs text-[#3a5570]">Нет активных чатов</div>
-                  <div className="font-mono text-[10px] text-[#2a4060]">Добавьте контакты в разделе «Сообщения»</div>
+                  <div className="font-mono text-[10px] text-[#2a4060]">Найдите бойцов во вкладке «Контакты»</div>
                 </div>
               ) : chats.map(chat => (
                 <button key={chat.id} onClick={() => openChat(chat)}
