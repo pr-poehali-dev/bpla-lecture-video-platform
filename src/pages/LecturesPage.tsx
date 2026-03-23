@@ -115,7 +115,7 @@ export default function LecturesPage() {
         <div className="text-center py-20 font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20" style={{ border: "1px solid #1a2a3a" }}>
-          <Icon name={tab === "video" ? "Play" : "FileText"} size={32} className="text-[#3a5570] mx-auto mb-3" />
+          <Icon name="FileText" size={32} className="text-[#3a5570] mx-auto mb-3" />
           <div className="font-mono text-xs text-[#3a5570]">Материалы не найдены</div>
           <div className="font-mono text-xs text-[#1a2a3a] mt-1">Инструктор ещё не добавил материалы</div>
         </div>
