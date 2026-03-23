@@ -80,6 +80,13 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                   </button>
                 )}
                 <button
+                  onClick={() => onNavigate("messages")}
+                  className={`flex items-center justify-center w-7 h-7 transition-all ${currentPage === "messages" ? "text-[#00f5ff]" : "text-[#5a7a95] hover:text-[#00f5ff]"}`}
+                  style={{ border: `1px solid ${currentPage === "messages" ? "rgba(0,245,255,0.4)" : "rgba(0,245,255,0.1)"}` }}
+                >
+                  <Icon name="MessageSquare" size={13} />
+                </button>
+                <button
                   onClick={() => onNavigate("profile")}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >

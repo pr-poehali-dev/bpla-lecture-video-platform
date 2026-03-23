@@ -1,6 +1,7 @@
 const AUTH_URL = "https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199";
 const ADMIN_URL = "https://functions.poehali.dev/5407bcc9-7143-4278-8422-e2a603eb0135";
 const FILES_URL = "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559";
+const MSG_URL = "https://functions.poehali.dev/64d88e88-79a2-48b8-8ac8-d37bfa8eb51e";
 
 function getToken(): string {
   return localStorage.getItem("drone_token") || "";
@@ -52,6 +53,25 @@ export const api = {
 
     makeAdmin: (user_id: number) =>
       fetch(`${ADMIN_URL}/?action=make-admin`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
+  },
+
+  msg: {
+    searchUsers: (q: string) =>
+      fetch(`${MSG_URL}/?action=users-search&q=${encodeURIComponent(q)}`, { headers: authHeaders() }).then(r => r.json()),
+    contactsList: () =>
+      fetch(`${MSG_URL}/?action=contacts-list`, { headers: authHeaders() }).then(r => r.json()),
+    contactRequest: (target_id: number) =>
+      fetch(`${MSG_URL}/?action=contact-request`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ target_id }) }).then(r => r.json()),
+    contactRespond: (contact_id: number, response: "accept" | "reject") =>
+      fetch(`${MSG_URL}/?action=contact-respond`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ contact_id, response }) }).then(r => r.json()),
+    chatsList: () =>
+      fetch(`${MSG_URL}/?action=chats-list`, { headers: authHeaders() }).then(r => r.json()),
+    chatCreate: (name: string, member_ids: number[]) =>
+      fetch(`${MSG_URL}/?action=chat-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ name, member_ids }) }).then(r => r.json()),
+    chatMessages: (chat_id: number) =>
+      fetch(`${MSG_URL}/?action=chat-messages&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()),
+    messageSend: (chat_id: number, content: string) =>
+      fetch(`${MSG_URL}/?action=message-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, content }) }).then(r => r.json()),
   },
 
   files: {

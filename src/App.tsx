@@ -15,11 +15,12 @@ import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AdminPage from "@/pages/AdminPage";
 import ProfilePage from "@/pages/ProfilePage";
+import MessagesPage from "@/pages/MessagesPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import { api } from "@/api";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware" | "profile";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "downloads" | "discussions" | "firmware" | "profile" | "messages";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -118,6 +119,7 @@ export default function App() {
       case "discussions": return <DiscussionsPage />;
       case "firmware": return <FirmwarePage />;
       case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} />;
+      case "messages": return <MessagesPage user={user} />;
       default: return <HomePage onNavigate={setCurrentPage} />;
     }
   };

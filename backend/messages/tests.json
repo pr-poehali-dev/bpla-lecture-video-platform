@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "No token - unauthorized",
+      "method": "GET",
+      "path": "/?action=contacts-list",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Search without query",
+      "method": "GET",
+      "path": "/?action=users-search&q=a",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
