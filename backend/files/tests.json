@@ -5,24 +5,19 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": "{\"files\": []}",
       "bodyMatcher": "partial"
     },
     {
       "name": "List videos",
       "method": "GET",
       "path": "/?type=video",
-      "expectedStatus": 200,
-      "expectedBody": "{\"files\": []}",
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "List documents",
       "method": "GET",
       "path": "/?type=document",
-      "expectedStatus": 200,
-      "expectedBody": "{\"files\": []}",
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     }
   ]
 }

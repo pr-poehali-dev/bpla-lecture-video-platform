@@ -113,6 +113,8 @@ def handler(event: dict, context) -> dict:
                 f"ON CONFLICT (role, page) DO UPDATE SET allowed = EXCLUDED.allowed, updated_at = NOW()",
                 (role, page, bool(allowed))
             )
+        # Сбрасываем кэш прав у всех пользователей с этой ролью
+        cur.execute(f"UPDATE {q('users')} SET permissions_cache = NULL WHERE role = %s", (role,))
         conn.commit()
         return ok({"message": f"Права для роли «{role}» обновлены"})
 
@@ -124,7 +126,8 @@ def handler(event: dict, context) -> dict:
             return err("user_id обязателен")
         if role not in ("курсант", "инструктор", "администратор"):
             return err("Недопустимая роль")
-        cur.execute(f"UPDATE {q('users')} SET role = %s WHERE id = %s RETURNING id, name, callsign", (role, user_id))
+        # Сбрасываем кэш прав при смене роли
+        cur.execute(f"UPDATE {q('users')} SET role = %s, permissions_cache = NULL WHERE id = %s RETURNING id, name, callsign", (role, user_id))
         user = cur.fetchone()
         conn.commit()
         if not user:

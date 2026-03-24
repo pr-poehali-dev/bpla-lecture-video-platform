@@ -75,6 +75,9 @@ def handler(event: dict, context) -> dict:
         category = params.get("category")
         section = params.get("section")
 
+        limit = min(int(params.get("limit", 50)), 100)
+        offset = max(int(params.get("offset", 0)), 0)
+
         where = "WHERE 1=1"
         if file_type:
             where += f" AND f.file_type = '{esc(file_type)}'"
@@ -82,6 +85,9 @@ def handler(event: dict, context) -> dict:
             where += f" AND f.category = '{esc(category)}'"
         if section:
             where += f" AND f.section = '{esc(section)}'"
+
+        cur.execute(f"SELECT COUNT(*) FROM {schema}.files f {where}")
+        total = cur.fetchone()[0]
 
         cur.execute(f"""
             SELECT f.id, f.title, f.description, f.file_type, f.category,
@@ -91,6 +97,7 @@ def handler(event: dict, context) -> dict:
             LEFT JOIN {schema}.users u ON f.uploaded_by = u.id
             {where}
             ORDER BY f.created_at DESC
+            LIMIT {limit} OFFSET {offset}
         """)
         rows = cur.fetchall()
         conn.close()
@@ -111,7 +118,7 @@ def handler(event: dict, context) -> dict:
                 "uploader": r[10],
                 "section": r[11],
             })
-        return {"statusCode": 200, "headers": CORS, "body": json.dumps({"files": files})}
+        return {"statusCode": 200, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"files": files, "total": total, "limit": limit, "offset": offset})}
 
     # POST /files - загрузка файла (для инструкторов и администраторов)
     if method == "POST":

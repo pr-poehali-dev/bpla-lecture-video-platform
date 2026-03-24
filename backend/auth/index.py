@@ -42,6 +42,15 @@ def get_permissions(cur, role: str) -> dict:
         perms[row["page"]] = row["allowed"]
     return perms
 
+def refresh_permissions_cache(cur, conn, user_id: int, role: str, is_admin: bool) -> dict:
+    perms = {p: True for p in PAGES} if is_admin else get_permissions(cur, role)
+    cur.execute(
+        f"UPDATE {q('users')} SET permissions_cache = %s WHERE id = %s",
+        (json.dumps(perms), user_id)
+    )
+    conn.commit()
+    return perms
+
 def ok(data: dict, status: int = 200) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps(data, ensure_ascii=False)}
 
@@ -49,7 +58,7 @@ def err(msg: str, status: int = 400) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"error": msg}, ensure_ascii=False)}
 
 def user_fields():
-    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role"
+    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role, permissions_cache"
 
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
@@ -81,13 +90,11 @@ def handler(event: dict, context) -> dict:
         if len(password) < 6:
             return err("Пароль минимум 6 символов")
 
-        cur.execute(f"SELECT id FROM {q('users')} WHERE email = %s", (email,))
-        if cur.fetchone():
-            return err("Email уже зарегистрирован")
-
-        cur.execute(f"SELECT id FROM {q('users')} WHERE callsign = %s", (callsign,))
-        if cur.fetchone():
-            return err("Позывной уже занят")
+        cur.execute(f"SELECT id FROM {q('users')} WHERE email = %s OR callsign = %s", (email, callsign))
+        existing = cur.fetchone()
+        if existing:
+            cur.execute(f"SELECT id FROM {q('users')} WHERE email = %s", (email,))
+            return err("Email уже зарегистрирован") if cur.fetchone() else err("Позывной уже занят")
 
         pw_hash = hash_password(password)
         cur.execute(
@@ -122,10 +129,19 @@ def handler(event: dict, context) -> dict:
             return err("rejected", 403)
 
         token = secrets.token_hex(32)
-        cur.execute(f"UPDATE {q('users')} SET session_token = %s WHERE id = %s", (token, user["id"]))
+
+        # Используем кэш прав или пересчитываем
+        if user["permissions_cache"]:
+            perms = user["permissions_cache"] if isinstance(user["permissions_cache"], dict) else json.loads(user["permissions_cache"])
+            cur.execute(f"UPDATE {q('users')} SET session_token = %s WHERE id = %s", (token, user["id"]))
+        else:
+            perms = {p: True for p in PAGES} if user["is_admin"] else get_permissions(cur, user["role"])
+            cur.execute(
+                f"UPDATE {q('users')} SET session_token = %s, permissions_cache = %s WHERE id = %s",
+                (token, json.dumps(perms), user["id"])
+            )
         conn.commit()
 
-        perms = get_permissions(cur, user["role"]) if not user["is_admin"] else {p: True for p in PAGES}
         return ok({
             "token": token,
             "user": {
@@ -159,10 +175,25 @@ def handler(event: dict, context) -> dict:
         if not user:
             return err("Сессия недействительна", 401)
 
-        perms = get_permissions(cur, user["role"]) if not user["is_admin"] else {p: True for p in PAGES}
+        # Читаем права из кэша — без лишнего запроса к role_permissions
+        if user["permissions_cache"]:
+            perms = user["permissions_cache"] if isinstance(user["permissions_cache"], dict) else json.loads(user["permissions_cache"])
+        else:
+            perms = refresh_permissions_cache(cur, conn, user["id"], user["role"], user["is_admin"])
+
         user_dict = dict(user)
+        user_dict.pop("permissions_cache", None)
         user_dict["permissions"] = perms
         return ok({"user": user_dict})
+
+    # logout
+    if action == "logout" and method == "POST":
+        auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
+        token = auth.replace("Bearer ", "").strip()
+        if token:
+            cur.execute(f"UPDATE {q('users')} SET session_token = NULL WHERE session_token = %s", (token,))
+            conn.commit()
+        return ok({"message": "Выход выполнен"})
 
     # update-profile
     if action == "update-profile" and method == "POST":
@@ -171,7 +202,7 @@ def handler(event: dict, context) -> dict:
         if not token:
             return err("Не авторизован", 401)
 
-        cur.execute(f"SELECT id FROM {q('users')} WHERE session_token = %s", (token,))
+        cur.execute(f"SELECT id, is_admin, role FROM {q('users')} WHERE session_token = %s", (token,))
         user = cur.fetchone()
         if not user:
             return err("Сессия недействительна", 401)
@@ -192,7 +223,13 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE id = %s", (user["id"],))
         updated = cur.fetchone()
         updated_dict = dict(updated)
-        perms = get_permissions(cur, updated_dict.get("role")) if not updated_dict.get("is_admin") else {p: True for p in PAGES}
+
+        if updated_dict.get("permissions_cache"):
+            perms = updated_dict["permissions_cache"] if isinstance(updated_dict["permissions_cache"], dict) else json.loads(updated_dict["permissions_cache"])
+        else:
+            perms = refresh_permissions_cache(cur, conn, user["id"], updated_dict.get("role"), updated_dict.get("is_admin"))
+
+        updated_dict.pop("permissions_cache", None)
         updated_dict["permissions"] = perms
         return ok({"user": updated_dict})
 
@@ -228,28 +265,15 @@ def handler(event: dict, context) -> dict:
             aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
             aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"]
         )
-        key = f"avatars/{user['id']}_{uuid.uuid4().hex[:8]}.{image_ext}"
-        mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}
-        s3.put_object(Bucket="files", Key=key, Body=img_bytes, ContentType=mime_map.get(image_ext, "image/jpeg"))
-        cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
 
-        cur.execute(f"UPDATE {q('users')} SET avatar_url = %s WHERE id = %s", (cdn_url, user["id"]))
+        key = f"avatars/{uuid.uuid4()}.{image_ext}"
+        content_type = f"image/{'jpeg' if image_ext in ('jpg', 'jpeg') else image_ext}"
+        s3.put_object(Bucket="files", Key=key, Body=img_bytes, ContentType=content_type)
+
+        avatar_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+        cur.execute(f"UPDATE {q('users')} SET avatar_url = %s WHERE id = %s", (avatar_url, user["id"]))
         conn.commit()
 
-        cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE id = %s", (user["id"],))
-        updated = cur.fetchone()
-        updated_dict = dict(updated)
-        perms = get_permissions(cur, updated_dict.get("role")) if not updated_dict.get("is_admin") else {p: True for p in PAGES}
-        updated_dict["permissions"] = perms
-        return ok({"user": updated_dict, "avatar_url": cdn_url})
-
-    # logout
-    if action == "logout" and method == "POST":
-        auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
-        token = auth.replace("Bearer ", "").strip()
-        if token:
-            cur.execute(f"UPDATE {q('users')} SET session_token = NULL WHERE session_token = %s", (token,))
-            conn.commit()
-        return ok({"message": "Вышли из системы"})
+        return ok({"avatar_url": avatar_url})
 
     return err("Не найдено", 404)
