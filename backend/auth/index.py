@@ -150,13 +150,14 @@ def handler(event: dict, context) -> dict:
         if not token:
             return err("Не авторизован", 401)
 
-        cur.execute(f"SELECT {user_fields()} FROM {q('users')} WHERE session_token = %s", (token,))
+        cur.execute(
+            f"UPDATE {q('users')} SET last_seen = NOW() WHERE session_token = %s RETURNING {user_fields()}",
+            (token,)
+        )
         user = cur.fetchone()
+        conn.commit()
         if not user:
             return err("Сессия недействительна", 401)
-
-        cur.execute(f"UPDATE {q('users')} SET last_seen = NOW() WHERE id = %s", (user["id"],))
-        conn.commit()
 
         perms = get_permissions(cur, user["role"]) if not user["is_admin"] else {p: True for p in PAGES}
         user_dict = dict(user)

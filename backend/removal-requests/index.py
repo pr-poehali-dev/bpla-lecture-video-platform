@@ -19,21 +19,6 @@ def get_db():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
-def get_user_from_token(token: str):
-    schema = os.environ["MAIN_DB_SCHEMA"]
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = %s AND status = 'approved'",
-        (token,),
-    )
-    row = cur.fetchone()
-    conn.close()
-    if not row:
-        return None
-    return {"id": row[0], "name": row[1], "is_admin": row[2], "role": row[3]}
-
-
 def get_s3():
     return boto3.client(
         "s3",
@@ -51,16 +36,23 @@ def handler(event: dict, context) -> dict:
     method = event.get("httpMethod", "GET")
     schema = os.environ["MAIN_DB_SCHEMA"]
     token = event.get("headers", {}).get("X-Authorization", "").replace("Bearer ", "")
-    user = get_user_from_token(token)
 
-    if not user:
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = %s AND status = 'approved'",
+        (token,),
+    )
+    row = cur.fetchone()
+    if not row:
+        conn.close()
         return {"statusCode": 401, "headers": CORS, "body": json.dumps({"error": "Требуется авторизация"})}
 
+    user = {"id": row[0], "name": row[1], "is_admin": row[2], "role": row[3]}
+
     # GET — список заявок
-    # Администратор видит все, инструктор — только свои
     if method == "GET":
-        conn = get_db()
-        cur = conn.cursor()
         if user["is_admin"]:
             cur.execute(
                 f"""
@@ -114,6 +106,7 @@ def handler(event: dict, context) -> dict:
     # POST — создать заявку (только инструктор)
     if method == "POST":
         if not (user.get("role") in ("инструктор", "администратор") or user["is_admin"]):
+            conn.close()
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён"})}
 
         body = json.loads(event.get("body") or "{}")
@@ -121,18 +114,14 @@ def handler(event: dict, context) -> dict:
         reason = body.get("reason", "").strip()
 
         if not file_id:
+            conn.close()
             return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите file_id"})}
 
-        conn = get_db()
-        cur = conn.cursor()
-
-        # Проверяем файл
         cur.execute(f"SELECT id FROM {schema}.files WHERE id = %s", (file_id,))
         if not cur.fetchone():
             conn.close()
             return {"statusCode": 404, "headers": CORS, "body": json.dumps({"error": "Файл не найден"})}
 
-        # Нет ли уже активной заявки
         cur.execute(
             f"SELECT id FROM {schema}.file_removal_requests WHERE file_id = %s AND requested_by = %s AND status = 'pending'",
             (file_id, user["id"]),
@@ -153,17 +142,17 @@ def handler(event: dict, context) -> dict:
     # PUT — одобрить или отклонить (только администратор)
     if method == "PUT":
         if not user["is_admin"]:
+            conn.close()
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён"})}
 
         body = json.loads(event.get("body") or "{}")
         request_id = body.get("id")
-        action = body.get("action")  # "approve" или "reject"
+        action = body.get("action")
 
         if not request_id or action not in ("approve", "reject"):
+            conn.close()
             return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите id и action (approve/reject)"})}
 
-        conn = get_db()
-        cur = conn.cursor()
         cur.execute(
             f"SELECT r.id, r.file_id, r.status, f.s3_key, f.mime_type FROM {schema}.file_removal_requests r JOIN {schema}.files f ON r.file_id = f.id WHERE r.id = %s",
             (request_id,),
@@ -187,7 +176,6 @@ def handler(event: dict, context) -> dict:
         )
 
         if action == "approve":
-            # Удаляем файл из S3 и БД
             if mime_type != "youtube" and s3_key:
                 s3 = get_s3()
                 s3.delete_object(Bucket="files", Key=s3_key)
@@ -198,4 +186,5 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True, "status": new_status})}
 
+    conn.close()
     return {"statusCode": 405, "headers": CORS, "body": json.dumps({"error": "Method not allowed"})}

@@ -162,20 +162,37 @@ def handler(event: dict, context) -> dict:
         """, (user["id"], user["id"]))
         chats = [dict(c) for c in cur.fetchall()]
 
-        # Для каждого direct чата — получить имя собеседника
-        for chat in chats:
-            if chat["type"] == "direct":
-                cur.execute(f"""
-                    SELECT u.id, u.name, u.callsign, u.rank FROM {t('users')} u
-                    JOIN {t('chat_members')} cm ON cm.user_id = u.id
-                    WHERE cm.chat_id = %s AND u.id != %s LIMIT 1
-                """, (chat["id"], user["id"]))
-                partner = cur.fetchone()
-                if partner:
-                    chat["partner"] = dict(partner)
-            if chat["type"] == "group":
-                cur.execute(f"SELECT COUNT(*) AS cnt FROM {t('chat_members')} WHERE chat_id = %s", (chat["id"],))
-                chat["members_count"] = cur.fetchone()["cnt"]
+        if chats:
+            chat_ids = [c["id"] for c in chats]
+            ids_placeholder = ",".join(["%s"] * len(chat_ids))
+
+            # Получаем всех партнёров по direct-чатам одним запросом
+            cur.execute(f"""
+                SELECT cm.chat_id, u.id, u.name, u.callsign, u.rank
+                FROM {t('chat_members')} cm
+                JOIN {t('users')} u ON u.id = cm.user_id
+                WHERE cm.chat_id IN ({ids_placeholder}) AND cm.user_id != %s
+            """, (*chat_ids, user["id"]))
+            partners_by_chat = {}
+            for row in cur.fetchall():
+                partners_by_chat[row["chat_id"]] = {"id": row["id"], "name": row["name"], "callsign": row["callsign"], "rank": row["rank"]}
+
+            # Получаем кол-во участников для групповых чатов одним запросом
+            cur.execute(f"""
+                SELECT chat_id, COUNT(*) AS cnt
+                FROM {t('chat_members')}
+                WHERE chat_id IN ({ids_placeholder})
+                GROUP BY chat_id
+            """, tuple(chat_ids))
+            members_count_by_chat = {row["chat_id"]: row["cnt"] for row in cur.fetchall()}
+
+            for chat in chats:
+                if chat["type"] == "direct":
+                    partner = partners_by_chat.get(chat["id"])
+                    if partner:
+                        chat["partner"] = partner
+                elif chat["type"] == "group":
+                    chat["members_count"] = members_count_by_chat.get(chat["id"], 0)
 
         return ok({"chats": chats})
 

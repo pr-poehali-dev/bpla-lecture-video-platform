@@ -35,15 +35,12 @@ def esc(val):
     return str(val).replace("'", "''")
 
 
-def get_user_from_token(token: str):
-    schema = os.environ["MAIN_DB_SCHEMA"]
-    conn = get_db()
-    cur = conn.cursor()
+def get_user_from_token(cur, token: str, schema: str):
     cur.execute(
-        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = '{esc(token)}' AND status = 'approved'"
+        f"SELECT id, name, is_admin, role FROM {schema}.users WHERE session_token = %s AND status = 'approved'",
+        (token,)
     )
     row = cur.fetchone()
-    conn.close()
     if not row:
         return None
     return {"id": row[0], "name": row[1], "is_admin": row[2], "role": row[3]}
@@ -68,6 +65,8 @@ def handler(event: dict, context) -> dict:
 
     method = event.get("httpMethod", "GET")
     schema = os.environ["MAIN_DB_SCHEMA"]
+    conn = get_db()
+    cur = conn.cursor()
 
     # GET /files - список файлов
     if method == "GET":
@@ -84,8 +83,6 @@ def handler(event: dict, context) -> dict:
         if section:
             where += f" AND f.section = '{esc(section)}'"
 
-        conn = get_db()
-        cur = conn.cursor()
         cur.execute(f"""
             SELECT f.id, f.title, f.description, f.file_type, f.category,
                    f.original_name, f.mime_type, f.file_size, f.cdn_url,
@@ -119,8 +116,9 @@ def handler(event: dict, context) -> dict:
     # POST /files - загрузка файла (для инструкторов и администраторов)
     if method == "POST":
         token = event.get("headers", {}).get("X-Authorization", "").replace("Bearer ", "")
-        user = get_user_from_token(token)
+        user = get_user_from_token(cur, token, schema)
         if not user or not can_upload(user):
+            conn.close()
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён. Загрузка доступна только инструкторам."})}
 
         body = json.loads(event.get("body") or "{}")
@@ -133,17 +131,17 @@ def handler(event: dict, context) -> dict:
         file_data_b64 = body.get("file_data", "")
 
         if not title:
+            conn.close()
             return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите название"})}
 
         # YouTube — без загрузки в S3
         if mime_type == "youtube":
             youtube_id = body.get("youtube_id", "").strip()
             if not youtube_id:
+                conn.close()
                 return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите youtube_id"})}
             cdn_url = f"https://www.youtube.com/embed/{youtube_id}"
             s3_key = f"youtube/{youtube_id}"
-            conn = get_db()
-            cur = conn.cursor()
             cur.execute(f"""
                 INSERT INTO {schema}.files
                     (title, description, file_type, category, section, original_name, mime_type, file_size, s3_key, cdn_url, uploaded_by)
@@ -161,6 +159,7 @@ def handler(event: dict, context) -> dict:
         elif mime_type in ALLOWED_DOC:
             file_type = "document"
         else:
+            conn.close()
             return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": f"Формат не поддерживается: {mime_type}"})}
 
         file_bytes = base64.b64decode(file_data_b64)
@@ -174,8 +173,6 @@ def handler(event: dict, context) -> dict:
 
         cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{s3_key}"
 
-        conn = get_db()
-        cur = conn.cursor()
         cur.execute(f"""
             INSERT INTO {schema}.files
                 (title, description, file_type, category, section, original_name, mime_type, file_size, s3_key, cdn_url, uploaded_by)
@@ -192,17 +189,17 @@ def handler(event: dict, context) -> dict:
     # DELETE /files?id=X (только для администраторов)
     if method == "DELETE":
         token = event.get("headers", {}).get("X-Authorization", "").replace("Bearer ", "")
-        user = get_user_from_token(token)
+        user = get_user_from_token(cur, token, schema)
         if not user or not user["is_admin"]:
+            conn.close()
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Удаление материалов доступно только администраторам"})}
 
         params = event.get("queryStringParameters") or {}
         file_id = params.get("id")
         if not file_id:
+            conn.close()
             return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Укажите id"})}
 
-        conn = get_db()
-        cur = conn.cursor()
         cur.execute(f"SELECT s3_key, mime_type FROM {schema}.files WHERE id = {int(file_id)}")
         row = cur.fetchone()
         if not row:
@@ -220,4 +217,5 @@ def handler(event: dict, context) -> dict:
 
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True})}
 
-    return {"statusCode": 404, "headers": CORS, "body": json.dumps({"error": "Not found"})}
+    conn.close()
+    return {"statusCode": 405, "headers": CORS, "body": json.dumps({"error": "Method not allowed"})}
