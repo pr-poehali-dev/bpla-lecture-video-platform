@@ -192,17 +192,21 @@ def handler(event: dict, context) -> dict:
 
     # GET ?action=stats
     if action == "stats" and method == "GET":
-        cur.execute(f"SELECT COUNT(*) as total FROM {q('users')}")
-        total = cur.fetchone()["total"]
-        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('users')} WHERE status = 'pending'")
-        pending = cur.fetchone()["cnt"]
-        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('users')} WHERE status = 'approved'")
-        approved = cur.fetchone()["cnt"]
-        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('users')} WHERE is_admin = TRUE")
-        admins = cur.fetchone()["cnt"]
-        cur.execute(f"SELECT role, COUNT(*) as cnt FROM {q('users')} WHERE status = 'approved' GROUP BY role")
-        by_role = {row["role"]: row["cnt"] for row in cur.fetchall()}
-        return ok({"total": total, "pending": pending, "approved": approved, "admins": admins, "by_role": by_role})
+        cur.execute(f"""
+            SELECT
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+                COUNT(*) FILTER (WHERE status = 'approved') AS approved,
+                COUNT(*) FILTER (WHERE is_admin = TRUE) AS admins,
+                COUNT(*) FILTER (WHERE status = 'approved' AND role = 'курсант') AS role_kursant,
+                COUNT(*) FILTER (WHERE status = 'approved' AND role = 'инструктор') AS role_instructor
+            FROM {q('users')}
+        """)
+        row = cur.fetchone()
+        by_role = {}
+        if row["role_kursant"]: by_role["курсант"] = row["role_kursant"]
+        if row["role_instructor"]: by_role["инструктор"] = row["role_instructor"]
+        return ok({"total": row["total"], "pending": row["pending"], "approved": row["approved"], "admins": row["admins"], "by_role": by_role})
 
     return err("Не найдено", 404)
 
