@@ -73,7 +73,7 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
 
   useEffect(() => {
     loadChats();
-    const interval = setInterval(loadChats, 10000);
+    const interval = setInterval(loadChats, 20000);
     return () => clearInterval(interval);
   }, []);
 
@@ -84,7 +84,7 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   useEffect(() => {
     if (activeChat) {
       if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(() => loadMessages(activeChat.id), 4000);
+      pollRef.current = setInterval(() => loadMessages(activeChat.id), 10000);
       return () => { if (pollRef.current) clearInterval(pollRef.current); };
     }
   }, [activeChat]);

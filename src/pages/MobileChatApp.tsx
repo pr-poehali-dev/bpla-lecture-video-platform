@@ -56,7 +56,7 @@ export default function MobileChatApp() {
   useEffect(() => {
     if (!user) return;
     loadChats();
-    pollChatsRef.current = setInterval(loadChats, 8000);
+    pollChatsRef.current = setInterval(loadChats, 20000);
     return () => { if (pollChatsRef.current) clearInterval(pollChatsRef.current); };
   }, [user]);
 
@@ -103,7 +103,7 @@ export default function MobileChatApp() {
     pollMsgRef.current = setInterval(async () => {
       const r = await api.msg.chatMessages(chat.id);
       if (r.messages) setMessages(r.messages);
-    }, 4000);
+    }, 10000);
   };
 
   const backToChats = () => {

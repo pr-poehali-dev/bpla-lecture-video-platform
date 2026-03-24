@@ -59,7 +59,7 @@ export default function MessagesPage({ user }: MessagesPageProps) {
   useEffect(() => {
     if (activeChat) {
       if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(() => loadMessages(activeChat.id), 4000);
+      pollRef.current = setInterval(() => loadMessages(activeChat.id), 10000);
       return () => { if (pollRef.current) clearInterval(pollRef.current); };
     }
   }, [activeChat]);

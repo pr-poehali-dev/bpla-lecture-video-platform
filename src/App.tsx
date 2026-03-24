@@ -55,7 +55,7 @@ export default function App() {
 
     const ping = setInterval(() => {
       if (localStorage.getItem("drone_token")) api.me().catch(() => {});
-    }, 30000);
+    }, 60000);
     return () => clearInterval(ping);
   }, []);
 
