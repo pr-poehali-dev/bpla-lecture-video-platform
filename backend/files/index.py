@@ -46,8 +46,10 @@ def get_user_from_token(cur, token: str, schema: str):
     return {"id": row[0], "name": row[1], "is_admin": row[2], "role": row[3]}
 
 
+INSTRUCTOR_ROLES = {"инструктор кт", "инструктор fpv", "инструктор оператор-сапер"}
+
 def can_upload(user: dict) -> bool:
-    return user["is_admin"] or user.get("role") in ("инструктор", "администратор")
+    return user["is_admin"] or user.get("role") in INSTRUCTOR_ROLES
 
 
 def get_s3():

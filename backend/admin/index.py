@@ -15,7 +15,8 @@ CORS = {
 }
 
 PAGES = ["home", "lectures", "videos", "drone-types", "materials", "firmware", "discussions", "downloads"]
-ROLES = ["курсант", "инструктор"]
+ROLES = ["курсант", "инструктор кт", "инструктор fpv", "инструктор оператор-сапер"]
+INSTRUCTOR_ROLES = {"инструктор кт", "инструктор fpv", "инструктор оператор-сапер"}
 
 def get_schema():
     return os.environ.get("MAIN_DB_SCHEMA", "public")
@@ -124,7 +125,7 @@ def handler(event: dict, context) -> dict:
         role = body.get("role")
         if not user_id:
             return err("user_id обязателен")
-        if role not in ("курсант", "инструктор", "администратор"):
+        if role not in ("курсант", "инструктор кт", "инструктор fpv", "инструктор оператор-сапер", "администратор"):
             return err("Недопустимая роль")
         # Сбрасываем кэш прав при смене роли
         cur.execute(f"UPDATE {q('users')} SET role = %s, permissions_cache = NULL WHERE id = %s RETURNING id, name, callsign", (role, user_id))
@@ -199,13 +200,17 @@ def handler(event: dict, context) -> dict:
                 COUNT(*) FILTER (WHERE status = 'approved') AS approved,
                 COUNT(*) FILTER (WHERE is_admin = TRUE) AS admins,
                 COUNT(*) FILTER (WHERE status = 'approved' AND role = 'курсант') AS role_kursant,
-                COUNT(*) FILTER (WHERE status = 'approved' AND role = 'инструктор') AS role_instructor
+                COUNT(*) FILTER (WHERE status = 'approved' AND role = 'инструктор кт') AS role_inst_kt,
+                COUNT(*) FILTER (WHERE status = 'approved' AND role = 'инструктор fpv') AS role_inst_fpv,
+                COUNT(*) FILTER (WHERE status = 'approved' AND role = 'инструктор оператор-сапер') AS role_inst_saper
             FROM {q('users')}
         """)
         row = cur.fetchone()
         by_role = {}
         if row["role_kursant"]: by_role["курсант"] = row["role_kursant"]
-        if row["role_instructor"]: by_role["инструктор"] = row["role_instructor"]
+        if row["role_inst_kt"]: by_role["инструктор кт"] = row["role_inst_kt"]
+        if row["role_inst_fpv"]: by_role["инструктор fpv"] = row["role_inst_fpv"]
+        if row["role_inst_saper"]: by_role["инструктор оператор-сапер"] = row["role_inst_saper"]
         return ok({"total": row["total"], "pending": row["pending"], "approved": row["approved"], "admins": row["admins"], "by_role": by_role})
 
     return err("Не найдено", 404)
@@ -274,7 +279,7 @@ def handle_discussions(event, method, action, body, conn, cur):
     if action == "disc-create" and method == "POST":
         if not user:
             return err("Требуется авторизация", 401)
-        if not (user["is_admin"] or user.get("role") in ("инструктор", "администратор")):
+        if not (user["is_admin"] or user.get("role") in INSTRUCTOR_ROLES):
             return err("Создавать темы могут только инструкторы", 403)
         title = body.get("title", "").strip()
         category = body.get("category", "Общее")

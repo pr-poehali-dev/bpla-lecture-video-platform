@@ -107,7 +107,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           <div className="hidden lg:flex items-center gap-3">
             {user && (
               <>
-                {(user.role === "инструктор" || user.is_admin) && (
+                {(["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user.role || "") || user.is_admin) && (
                   <button
                     onClick={() => onNavigate("content-upload")}
                     className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all"

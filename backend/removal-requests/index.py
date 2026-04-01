@@ -103,9 +103,11 @@ def handler(event: dict, context) -> dict:
             })
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"requests": requests})}
 
+    INSTRUCTOR_ROLES = {"инструктор кт", "инструктор fpv", "инструктор оператор-сапер"}
+
     # POST — создать заявку (только инструктор)
     if method == "POST":
-        if not (user.get("role") in ("инструктор", "администратор") or user["is_admin"]):
+        if not (user.get("role") in INSTRUCTOR_ROLES or user["is_admin"]):
             conn.close()
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Доступ запрещён"})}
 

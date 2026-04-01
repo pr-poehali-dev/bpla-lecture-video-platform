@@ -119,8 +119,9 @@ function TxtViewer({ url }: { url: string }) {
 type Tab = "firmware" | "downloads";
 
 export default function FirmwarePage({ user }: { user?: User | null }) {
-  const canUpload = user?.is_admin || user?.role === "инструктор";
-  const canSeeDownloads = user?.is_admin || user?.role === "инструктор";
+  const isInstructor = ["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user?.role || "");
+  const canUpload = user?.is_admin || isInstructor;
+  const canSeeDownloads = user?.is_admin || isInstructor;
   const [tab, setTab] = useState<Tab>("firmware");
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);

@@ -41,7 +41,7 @@ function timeAgo(iso: string) {
 }
 
 export default function DiscussionsPage({ user }: Props) {
-  const canCreate = user?.is_admin || user?.role === "инструктор";
+  const canCreate = user?.is_admin || ["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user?.role || "");
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);

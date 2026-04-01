@@ -20,7 +20,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function ContentUploadPage({ user }: Props) {
-  const canUpload = user.is_admin || user.role === "инструктор";
+  const canUpload = user.is_admin || ["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user.role || "");
   const [tab, setTab] = useState<"upload" | "requests">("upload");
   const [requests, setRequests] = useState<RemovalRequest[]>([]);
   const [reqLoading, setReqLoading] = useState(false);

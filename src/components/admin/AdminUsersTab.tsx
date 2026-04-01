@@ -26,11 +26,13 @@ const statusLabel: Record<string, string> = {
 
 const roleColor: Record<string, string> = {
   "курсант": "#00f5ff",
-  "инструктор": "#00ff88",
+  "инструктор кт": "#00ff88",
+  "инструктор fpv": "#a78bfa",
+  "инструктор оператор-сапер": "#fbbf24",
   "администратор": "#ff6b00",
 };
 
-const ROLES = ["курсант", "инструктор", "администратор"];
+const ROLES = ["курсант", "инструктор кт", "инструктор fpv", "инструктор оператор-сапер", "администратор"];
 
 interface Props {
   users: User[];

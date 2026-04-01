@@ -26,7 +26,9 @@ const PAGE_ICONS: Record<string, string> = {
 
 const ROLE_COLORS: Record<string, string> = {
   "курсант": "#00f5ff",
-  "инструктор": "#00ff88",
+  "инструктор кт": "#00ff88",
+  "инструктор fpv": "#a78bfa",
+  "инструктор оператор-сапер": "#fbbf24",
 };
 
 type Permissions = Record<string, Record<string, boolean>>;
