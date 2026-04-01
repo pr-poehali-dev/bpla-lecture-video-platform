@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
+import { User } from "@/App";
 
 const FIRMWARE_CATEGORIES = ["Все", "Betaflight", "ArduPilot", "ExpressLRS", "OpenTX/EdgeTX", "Инструкции"];
 
@@ -117,7 +118,8 @@ function TxtViewer({ url }: { url: string }) {
 
 type Tab = "firmware" | "downloads";
 
-export default function FirmwarePage() {
+export default function FirmwarePage({ user }: { user?: User | null }) {
+  const canUpload = user?.is_admin || user?.role === "инструктор";
   const [tab, setTab] = useState<Tab>("firmware");
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,16 +292,28 @@ export default function FirmwarePage() {
           <div className="p-5 flex flex-col md:flex-row items-center justify-between gap-4" style={{ background: "rgba(0,245,255,0.03)", border: "1px dashed rgba(0,245,255,0.2)" }}>
             <div>
               <div className="font-orbitron text-sm text-white mb-1">ЗАГРУЗИТЬ ФАЙЛ</div>
-              <div className="font-plex text-xs text-[#5a7a95]">Поделитесь материалом с сообществом — прошивки, конфиги, документы</div>
+              <div className="font-plex text-xs text-[#5a7a95]">
+                {canUpload
+                  ? "Поделитесь материалом с сообществом — прошивки, конфиги, документы"
+                  : "Загрузка материалов доступна только инструкторам и администраторам"}
+              </div>
             </div>
-            <button
-              className="btn-neon flex items-center gap-2 flex-shrink-0"
-              onClick={handleUpload}
-              disabled={uploading}
-            >
-              <Icon name={uploading ? "Loader" : "Upload"} size={14} />
-              {uploading ? "Загрузка..." : "Загрузить"}
-            </button>
+            {canUpload && (
+              <button
+                className="btn-neon flex items-center gap-2 flex-shrink-0"
+                onClick={handleUpload}
+                disabled={uploading}
+              >
+                <Icon name={uploading ? "Loader" : "Upload"} size={14} />
+                {uploading ? "Загрузка..." : "Загрузить"}
+              </button>
+            )}
+            {!canUpload && (
+              <div className="flex items-center gap-2 px-4 py-2 flex-shrink-0 font-mono text-xs" style={{ border: "1px solid rgba(90,122,149,0.3)", color: "#3a5570" }}>
+                <Icon name="Lock" size={12} />
+                ТОЛЬКО ДЛЯ ИНСТРУКТОРОВ
+              </div>
+            )}
           </div>
           {uploadSuccess && (
             <div className="font-mono text-xs px-4 py-2 mt-2" style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.3)", color: "#00ff88" }}>

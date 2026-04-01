@@ -126,7 +126,7 @@ export default function App() {
       case "drone-types": return <DroneTypesPage />;
       case "discussions": return <DiscussionsPage user={user} />;
       case "content-upload": return <ContentUploadPage user={user} />;
-      case "firmware": return <FirmwarePage />;
+      case "firmware": return <FirmwarePage user={user} />;
       case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} onNavigate={navigate} />;
       case "messages": return <MessagesPage user={user} />;
       default: return <HomePage onNavigate={navigate} />;
