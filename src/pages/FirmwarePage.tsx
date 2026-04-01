@@ -120,6 +120,7 @@ type Tab = "firmware" | "downloads";
 
 export default function FirmwarePage({ user }: { user?: User | null }) {
   const canUpload = user?.is_admin || user?.role === "инструктор";
+  const canSeeDownloads = user?.is_admin || user?.role === "инструктор";
   const [tab, setTab] = useState<Tab>("firmware");
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,9 +197,9 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
       {/* Вкладки */}
       <div className="flex gap-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
         {([
-          { id: "firmware" as Tab, label: "ПРОШИВКИ FPV КТ", icon: "Cpu" },
-          { id: "downloads" as Tab, label: "ЗАГРУЗКИ", icon: "Download" },
-        ] as { id: Tab; label: string; icon: string }[]).map((t) => (
+          { id: "firmware" as Tab, label: "ПРОШИВКИ FPV КТ", icon: "Cpu", visible: true },
+          { id: "downloads" as Tab, label: "ЗАГРУЗКИ", icon: "Download", visible: canSeeDownloads },
+        ] as { id: Tab; label: string; icon: string; visible: boolean }[]).filter(t => t.visible).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
