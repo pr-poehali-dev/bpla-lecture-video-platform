@@ -19,10 +19,10 @@ const STATIC_SECTIONS = [
     icon: "Cpu",
     color: "#00f5ff",
     items: [
-      { name: "Betaflight 4.5.1 — стабильный релиз", size: "12.4 МБ", version: "v4.5.1", date: "10 мар 2026" },
-      { name: "ArduPilot 4.6.0 — боевая конфигурация", size: "28.1 МБ", version: "v4.6.0", date: "05 мар 2026" },
-      { name: "ExpressLRS 3.5.2 — прошивка TX/RX", size: "3.7 МБ", version: "v3.5.2", date: "01 мар 2026" },
-      { name: "OpenTX 2.3.15 — апдейт аппаратуры", size: "8.9 МБ", version: "v2.3.15", date: "20 фев 2026" },
+      { name: "Betaflight 4.5.1 — стабильный релиз", size: "12.4 МБ", version: "v4.5.1", date: "10 мар 2026", url: "https://github.com/betaflight/betaflight/releases/tag/4.5.1" },
+      { name: "ArduPilot 4.6.0 — боевая конфигурация", size: "28.1 МБ", version: "v4.6.0", date: "05 мар 2026", url: "https://firmware.ardupilot.org/" },
+      { name: "ExpressLRS 3.5.2 — прошивка TX/RX", size: "3.7 МБ", version: "v3.5.2", date: "01 мар 2026", url: "https://github.com/ExpressLRS/ExpressLRS/releases/tag/3.5.2" },
+      { name: "OpenTX 2.3.15 — апдейт аппаратуры", size: "8.9 МБ", version: "v2.3.15", date: "20 фев 2026", url: "https://www.open-tx.org/downloads" },
     ],
   },
   {
@@ -30,9 +30,9 @@ const STATIC_SECTIONS = [
     icon: "Settings",
     color: "#00ff88",
     items: [
-      { name: "Betaflight пресет — боевой FPV", size: "0.02 МБ", version: "BF-WAR", date: "12 мар 2026" },
-      { name: "Конфигурация PID для ударных задач", size: "0.01 МБ", version: "PID-1.0", date: "08 мар 2026" },
-      { name: "OSD профиль — боевой режим", size: "0.03 МБ", version: "OSD-WAR", date: "02 мар 2026" },
+      { name: "Betaflight пресет — боевой FPV", size: "0.02 МБ", version: "BF-WAR", date: "12 мар 2026", url: "https://github.com/betaflight/firmware-presets" },
+      { name: "Конфигурация PID для ударных задач", size: "0.01 МБ", version: "PID-1.0", date: "08 мар 2026", url: "https://github.com/betaflight/betaflight/wiki/PID-Tuning-Guide" },
+      { name: "OSD профиль — боевой режим", size: "0.03 МБ", version: "OSD-WAR", date: "02 мар 2026", url: "https://betaflight.com/docs/development/OSD" },
     ],
   },
   {
@@ -40,9 +40,9 @@ const STATIC_SECTIONS = [
     icon: "BookOpen",
     color: "#ff6b00",
     items: [
-      { name: "Полный справочник FPV пилота", size: "14.5 МБ", version: "2026", date: "15 мар 2026" },
-      { name: "Руководство по ремонту в полевых условиях", size: "6.2 МБ", version: "v2.1", date: "10 мар 2026" },
-      { name: "Нормативная база применения БпЛА", size: "2.8 МБ", version: "2026", date: "01 мар 2026" },
+      { name: "Полный справочник FPV пилота", size: "14.5 МБ", version: "2026", date: "15 мар 2026", url: "https://oscarliang.com/fpv-drone-guide/" },
+      { name: "Руководство по ремонту в полевых условиях", size: "6.2 МБ", version: "v2.1", date: "10 мар 2026", url: "https://ardupilot.org/copter/docs/common-field-repairs.html" },
+      { name: "Нормативная база применения БпЛА", size: "2.8 МБ", version: "2026", date: "01 мар 2026", url: "https://favt.gov.ru/dejatelnost-uvs-i-bvs/" },
     ],
   },
 ];
@@ -123,6 +123,9 @@ export default function FirmwarePage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [viewing, setViewing] = useState<FileItem | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     api.files.list("document", undefined, "firmware").then((res) => {
@@ -130,6 +133,47 @@ export default function FirmwarePage() {
       setLoading(false);
     });
   }, []);
+
+  const handleUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.txt,.doc,.docx,.zip,.bin,.hex,.config,.diff";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setUploading(true);
+      setUploadError(null);
+      setUploadSuccess(null);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const base64 = (ev.target?.result as string).split(",")[1];
+          const res = await api.files.upload({
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            description: "",
+            category: "Все",
+            section: "firmware",
+            original_name: file.name,
+            mime_type: file.type || "application/octet-stream",
+            file_data: base64,
+          });
+          if (res.id) {
+            setUploadSuccess(`Файл «${file.name}» успешно загружен`);
+            const updated = await api.files.list("document", undefined, "firmware");
+            setFiles(updated.files || []);
+          } else {
+            setUploadError(res.error || "Ошибка загрузки");
+          }
+          setUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } catch {
+        setUploadError("Ошибка загрузки файла");
+        setUploading(false);
+      }
+    };
+    input.click();
+  };
 
   const filtered = activeCategory === "Все"
     ? files
@@ -248,11 +292,25 @@ export default function FirmwarePage() {
               <div className="font-orbitron text-sm text-white mb-1">ЗАГРУЗИТЬ ФАЙЛ</div>
               <div className="font-plex text-xs text-[#5a7a95]">Поделитесь материалом с сообществом — прошивки, конфиги, документы</div>
             </div>
-            <button className="btn-neon flex items-center gap-2 flex-shrink-0">
-              <Icon name="Upload" size={14} />
-              Загрузить
+            <button
+              className="btn-neon flex items-center gap-2 flex-shrink-0"
+              onClick={handleUpload}
+              disabled={uploading}
+            >
+              <Icon name={uploading ? "Loader" : "Upload"} size={14} />
+              {uploading ? "Загрузка..." : "Загрузить"}
             </button>
           </div>
+          {uploadSuccess && (
+            <div className="font-mono text-xs px-4 py-2 mt-2" style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.3)", color: "#00ff88" }}>
+              ✓ {uploadSuccess}
+            </div>
+          )}
+          {uploadError && (
+            <div className="font-mono text-xs px-4 py-2 mt-2" style={{ background: "rgba(255,50,50,0.06)", border: "1px solid rgba(255,50,50,0.3)", color: "#ff5050" }}>
+              ✗ {uploadError}
+            </div>
+          )}
 
           {STATIC_SECTIONS.map((section) => (
             <div key={section.title}>
@@ -282,15 +340,18 @@ export default function FirmwarePage() {
                         <span className="font-mono text-[10px] text-[#2a4060]">{item.date}</span>
                       </div>
                     </div>
-                    <button
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2 font-mono text-xs tracking-wider transition-all duration-200 flex-shrink-0"
-                      style={{ border: `1px solid ${section.color}40`, color: section.color, background: `${section.color}05` }}
-                      onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${section.color}15`; }}
-                      onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${section.color}05`; }}
+                      style={{ border: `1px solid ${section.color}40`, color: section.color, background: `${section.color}05`, textDecoration: "none" }}
+                      onMouseOver={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = `${section.color}15`; }}
+                      onMouseOut={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = `${section.color}05`; }}
                     >
-                      <Icon name="Download" size={12} />
+                      <Icon name="ExternalLink" size={12} />
                       СКАЧАТЬ
-                    </button>
+                    </a>
                   </div>
                 ))}
               </div>
