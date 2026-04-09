@@ -80,7 +80,6 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
             </div>
             <div>
               <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БПС</div>
-              <div className="font-orbitron font-bold text-xs tracking-[0.1em] text-white leading-none">БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ</div>
             </div>
           </div>
 
