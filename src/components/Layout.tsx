@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { type Page, type User } from "@/App";
 import Icon from "@/components/ui/icon";
 import ChatWidget from "@/components/ChatWidget";
+import { api } from "@/api";
 
 function useServerStatus() {
   const [online, setOnline] = useState<boolean | null>(null);
@@ -41,10 +42,34 @@ interface LayoutProps {
   onGoToAdmin?: () => void;
 }
 
+function useUnreadCount(user?: User, currentPage?: Page) {
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetch = () => {
+      api.msg.chatsList().then((res) => {
+        const total = (res.chats || []).reduce((acc: number, c: { unread_count?: number }) => acc + (c.unread_count || 0), 0);
+        setUnread(total);
+      }).catch(() => {});
+    };
+    fetch();
+    const id = setInterval(fetch, 30000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  useEffect(() => {
+    if (currentPage === "messages") setUnread(0);
+  }, [currentPage]);
+
+  return unread;
+}
+
 export default function Layout({ currentPage, onNavigate, children, user, onLogout, onGoToAdmin }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const serverOnline = useServerStatus();
+  const unreadMessages = useUnreadCount(user, currentPage);
 
   const visibleNavItems = navItems.filter(item => {
     if (!user?.permissions) return true;
@@ -325,6 +350,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
             { id: "profile" as Page, icon: "User", label: "Профиль" },
           ].map((item) => {
             const isActive = currentPage === item.id;
+            const badge = item.id === "messages" && unreadMessages > 0 ? unreadMessages : 0;
             return (
               <button
                 key={item.id}
@@ -332,7 +358,17 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 className="flex-1 relative flex flex-col items-center justify-center gap-0.5 py-2 transition-all"
                 style={{ color: isActive ? "#00f5ff" : "#3a5570" }}
               >
-                <Icon name={item.icon} size={isActive ? 20 : 18} />
+                <div className="relative">
+                  <Icon name={item.icon} size={isActive ? 20 : 18} />
+                  {badge > 0 && (
+                    <span
+                      className="absolute -top-1.5 -right-2 min-w-[16px] h-4 flex items-center justify-center font-mono text-[9px] font-bold rounded-full px-1"
+                      style={{ background: "#ff2244", color: "#fff", boxShadow: "0 0 6px rgba(255,34,68,0.6)" }}
+                    >
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                </div>
                 <span className="font-mono text-[9px] tracking-wider">{item.label.toUpperCase()}</span>
                 {isActive && (
                   <div className="absolute bottom-0 w-6 h-0.5" style={{ background: "#00f5ff", boxShadow: "0 0 6px #00f5ff" }} />
