@@ -69,6 +69,19 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return result if result else err("Не найдено", 404)
 
+    # GET ?action=get-page&slug=home — публичный, для рендера страниц
+    if action == "get-page" and method == "GET":
+        slug = (event.get("queryStringParameters") or {}).get("slug", "home")
+        cur.execute(f"SELECT id, slug, title, is_visible FROM {q('pages')} WHERE slug = %s", (slug,))
+        page = cur.fetchone()
+        if not page:
+            conn.close()
+            return err("Страница не найдена", 404)
+        cur.execute(f"SELECT id, type, sort_order, data FROM {q('page_blocks')} WHERE page_id = %s AND sort_order >= 0 ORDER BY sort_order", (page["id"],))
+        blocks = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"page": dict(page), "blocks": blocks})
+
     # GET ?action=get-settings — публичный, вызывается из App.tsx при старте
     if action == "get-settings" and method == "GET":
         cur.execute(f"SELECT key, value FROM {q('site_settings')}")
@@ -281,6 +294,140 @@ def handler(event: dict, context) -> dict:
             )
         conn.commit()
         return ok({"message": "Настройки сохранены"})
+
+    # ── PAGES ────────────────────────────────────────────────────────────────
+
+    # GET ?action=get-pages
+    if action == "get-pages" and method == "GET":
+        cur.execute(f"SELECT id, slug, title, is_system, is_visible, sort_order FROM {q('pages')} ORDER BY sort_order, id")
+        pages = [dict(r) for r in cur.fetchall()]
+        return ok({"pages": pages})
+
+    # GET ?action=get-page&slug=home  (публичный — без проверки is_admin, уже разрешён выше)
+    # POST ?action=create-page
+    if action == "create-page" and method == "POST":
+        slug = body.get("slug", "").strip().lower().replace(" ", "-")
+        title = body.get("title", "").strip()
+        if not slug or not title:
+            return err("slug и title обязательны")
+        cur.execute(f"SELECT id FROM {q('pages')} WHERE slug = %s", (slug,))
+        if cur.fetchone():
+            return err("Страница с таким slug уже существует")
+        cur.execute(f"SELECT COALESCE(MAX(sort_order),0)+1 FROM {q('pages')}")
+        order = cur.fetchone()[0]
+        cur.execute(
+            f"INSERT INTO {q('pages')} (slug, title, is_system, sort_order) VALUES (%s, %s, FALSE, %s) RETURNING id",
+            (slug, title, order)
+        )
+        page_id = cur.fetchone()[0]
+        cur.execute(
+            f"INSERT INTO {q('page_blocks')} (page_id, type, sort_order, data) VALUES (%s, 'text', 0, %s)",
+            (page_id, json.dumps({"title": title, "content": "Содержимое страницы"}))
+        )
+        conn.commit()
+        return ok({"id": page_id, "message": "Страница создана"})
+
+    # POST ?action=update-page
+    if action == "update-page" and method == "POST":
+        page_id = body.get("page_id")
+        title = body.get("title", "").strip()
+        is_visible = body.get("is_visible")
+        sort_order = body.get("sort_order")
+        if not page_id:
+            return err("page_id обязателен")
+        fields = []
+        vals = []
+        if title:
+            fields.append("title = %s"); vals.append(title)
+        if is_visible is not None:
+            fields.append("is_visible = %s"); vals.append(bool(is_visible))
+        if sort_order is not None:
+            fields.append("sort_order = %s"); vals.append(int(sort_order))
+        if not fields:
+            return err("Нет полей для обновления")
+        fields.append("updated_at = NOW()")
+        vals.append(page_id)
+        cur.execute(f"UPDATE {q('pages')} SET {', '.join(fields)} WHERE id = %s", vals)
+        conn.commit()
+        return ok({"message": "Страница обновлена"})
+
+    # POST ?action=delete-page
+    if action == "delete-page" and method == "POST":
+        page_id = body.get("page_id")
+        if not page_id:
+            return err("page_id обязателен")
+        cur.execute(f"SELECT is_system FROM {q('pages')} WHERE id = %s", (page_id,))
+        row = cur.fetchone()
+        if not row:
+            return err("Страница не найдена", 404)
+        if row["is_system"]:
+            return err("Системную страницу нельзя удалить")
+        cur.execute(f"UPDATE {q('page_blocks')} SET data = data WHERE page_id = %s RETURNING id", (page_id,))
+        cur.execute(f"UPDATE {q('pages')} SET is_visible = FALSE WHERE id = %s", (page_id,))
+        cur.execute(f"UPDATE {q('pages')} SET slug = slug || '_deleted_' || %s WHERE id = %s", (str(page_id), page_id))
+        conn.commit()
+        return ok({"message": "Страница удалена"})
+
+    # GET ?action=get-page-blocks&page_id=1
+    if action == "get-page-blocks" and method == "GET":
+        page_id = (event.get("queryStringParameters") or {}).get("page_id")
+        if not page_id:
+            return err("page_id обязателен")
+        cur.execute(f"SELECT id, type, sort_order, data FROM {q('page_blocks')} WHERE page_id = %s ORDER BY sort_order", (page_id,))
+        blocks = [dict(r) for r in cur.fetchall()]
+        return ok({"blocks": blocks})
+
+    # POST ?action=update-block
+    if action == "update-block" and method == "POST":
+        block_id = body.get("block_id")
+        data = body.get("data")
+        if not block_id or data is None:
+            return err("block_id и data обязательны")
+        cur.execute(
+            f"UPDATE {q('page_blocks')} SET data = %s, updated_at = NOW() WHERE id = %s",
+            (json.dumps(data), block_id)
+        )
+        conn.commit()
+        return ok({"message": "Блок сохранён"})
+
+    # POST ?action=add-block
+    if action == "add-block" and method == "POST":
+        page_id = body.get("page_id")
+        block_type = body.get("type", "text")
+        if not page_id:
+            return err("page_id обязателен")
+        defaults = {
+            "hero": {"sysLabel": "SYS.INIT", "title1": "ЗАГОЛОВОК", "title2": "", "title3": "", "subtitle": "Описание страницы", "btn1Label": "Кнопка 1", "btn1Page": "home", "btn2Label": "Кнопка 2", "btn2Page": "home"},
+            "stats": [{"value": "0", "label": "Метрика", "icon": "BarChart"}],
+            "features": [{"icon": "Star", "title": "Раздел", "desc": "Описание", "page": "home"}],
+            "text": {"title": "Заголовок блока", "content": "Текст блока"},
+            "cta": {"label": "// ПОДЗАГОЛОВОК", "title": "ЗАГОЛОВОК", "subtitle": "Описание", "btnLabel": "Кнопка", "btnPage": "home"},
+        }
+        cur.execute(f"SELECT COALESCE(MAX(sort_order),0)+1 FROM {q('page_blocks')} WHERE page_id = %s", (page_id,))
+        order = cur.fetchone()[0]
+        cur.execute(
+            f"INSERT INTO {q('page_blocks')} (page_id, type, sort_order, data) VALUES (%s, %s, %s, %s) RETURNING id",
+            (page_id, block_type, order, json.dumps(defaults.get(block_type, {})))
+        )
+        block_id = cur.fetchone()[0]
+        conn.commit()
+        return ok({"block_id": block_id, "message": "Блок добавлен"})
+
+    # POST ?action=delete-block
+    if action == "delete-block" and method == "POST":
+        block_id = body.get("block_id")
+        if not block_id:
+            return err("block_id обязателен")
+        cur.execute(f"UPDATE {q('page_blocks')} SET sort_order = -1 WHERE id = %s RETURNING page_id", (block_id,))
+        row = cur.fetchone()
+        if not row:
+            return err("Блок не найден", 404)
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('page_blocks')} WHERE page_id = %s AND sort_order >= 0", (row["page_id"],))
+        if cur.fetchone()["cnt"] < 1:
+            return err("Нельзя удалить последний блок")
+        cur.execute(f"UPDATE {q('page_blocks')} SET data = '{{}}'::jsonb WHERE id = %s AND sort_order = -1", (block_id,))
+        conn.commit()
+        return ok({"message": "Блок удалён"})
 
     return err("Не найдено", 404)
 

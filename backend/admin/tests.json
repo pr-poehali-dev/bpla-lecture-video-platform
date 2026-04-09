@@ -15,6 +15,21 @@
       "expectedStatus": 200,
       "expectedBody": {"settings": {}},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get home page public",
+      "method": "GET",
+      "path": "/?action=get-page&slug=home",
+      "expectedStatus": 200,
+      "expectedBody": {"page": {"slug": "home"}},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get pages list no auth",
+      "method": "GET",
+      "path": "/?action=get-pages",
+      "expectedStatus": 403,
+      "bodyMatcher": "partial"
     }
   ]
 }

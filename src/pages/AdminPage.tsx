@@ -9,6 +9,7 @@ import AdminDiscussionsTab from "@/components/admin/AdminDiscussionsTab";
 import AdminLecturesTab from "@/components/admin/AdminLecturesTab";
 import AdminVideosTab from "@/components/admin/AdminVideosTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
+import AdminPagesTab from "@/components/admin/AdminPagesTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -21,7 +22,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings";
+type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings" | "pages";
 
 interface Stats {
   total: number;
@@ -47,6 +48,7 @@ const tabLabels: Record<Tab, string> = {
   lectures: "Лекции",
   videos: "Видео",
   settings: "Настройки",
+  pages: "Страницы",
 };
 
 const sidebarGroups = [
@@ -74,6 +76,7 @@ const sidebarGroups = [
   {
     label: "СИСТЕМА",
     items: [
+      { key: "pages" as Tab, label: "Страницы", icon: "Layout" },
       { key: "settings" as Tab, label: "Настройки", icon: "Settings" },
     ],
   },
@@ -401,6 +404,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "removals" && <AdminRemovalTab onPendingCount={setRemovalPendingCount} />}
           {activeTab === "discussions" && <AdminDiscussionsTab />}
           {activeTab === "settings" && <AdminSettingsTab />}
+          {activeTab === "pages" && <AdminPagesTab />}
         </main>
       </div>
     </div>

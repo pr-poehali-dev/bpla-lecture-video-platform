@@ -95,6 +95,33 @@ export const api = {
 
     setSettings: (settings: Record<string, string>) =>
       fetch(`${ADMIN_URL}/?action=set-settings`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ settings }) }).then((r) => r.json()),
+
+    getPage: (slug: string) =>
+      fetch(`${ADMIN_URL}/?action=get-page&slug=${slug}`).then((r) => r.json()),
+
+    getPages: () =>
+      fetch(`${ADMIN_URL}/?action=get-pages`, { headers: authHeaders() }).then((r) => r.json()),
+
+    createPage: (slug: string, title: string) =>
+      fetch(`${ADMIN_URL}/?action=create-page`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ slug, title }) }).then((r) => r.json()),
+
+    updatePage: (page_id: number, data: { title?: string; is_visible?: boolean; sort_order?: number }) =>
+      fetch(`${ADMIN_URL}/?action=update-page`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ page_id, ...data }) }).then((r) => r.json()),
+
+    deletePage: (page_id: number) =>
+      fetch(`${ADMIN_URL}/?action=delete-page`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ page_id }) }).then((r) => r.json()),
+
+    getPageBlocks: (page_id: number) =>
+      fetch(`${ADMIN_URL}/?action=get-page-blocks&page_id=${page_id}`, { headers: authHeaders() }).then((r) => r.json()),
+
+    updateBlock: (block_id: number, data: unknown) =>
+      fetch(`${ADMIN_URL}/?action=update-block`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ block_id, data }) }).then((r) => r.json()),
+
+    addBlock: (page_id: number, type: string) =>
+      fetch(`${ADMIN_URL}/?action=add-block`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ page_id, type }) }).then((r) => r.json()),
+
+    deleteBlock: (block_id: number) =>
+      fetch(`${ADMIN_URL}/?action=delete-block`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ block_id }) }).then((r) => r.json()),
   },
 
   msg: {
