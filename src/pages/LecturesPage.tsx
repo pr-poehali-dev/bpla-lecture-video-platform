@@ -21,21 +21,29 @@ function DocModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
   const isPdf = file.mime_type === "application/pdf";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(5,8,16,0.97)" }} onClick={onClose}>
-      <div className="w-full max-w-4xl flex flex-col" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(5,8,16,0.97)" }} onClick={onClose}>
+      <div className="w-full sm:max-w-4xl flex flex-col" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "92vh" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>
-          <span className="font-mono text-sm text-white truncate">{file.title}</span>
-          <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff] ml-4 flex-shrink-0">
-            <Icon name="X" size={20} />
-          </button>
+          <span className="font-mono text-sm text-white truncate pr-2">{file.title}</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <a href={file.cdn_url} target="_blank" rel="noopener noreferrer" className="text-[#3a5570] hover:text-[#00f5ff] transition-colors">
+              <Icon name="ExternalLink" size={16} />
+            </a>
+            <button onClick={onClose} className="text-[#3a5570] hover:text-[#00f5ff]">
+              <Icon name="X" size={20} />
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-hidden" style={{ background: "#050810", minHeight: 0 }}>
           {isPdf ? (
-            <iframe src={`${file.cdn_url}#toolbar=1`} className="w-full" style={{ minHeight: "70vh", border: "none" }} title={file.title} />
+            <iframe src={`${file.cdn_url}#toolbar=1`} className="w-full h-full" style={{ minHeight: "60vh", border: "none" }} title={file.title} />
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="flex flex-col items-center justify-center py-12 sm:py-20 gap-4">
               <Icon name="FileText" size={48} className="text-[#3a5570]" />
               <div className="font-mono text-sm text-[#3a5570]">Предпросмотр недоступен</div>
+              <a href={file.cdn_url} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-[#00f5ff] flex items-center gap-1">
+                <Icon name="Download" size={13} />Скачать файл
+              </a>
             </div>
           )}
         </div>
@@ -68,14 +76,14 @@ export default function LecturesPage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {viewing && <DocModal file={viewing} onClose={() => setViewing(null)} />}
 
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// УЧЕБНЫЙ ЦЕНТР</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-6 tracking-wider">ЛЕКЦИИ</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">ЛЕКЦИИ</h1>
 
       {/* Search */}
       <div className="relative mb-6">

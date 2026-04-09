@@ -76,7 +76,7 @@ export default function AdminUsersTab({ users, loading, filter, setFilter, msg, 
       )}
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {[
           { key: "pending", label: "ОЖИДАЮТ" },
           { key: "approved", label: "ОДОБРЕНЫ" },
@@ -172,7 +172,7 @@ export default function AdminUsersTab({ users, loading, filter, setFilter, msg, 
                 </div>
               )}
               {!user.is_admin && (
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex flex-wrap gap-2 flex-shrink-0">
                   {user.status !== "approved" && (
                     <button
                       onClick={() => onApprove(user.id)}

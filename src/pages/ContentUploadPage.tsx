@@ -50,13 +50,13 @@ export default function ContentUploadPage({ user }: Props) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// УПРАВЛЕНИЕ КОНТЕНТОМ</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-2 tracking-wider">ЗАГРУЗКА МАТЕРИАЛОВ</h1>
-      <div className="flex items-center gap-2 mb-8">
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-2 tracking-wider">ЗАГРУЗКА МАТЕРИАЛОВ</h1>
+      <div className="flex items-center gap-2 mb-6 sm:mb-8">
         <div className="font-mono text-xs px-2 py-0.5" style={{ border: "1px solid rgba(0,255,136,0.3)", color: "#00ff88", background: "rgba(0,255,136,0.06)" }}>
           {user.role?.toUpperCase() || "ИНСТРУКТОР"}
         </div>

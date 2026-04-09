@@ -80,17 +80,17 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ЛИЧНЫЙ КАБИНЕТ</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-8 tracking-wider">ЛИЧНОЕ ДЕЛО</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-6 sm:mb-8 tracking-wider">ЛИЧНОЕ ДЕЛО</h1>
 
       <div className="max-w-2xl">
         {/* Avatar + callsign block */}
-        <div className="card-drone p-6 mb-6">
-          <div className="flex items-center gap-5 mb-6">
+        <div className="card-drone p-4 sm:p-6 mb-6">
+          <div className="flex items-center gap-4 sm:gap-5 mb-5 sm:mb-6">
             <div className="relative flex-shrink-0 group">
               <Avatar callsign={user.callsign} avatarUrl={user.avatar_url} size={72} />
               <button
@@ -133,10 +133,10 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
               {avatarError && <div className="font-mono text-[10px] text-[#ff2244] mt-1">{avatarError}</div>}
             </div>
 
-            <div className="ml-auto">
+            <div className="ml-auto flex-shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
-                <span className="font-mono text-xs text-[#5a7a95]">ONLINE</span>
+                <span className="font-mono text-xs text-[#5a7a95] hidden sm:inline">ONLINE</span>
               </div>
             </div>
           </div>
@@ -200,12 +200,12 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
                   {error}
                 </div>
               )}
-              <div className="flex gap-3 pt-2">
-                <button onClick={handleSave} disabled={saving} className="btn-neon flex items-center gap-2 disabled:opacity-50">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button onClick={handleSave} disabled={saving} className="btn-neon flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto">
                   {saving ? <Icon name="Loader" size={13} className="animate-spin" /> : <Icon name="Save" size={13} />}
                   {saving ? "СОХРАНЕНИЕ..." : "СОХРАНИТЬ"}
                 </button>
-                <button onClick={handleCancel} className="font-mono text-xs px-4 py-2 text-[#3a5570] hover:text-white transition-colors" style={{ border: "1px solid #1a2a3a" }}>
+                <button onClick={handleCancel} className="font-mono text-xs px-4 py-2.5 sm:py-2 text-[#3a5570] hover:text-white transition-colors w-full sm:w-auto text-center" style={{ border: "1px solid #1a2a3a" }}>
                   ОТМЕНА
                 </button>
               </div>

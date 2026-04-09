@@ -155,7 +155,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
     <div className="min-h-screen flex" style={{ background: "#07111f" }}>
 
       {/* ===== SIDEBAR ===== */}
-      <aside className="flex-shrink-0 flex flex-col transition-all duration-300"
+      <aside className={`flex-shrink-0 flex-col transition-all duration-300 ${sidebarCollapsed ? "hidden md:flex" : "flex fixed md:relative inset-y-0 left-0 z-40"}`}
         style={{ width: sidebarCollapsed ? 56 : 220, background: "linear-gradient(180deg, #0d1b2e 0%, #081424 100%)", borderRight: "1px solid rgba(0,245,255,0.08)", minHeight: "100vh" }}>
 
         {/* Logo */}
@@ -187,7 +187,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                 const isActive = activeTab === item.key;
                 const badge = item.key === "users" ? pendingCount : item.key === "removals" ? removalPendingCount : 0;
                 return (
-                  <button key={item.key} onClick={() => setActiveTab(item.key)}
+                  <button key={item.key} onClick={() => { setActiveTab(item.key); if (window.innerWidth < 768) setSidebarCollapsed(true); }}
                     title={sidebarCollapsed ? item.label : undefined}
                     className="flex items-center gap-3 w-full transition-all"
                     style={{
@@ -225,12 +225,26 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
         )}
       </aside>
 
+      {/* Mobile overlay when sidebar open */}
+      {!sidebarCollapsed && (
+        <div className="fixed inset-0 z-30 bg-black/60 md:hidden" onClick={() => setSidebarCollapsed(true)} />
+      )}
+
       {/* ===== MAIN ===== */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <div className="flex md:hidden items-center gap-3 px-4 h-14 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.08)", background: "#0d1b2e" }}>
+          <button onClick={() => setSidebarCollapsed(false)} className="w-8 h-8 flex items-center justify-center text-[#5a7a95] hover:text-[#00f5ff] transition-colors">
+            <Icon name="Menu" size={18} />
+          </button>
+          <span className="font-orbitron text-xs font-bold text-[#00f5ff] tracking-widest flex-1">{tabLabels[activeTab]}</span>
+          <button onClick={onGoToSite} className="font-mono text-[10px] text-[#3a5570] hover:text-[#00f5ff] transition-colors">← Сайт</button>
+        </div>
+
         <AdminHeader currentUser={currentUser} onLogout={onLogout} onGoToSite={onGoToSite}
           onNavigate={(t) => setActiveTab(t as Tab)} pendingCount={pendingCount} />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-3 sm:p-6">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 mb-5">
             <button onClick={() => setActiveTab("dashboard")} className="font-mono text-[11px] text-[#00f5ff] hover:text-white transition-colors">Dashboard</button>

@@ -32,13 +32,13 @@ function DocViewerModal({ file, onClose, canDownload }: { file: FileItem; onClos
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(5,8,16,0.95)" }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl flex flex-col"
-        style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "90vh" }}
+        className="w-full sm:max-w-5xl flex flex-col"
+        style={{ border: "1px solid #00f5ff", boxShadow: "0 0 40px rgba(0,245,255,0.2)", maxHeight: "92vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid #1a2a3a", background: "#0a1520" }}>

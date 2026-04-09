@@ -41,42 +41,42 @@ export default function HomePage({ onNavigate }: Props) {
         <div className="absolute top-0 left-0 w-full h-px" style={{ background: "linear-gradient(90deg, transparent, #00f5ff40, transparent)" }} />
         <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: "linear-gradient(180deg, transparent, #00f5ff30, transparent)" }} />
 
-        <div className="relative max-w-7xl mx-auto px-6 py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           {/* System label */}
-          <div className="flex items-center gap-3 mb-8 animate-fade-in">
+          <div className="flex items-center gap-3 mb-6 sm:mb-8 animate-fade-in">
             <div className="flex gap-1">
               <div className="w-2 h-2 bg-[#00f5ff]" style={{ boxShadow: "0 0 6px #00f5ff" }} />
               <div className="w-2 h-2 bg-[#00ff88]" style={{ boxShadow: "0 0 6px #00ff88" }} />
             </div>
-            <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em] uppercase">SYS.INIT — БПС v2.6</span>
+            <span className="font-mono text-[10px] sm:text-xs text-[#00f5ff] tracking-[0.2em] sm:tracking-[0.3em] uppercase">SYS.INIT — БПС v2.6</span>
           </div>
 
           {/* Main title */}
-          <h1 className="font-orbitron text-5xl md:text-7xl font-black leading-none mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <h1 className="font-orbitron text-4xl sm:text-5xl md:text-7xl font-black leading-none mb-5 sm:mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <span className="block text-white">БЕСПИЛОТНЫЕ</span>
             <span className="block" style={{ color: "#00f5ff", textShadow: "0 0 40px rgba(0,245,255,0.5)" }}>ПИЛОТИРУЕМЫЕ</span>
             <span className="block text-white">СИСТЕМЫ</span>
           </h1>
 
-          <p className="font-plex text-lg text-[#7a9bb5] max-w-xl mb-10 leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <p className="font-plex text-base sm:text-lg text-[#7a9bb5] max-w-xl mb-8 sm:mb-10 leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
             Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных пилотируемых систем.
           </p>
 
-          <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <button className="btn-neon-filled" onClick={() => onNavigate("lectures")}>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <button className="btn-neon-filled w-full sm:w-auto" onClick={() => onNavigate("lectures")}>
               Начать обучение
             </button>
-            <button className="btn-neon" onClick={() => onNavigate("videos")}>
+            <button className="btn-neon w-full sm:w-auto" onClick={() => onNavigate("videos")}>
               Смотреть видео
             </button>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-12 sm:mt-20 animate-fade-in" style={{ animationDelay: "0.4s" }}>
             {stats.map((s) => (
-              <div key={s.label} className="corner-brackets p-4" style={{ background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.1)" }}>
-                <div className="font-orbitron text-3xl font-black" style={{ color: "#00f5ff" }}>{s.value}</div>
-                <div className="font-plex text-xs text-[#5a7a95] mt-1 uppercase tracking-wider">{s.label}</div>
+              <div key={s.label} className="corner-brackets p-3 sm:p-4" style={{ background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.1)" }}>
+                <div className="font-orbitron text-2xl sm:text-3xl font-black" style={{ color: "#00f5ff" }}>{s.value}</div>
+                <div className="font-plex text-[10px] sm:text-xs text-[#5a7a95] mt-1 uppercase tracking-wider">{s.label}</div>
               </div>
             ))}
           </div>
@@ -91,31 +91,31 @@ export default function HomePage({ onNavigate }: Props) {
       </section>
 
       {/* Features grid */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="flex items-center gap-4 mb-12">
-          <div className="w-8 h-px bg-[#00f5ff]" />
-          <h2 className="section-title text-xl text-white">Разделы платформы</h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+        <div className="flex items-center gap-4 mb-8 sm:mb-12">
+          <div className="w-8 h-px bg-[#00f5ff] flex-shrink-0" />
+          <h2 className="section-title text-lg sm:text-xl text-white whitespace-nowrap">Разделы платформы</h2>
           <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, rgba(0,245,255,0.3), transparent)" }} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {features.map((f, i) => (
             <button
               key={f.title}
               onClick={() => onNavigate(f.page)}
-              className="card-drone p-6 text-left group animate-fade-in"
+              className="card-drone p-4 sm:p-6 text-left group animate-fade-in"
               style={{ animationDelay: `${i * 0.08}s` }}
             >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.3)", background: "rgba(0,245,255,0.05)" }}>
-                  <Icon name={f.icon} size={18} className="text-[#00f5ff]" />
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.3)", background: "rgba(0,245,255,0.05)" }}>
+                  <Icon name={f.icon} size={16} className="text-[#00f5ff]" />
                 </div>
                 <div>
-                  <h3 className="font-orbitron text-sm font-bold text-white mb-2 tracking-wider group-hover:text-[#00f5ff] transition-colors">{f.title}</h3>
+                  <h3 className="font-orbitron text-sm font-bold text-white mb-1 sm:mb-2 tracking-wider group-hover:text-[#00f5ff] transition-colors">{f.title}</h3>
                   <p className="font-plex text-xs text-[#5a7a95] leading-relaxed">{f.desc}</p>
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-[#00f5ff] opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-3 sm:mt-4 flex items-center gap-2 text-[#00f5ff] opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="font-mono text-xs">ОТКРЫТЬ</span>
                 <Icon name="ArrowRight" size={12} />
               </div>
@@ -125,13 +125,13 @@ export default function HomePage({ onNavigate }: Props) {
       </section>
 
       {/* CTA */}
-      <section className="py-20 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(0,245,255,0.03), rgba(0,255,136,0.02))" }}>
+      <section className="py-12 sm:py-20 relative overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(0,245,255,0.03), rgba(0,255,136,0.02))" }}>
         <div className="absolute inset-0" style={{ border: "1px solid rgba(0,245,255,0.08)" }} />
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <div className="font-mono text-xs text-[#00f5ff] tracking-[0.4em] mb-4">// ПРИСОЕДИНЯЙСЯ К ПЛАТФОРМЕ</div>
-          <h2 className="font-orbitron text-3xl font-black text-white mb-4">ГОТОВ К ОБУЧЕНИЮ?</h2>
-          <p className="font-plex text-[#5a7a95] mb-8">Изучай материалы, смотри видео, задавай вопросы в обсуждениях</p>
-          <button className="btn-neon-filled" onClick={() => onNavigate("discussions")}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <div className="font-mono text-[10px] sm:text-xs text-[#00f5ff] tracking-[0.3em] sm:tracking-[0.4em] mb-4">// ПРИСОЕДИНЯЙСЯ К ПЛАТФОРМЕ</div>
+          <h2 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-3 sm:mb-4">ГОТОВ К ОБУЧЕНИЮ?</h2>
+          <p className="font-plex text-sm sm:text-base text-[#5a7a95] mb-6 sm:mb-8">Изучай материалы, смотри видео, задавай вопросы в обсуждениях</p>
+          <button className="btn-neon-filled w-full sm:w-auto" onClick={() => onNavigate("discussions")}>
             Войти в сообщество
           </button>
         </div>

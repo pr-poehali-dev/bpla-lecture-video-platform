@@ -121,17 +121,17 @@ export default function DiscussionsPage({ user }: Props) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ФОРУМ СООБЩЕСТВА</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-8 tracking-wider">ОБСУЖДЕНИЯ</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-6 sm:mb-8 tracking-wider">ОБСУЖДЕНИЯ</h1>
 
       {/* Create topic modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(5,8,16,0.95)" }} onClick={() => setShowCreate(false)}>
-          <div className="w-full max-w-lg space-y-4 p-6" style={{ border: "1px solid #00f5ff", background: "#050810", boxShadow: "0 0 40px rgba(0,245,255,0.15)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(5,8,16,0.95)" }} onClick={() => setShowCreate(false)}>
+          <div className="w-full sm:max-w-lg space-y-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto" style={{ border: "1px solid #00f5ff", background: "#050810", boxShadow: "0 0 40px rgba(0,245,255,0.15)" }} onClick={(e) => e.stopPropagation()}>
             <div className="font-orbitron text-lg font-bold text-white tracking-wider">НОВОЕ ОБСУЖДЕНИЕ</div>
 
             <div>
@@ -189,9 +189,9 @@ export default function DiscussionsPage({ user }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
         {/* Topics list */}
-        <div className="lg:col-span-2 space-y-2">
+        <div className={`lg:col-span-2 space-y-2 ${selectedId ? "hidden lg:block" : "block"}`}>
           <div className="flex items-center justify-between mb-4">
             <span className="font-mono text-xs text-[#3a5570]">{topics.length} ТОПИКОВ</span>
             {canCreate && (
@@ -248,7 +248,7 @@ export default function DiscussionsPage({ user }: Props) {
         </div>
 
         {/* Thread */}
-        <div className="lg:col-span-3">
+        <div className={`lg:col-span-3 ${selectedId ? "block" : "hidden lg:block"}`}>
           {!selectedId ? (
             <div className="flex items-center justify-center h-64" style={{ border: "1px solid #1a2a3a" }}>
               <div className="text-center">
@@ -263,10 +263,17 @@ export default function DiscussionsPage({ user }: Props) {
           ) : selectedTopic ? (
             <div className="flex flex-col h-full" style={{ border: "1px solid rgba(0,245,255,0.15)", background: "#0a1520" }}>
               {/* Header */}
-              <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
+              <div className="px-4 sm:px-6 py-3 sm:py-4" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
+                <button
+                  className="flex lg:hidden items-center gap-1.5 font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] mb-3 transition-colors"
+                  onClick={() => { setSelectedId(null); setSelectedTopic(null); }}
+                >
+                  <Icon name="ChevronLeft" size={14} />
+                  Все темы
+                </button>
                 <div className="font-mono text-[10px] px-1.5 py-0.5 inline-block mb-2" style={{ border: "1px solid #1a2a3a", color: "#3a5570" }}>{selectedTopic.category}</div>
-                <h2 className="font-plex text-lg font-semibold text-white mb-2">{selectedTopic.title}</h2>
-                <div className="flex items-center gap-4 text-[#3a5570]">
+                <h2 className="font-plex text-base sm:text-lg font-semibold text-white mb-2">{selectedTopic.title}</h2>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[#3a5570]">
                   <span className="font-mono text-xs">@{selectedTopic.author_callsign || selectedTopic.author_name}</span>
                   <div className="flex items-center gap-1">
                     <Icon name="MessageSquare" size={11} />
@@ -280,7 +287,7 @@ export default function DiscussionsPage({ user }: Props) {
               </div>
 
               {/* Replies */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ maxHeight: "420px" }}>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4" style={{ maxHeight: "420px" }}>
                 {replies.length === 0 ? (
                   <div className="text-center py-8 font-mono text-xs text-[#3a5570]">Комментариев пока нет. Будьте первым!</div>
                 ) : (
@@ -315,19 +322,19 @@ export default function DiscussionsPage({ user }: Props) {
 
               {/* Reply input */}
               {user ? (
-                <div className="p-4 flex gap-3" style={{ borderTop: "1px solid rgba(0,245,255,0.1)" }}>
+                <div className="p-3 sm:p-4 flex flex-col sm:flex-row gap-2 sm:gap-3" style={{ borderTop: "1px solid rgba(0,245,255,0.1)" }}>
                   <textarea
                     value={newReply}
                     onChange={(e) => setNewReply(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey) handleReply(); }}
-                    placeholder="Написать комментарий... (Ctrl+Enter)"
+                    placeholder="Написать комментарий..."
                     rows={2}
                     className="flex-1 bg-[#050810] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-plex text-sm px-3 py-2 outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060] resize-none"
                   />
                   <button
                     onClick={handleReply}
                     disabled={sending || !newReply.trim()}
-                    className="btn-neon-filled flex items-center gap-2 self-end flex-shrink-0 disabled:opacity-40"
+                    className="btn-neon-filled flex items-center justify-center gap-2 sm:self-end flex-shrink-0 disabled:opacity-40 py-2.5 sm:py-2"
                   >
                     {sending ? <Icon name="Loader" size={13} className="animate-spin" /> : <Icon name="Send" size={13} />}
                     {sending ? "..." : "Отправить"}

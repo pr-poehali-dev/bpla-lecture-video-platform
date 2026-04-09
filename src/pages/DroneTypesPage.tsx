@@ -94,17 +94,17 @@ export default function DroneTypesPage() {
   const selectedDrone = droneTypes.find((d) => d.id === selected);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// КЛАССИФИКАЦИЯ</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white mb-2 tracking-wider">ТИПЫ БпЛА</h1>
-      <p className="font-plex text-sm text-[#5a7a95] mb-10">Выберите тип для подробной информации</p>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-2 tracking-wider">ТИПЫ БпЛА</h1>
+      <p className="font-plex text-sm text-[#5a7a95] mb-6 sm:mb-10">Выберите тип для подробной информации</p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left: list */}
-        <div className="lg:col-span-1 space-y-2">
+        <div className={`lg:col-span-1 space-y-2 ${selectedDrone ? "hidden lg:block" : "block"}`}>
           {droneTypes.map((drone) => (
             <button
               key={drone.id}
@@ -130,9 +130,16 @@ export default function DroneTypesPage() {
         </div>
 
         {/* Right: detail */}
-        <div className="lg:col-span-2">
+        <div className={`lg:col-span-2 ${selectedDrone ? "block" : "hidden lg:block"}`}>
           {selectedDrone ? (
-            <div className="card-drone p-8 h-full animate-fade-in" style={{ border: `1px solid ${selectedDrone.color}30` }}>
+            <div className="card-drone p-5 sm:p-8 h-full animate-fade-in" style={{ border: `1px solid ${selectedDrone.color}30` }}>
+              <button
+                className="flex lg:hidden items-center gap-1.5 font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] mb-4 transition-colors"
+                onClick={() => setSelected(null)}
+              >
+                <Icon name="ChevronLeft" size={14} />
+                Все типы
+              </button>
               <div className="flex items-start gap-4 mb-6">
                 <div className="text-5xl">{selectedDrone.emoji}</div>
                 <div>

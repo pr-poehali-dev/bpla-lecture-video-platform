@@ -148,7 +148,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                   </button>
 
                   {profileOpen && (
-                    <div className="absolute right-0 top-full pt-2 w-64 z-50">
+                    <div className="absolute right-0 top-full pt-2 w-72 max-w-[calc(100vw-1rem)] z-50">
                     <div
                       style={{ background: "rgba(5,8,16,0.98)", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 0 30px rgba(0,245,255,0.1)" }}
                     >
@@ -311,13 +311,13 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
       {user && currentPage !== "messages" && <ChatWidget user={user} />}
 
       {/* Footer */}
-      <footer className="mt-20 border-t py-8" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(5,8,16,0.8)" }}>
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="font-orbitron text-xs tracking-[0.3em] text-[#3a5570]">DRONE ACADEMY © 2026</div>
-          <div className="font-mono text-xs text-[#3a5570]">БЕСПЛАТНЫЙ ДОСТУП К ЗНАНИЯМ</div>
+      <footer className="mt-12 sm:mt-20 border-t py-6 sm:py-8" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(5,8,16,0.8)" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="font-orbitron text-[10px] sm:text-xs tracking-[0.3em] text-[#3a5570]">DRONE ACADEMY © 2026</div>
+          <div className="font-mono text-[10px] sm:text-xs text-[#3a5570]">БЕСПЛАТНЫЙ ДОСТУП К ЗНАНИЯМ</div>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[#00f5ff]" style={{ boxShadow: "0 0 6px #00f5ff" }} />
-            <span className="font-mono text-xs text-[#3a5570]">SYS.ACTIVE</span>
+            <span className="font-mono text-[10px] sm:text-xs text-[#3a5570]">SYS.ACTIVE</span>
           </div>
         </div>
       </footer>
