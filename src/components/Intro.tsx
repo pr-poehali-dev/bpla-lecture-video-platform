@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 interface Props {
   onDone: () => void;
@@ -13,6 +13,58 @@ const BOOT_LINES = [
   "СИСТЕМА ГОТОВА К РАБОТЕ",
 ];
 
+function useAudio() {
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  const getCtx = useCallback(() => {
+    if (!ctxRef.current) ctxRef.current = new AudioContext();
+    return ctxRef.current;
+  }, []);
+
+  const beep = useCallback((freq: number, duration: number, vol = 0.08, type: OscillatorType = "square") => {
+    try {
+      const ctx = getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch (_) { /* AudioContext недоступен */ }
+  }, [getCtx]);
+
+  const tick = useCallback(() => beep(880, 0.04, 0.06, "square"), [beep]);
+
+  const bootLine = useCallback(() => {
+    beep(440, 0.03, 0.05, "square");
+    setTimeout(() => beep(660, 0.03, 0.04, "square"), 40);
+  }, [beep]);
+
+  const glitchSound = useCallback(() => {
+    beep(120, 0.08, 0.12, "sawtooth");
+    setTimeout(() => beep(80, 0.06, 0.1, "sawtooth"), 60);
+    setTimeout(() => beep(2400, 0.04, 0.06, "square"), 100);
+  }, [beep]);
+
+  const ready = useCallback(() => {
+    beep(523, 0.1, 0.1, "sine");
+    setTimeout(() => beep(659, 0.1, 0.1, "sine"), 120);
+    setTimeout(() => beep(784, 0.15, 0.12, "sine"), 240);
+  }, [beep]);
+
+  const enter = useCallback(() => {
+    beep(440, 0.05, 0.08, "square");
+    setTimeout(() => beep(880, 0.05, 0.08, "square"), 60);
+    setTimeout(() => beep(1320, 0.1, 0.1, "sine"), 120);
+  }, [beep]);
+
+  return { tick, bootLine, glitchSound, ready, enter };
+}
+
 export default function Intro({ onDone }: Props) {
   const [phase, setPhase] = useState(0);
   const [bootLines, setBootLines] = useState<string[]>([]);
@@ -22,38 +74,47 @@ export default function Intro({ onDone }: Props) {
   const [finalVisible, setFinalVisible] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const linesRef = useRef<HTMLDivElement>(null);
+  const audio = useAudio();
 
   useEffect(() => {
     // Phase 0 → 1: start
-    const t0 = setTimeout(() => setPhase(1), 200);
+    const t0 = setTimeout(() => { setPhase(1); audio.tick(); }, 200);
 
     // Boot lines appear one by one
     BOOT_LINES.forEach((line, i) => {
       setTimeout(() => {
         setBootLines((prev) => [...prev, line]);
         if (linesRef.current) linesRef.current.scrollTop = linesRef.current.scrollHeight;
+        if (i === BOOT_LINES.length - 1) audio.ready();
+        else audio.bootLine();
       }, 400 + i * 340);
     });
 
-    // Progress bar
+    // Progress bar — periodic ticks
+    let lastTickAt = 0;
     const progressInterval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) { clearInterval(progressInterval); return 100; }
-        return p + 2;
+        const next = p + 2;
+        if (Math.floor(next / 25) > Math.floor(lastTickAt / 25)) {
+          lastTickAt = next;
+          audio.tick();
+        }
+        return next;
       });
     }, 42);
 
     // Glitch the title
-    const tGlitch1 = setTimeout(() => setGlitch(true), 1500);
+    const tGlitch1 = setTimeout(() => { setGlitch(true); audio.glitchSound(); }, 1500);
     const tGlitch2 = setTimeout(() => setGlitch(false), 1650);
-    const tGlitch3 = setTimeout(() => setGlitch(true), 1800);
+    const tGlitch3 = setTimeout(() => { setGlitch(true); }, 1800);
     const tGlitch4 = setTimeout(() => setGlitch(false), 1900);
 
     // Title appears
     const tTitle = setTimeout(() => setTitleVisible(true), 1200);
 
     // Final CTA
-    const tFinal = setTimeout(() => setFinalVisible(true), 2800);
+    const tFinal = setTimeout(() => { setFinalVisible(true); audio.tick(); }, 2800);
 
     return () => {
       clearTimeout(t0);
@@ -65,6 +126,7 @@ export default function Intro({ onDone }: Props) {
   }, []);
 
   const handleEnter = () => {
+    audio.enter();
     setFadeOut(true);
     setTimeout(onDone, 700);
   };
