@@ -38,8 +38,8 @@ export default function RegisterPage({ onBack }: Props) {
               <Icon name="Crosshair" size={20} className="text-[#00f5ff]" />
             </div>
             <div className="text-left">
-              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">DRONE</div>
-              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-white leading-none">ACADEMY</div>
+              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">БПС</div>
+              <div className="font-orbitron font-bold text-xs tracking-[0.1em] text-white leading-none">БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ</div>
             </div>
           </div>
           <div className="font-mono text-xs text-[#3a5570] tracking-[0.3em]">// ЗАПРОС ДОСТУПА</div>

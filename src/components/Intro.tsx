@@ -155,13 +155,13 @@ export default function Intro({ onDone }: Props) {
                 transition: "text-shadow 0.6s ease",
               }}
             >
-              DRONE
+              БПС
             </div>
             <div
-              className="font-orbitron font-black tracking-[0.3em] leading-none text-white"
-              style={{ fontSize: "clamp(2rem, 8vw, 4.5rem)" }}
+              className="font-orbitron font-black tracking-[0.15em] leading-none text-white"
+              style={{ fontSize: "clamp(1rem, 3vw, 1.8rem)" }}
             >
-              ACADEMY
+              БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function Intro({ onDone }: Props) {
           }}
         >
           <div className="font-mono text-xs tracking-[0.35em] text-center" style={{ color: "rgba(0,245,255,0.5)" }}>
-            ПРОФЕССИОНАЛЬНАЯ ПЛАТФОРМА ОБУЧЕНИЯ БпЛА
+            ПРОФЕССИОНАЛЬНАЯ ПЛАТФОРМА ОБУЧЕНИЯ БПС
           </div>
         </div>
 

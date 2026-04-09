@@ -48,18 +48,18 @@ export default function HomePage({ onNavigate }: Props) {
               <div className="w-2 h-2 bg-[#00f5ff]" style={{ boxShadow: "0 0 6px #00f5ff" }} />
               <div className="w-2 h-2 bg-[#00ff88]" style={{ boxShadow: "0 0 6px #00ff88" }} />
             </div>
-            <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em] uppercase">SYS.INIT — DRONE ACADEMY v2.6</span>
+            <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em] uppercase">SYS.INIT — БПС v2.6</span>
           </div>
 
           {/* Main title */}
           <h1 className="font-orbitron text-5xl md:text-7xl font-black leading-none mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <span className="block text-white">БОЕВОЕ</span>
-            <span className="block" style={{ color: "#00f5ff", textShadow: "0 0 40px rgba(0,245,255,0.5)" }}>ПРИМЕНЕНИЕ</span>
-            <span className="block text-white">БпЛА</span>
+            <span className="block text-white">БЕСПИЛОТНЫЕ</span>
+            <span className="block" style={{ color: "#00f5ff", textShadow: "0 0 40px rgba(0,245,255,0.5)" }}>ПИЛОТИРУЕМЫЕ</span>
+            <span className="block text-white">СИСТЕМЫ</span>
           </h1>
 
           <p className="font-plex text-lg text-[#7a9bb5] max-w-xl mb-10 leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных летательных аппаратов.
+            Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных пилотируемых систем.
           </p>
 
           <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
