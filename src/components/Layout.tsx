@@ -148,10 +148,18 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 )}
                 <button
                   onClick={() => onNavigate("messages")}
-                  className={`flex items-center justify-center w-7 h-7 transition-all ${currentPage === "messages" ? "text-[#00f5ff]" : "text-[#5a7a95] hover:text-[#00f5ff]"}`}
+                  className={`relative flex items-center justify-center w-7 h-7 transition-all ${currentPage === "messages" ? "text-[#00f5ff]" : "text-[#5a7a95] hover:text-[#00f5ff]"}`}
                   style={{ border: `1px solid ${currentPage === "messages" ? "rgba(0,245,255,0.4)" : "rgba(0,245,255,0.1)"}` }}
                 >
                   <Icon name="MessageSquare" size={13} />
+                  {unreadMessages > 0 && (
+                    <span
+                      className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center font-mono text-[8px] font-bold rounded-full px-0.5"
+                      style={{ background: "#ff2244", color: "#fff", boxShadow: "0 0 5px rgba(255,34,68,0.7)" }}
+                    >
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
+                    </span>
+                  )}
                 </button>
                 <a
                   href="/?mobile=1"
