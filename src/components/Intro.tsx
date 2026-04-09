@@ -1,226 +1,402 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface Props {
   onDone: () => void;
 }
 
+const BOOT_LINES = [
+  "ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ БПС...",
+  "ПРОВЕРКА ПРОТОКОЛОВ БЕЗОПАСНОСТИ...",
+  "ЗАГРУЗКА УЧЕБНЫХ МОДУЛЕЙ...",
+  "УСТАНОВКА ЗАЩИЩЁННОГО СОЕДИНЕНИЯ...",
+  "АВТОРИЗАЦИЯ КОМАНДНОГО СОСТАВА...",
+  "СИСТЕМА ГОТОВА К РАБОТЕ",
+];
+
 export default function Intro({ onDone }: Props) {
   const [phase, setPhase] = useState(0);
+  const [bootLines, setBootLines] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [glitch, setGlitch] = useState(false);
+  const [titleVisible, setTitleVisible] = useState(false);
+  const [finalVisible, setFinalVisible] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
+  const linesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 300);
-    const t2 = setTimeout(() => setPhase(2), 900);
-    const t3 = setTimeout(() => setPhase(3), 1600);
-    const t4 = setTimeout(() => setPhase(4), 2400);
-    const t5 = setTimeout(() => onDone(), 3400);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
-  }, [onDone]);
+    // Phase 0 → 1: start
+    const t0 = setTimeout(() => setPhase(1), 200);
+
+    // Boot lines appear one by one
+    BOOT_LINES.forEach((line, i) => {
+      setTimeout(() => {
+        setBootLines((prev) => [...prev, line]);
+        if (linesRef.current) linesRef.current.scrollTop = linesRef.current.scrollHeight;
+      }, 400 + i * 340);
+    });
+
+    // Progress bar
+    const progressInterval = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 100) { clearInterval(progressInterval); return 100; }
+        return p + 2;
+      });
+    }, 42);
+
+    // Glitch the title
+    const tGlitch1 = setTimeout(() => setGlitch(true), 1500);
+    const tGlitch2 = setTimeout(() => setGlitch(false), 1650);
+    const tGlitch3 = setTimeout(() => setGlitch(true), 1800);
+    const tGlitch4 = setTimeout(() => setGlitch(false), 1900);
+
+    // Title appears
+    const tTitle = setTimeout(() => setTitleVisible(true), 1200);
+
+    // Final CTA
+    const tFinal = setTimeout(() => setFinalVisible(true), 2800);
+
+    return () => {
+      clearTimeout(t0);
+      clearTimeout(tGlitch1); clearTimeout(tGlitch2);
+      clearTimeout(tGlitch3); clearTimeout(tGlitch4);
+      clearTimeout(tTitle); clearTimeout(tFinal);
+      clearInterval(progressInterval);
+    };
+  }, []);
+
+  const handleEnter = () => {
+    setFadeOut(true);
+    setTimeout(onDone, 700);
+  };
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center grid-bg overflow-hidden"
+      className="fixed inset-0 z-[9999] flex overflow-hidden select-none"
       style={{
-        background: "#050810",
-        opacity: phase === 4 ? 0 : 1,
-        transition: phase === 4 ? "opacity 0.9s ease" : "none",
+        background: "#020509",
+        opacity: fadeOut ? 0 : 1,
+        transition: fadeOut ? "opacity 0.7s ease" : "none",
       }}
     >
-      {/* Scanning lines */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-full h-px"
-            style={{
-              top: `${15 + i * 14}%`,
-              background: "linear-gradient(90deg, transparent, rgba(0,245,255,0.06), transparent)",
-              transform: `translateX(${phase >= 1 ? "0%" : "-100%"})`,
-              transition: `transform 1.2s ease ${i * 0.08}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Animated grid background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: "60px 60px",
+          opacity: phase >= 1 ? 1 : 0,
+          transition: "opacity 1s ease",
+        }}
+      />
 
-      {/* Corner decorations */}
+      {/* Vignette */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at center, transparent 40%, rgba(2,5,9,0.85) 100%)",
+        }}
+      />
+
+      {/* Scanlines */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)",
+          opacity: 0.6,
+        }}
+      />
+
+      {/* Moving scan beam */}
+      <div
+        className="absolute left-0 right-0 h-32 pointer-events-none"
+        style={{
+          background: "linear-gradient(180deg, transparent, rgba(0,245,255,0.04), transparent)",
+          animation: "scanBeam 4s linear infinite",
+        }}
+      />
+
+      {/* Corner brackets */}
       {[
-        { top: "5%", left: "5%" },
-        { top: "5%", right: "5%" },
-        { bottom: "5%", left: "5%" },
-        { bottom: "5%", right: "5%" },
-      ].map((style, i) => (
+        { top: 0, left: 0, borderTop: "2px solid #00f5ff", borderLeft: "2px solid #00f5ff" },
+        { top: 0, right: 0, borderTop: "2px solid #00f5ff", borderRight: "2px solid #00f5ff" },
+        { bottom: 0, left: 0, borderBottom: "2px solid #00f5ff", borderLeft: "2px solid #00f5ff" },
+        { bottom: 0, right: 0, borderBottom: "2px solid #00f5ff", borderRight: "2px solid #00f5ff" },
+      ].map((s, i) => (
         <div
           key={i}
-          className="absolute w-10 h-10"
+          className="absolute w-12 h-12 pointer-events-none"
           style={{
-            ...style,
-            opacity: phase >= 1 ? 1 : 0,
-            transition: `opacity 0.5s ease ${i * 0.1}s`,
-            borderTop: i < 2 ? "1px solid rgba(0,245,255,0.4)" : "none",
-            borderBottom: i >= 2 ? "1px solid rgba(0,245,255,0.4)" : "none",
-            borderLeft: i % 2 === 0 ? "1px solid rgba(0,245,255,0.4)" : "none",
-            borderRight: i % 2 === 1 ? "1px solid rgba(0,245,255,0.4)" : "none",
+            ...s,
+            opacity: phase >= 1 ? 0.6 : 0,
+            transition: `opacity 0.4s ease ${i * 0.1}s`,
           }}
         />
       ))}
 
-      {/* System text top */}
-      <div
-        className="absolute top-8 left-0 right-0 flex justify-center"
-        style={{ opacity: phase >= 1 ? 1 : 0, transition: "opacity 0.6s ease 0.2s" }}
-      >
-        <span className="font-mono text-[10px] tracking-[0.4em] text-[#1a3050]">
-          SYS.BOOT // v2.6.0 // SECURE CONNECTION ESTABLISHED
-        </span>
-      </div>
+      {/* Left panel — boot log */}
+      <div className="relative z-10 flex flex-col justify-center w-full max-w-2xl mx-auto px-8 lg:px-16 py-16">
 
-      {/* Main logo block */}
-      <div className="flex flex-col items-center gap-6">
-        {/* Icon */}
+        {/* Top label */}
         <div
-          className="relative flex items-center justify-center"
-          style={{
-            opacity: phase >= 1 ? 1 : 0,
-            transform: phase >= 1 ? "scale(1)" : "scale(0.6)",
-            transition: "opacity 0.5s ease, transform 0.6s cubic-bezier(0.34,1.56,0.64,1)",
-          }}
+          className="mb-8 flex items-center gap-3"
+          style={{ opacity: phase >= 1 ? 1 : 0, transition: "opacity 0.5s ease 0.3s" }}
         >
-          <div
-            className="w-20 h-20 flex items-center justify-center"
-            style={{
-              border: "1px solid rgba(0,245,255,0.5)",
-              boxShadow: phase >= 2
-                ? "0 0 40px rgba(0,245,255,0.3), 0 0 80px rgba(0,245,255,0.1), inset 0 0 20px rgba(0,245,255,0.05)"
-                : "0 0 10px rgba(0,245,255,0.1)",
-              transition: "box-shadow 0.8s ease",
-            }}
-          >
-            {/* Crosshair SVG */}
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="8" stroke="#00f5ff" strokeWidth="1.5"
-                strokeDasharray={phase >= 2 ? "50" : "0"}
-                style={{ transition: "stroke-dasharray 0.6s ease 0.2s" }}
-              />
-              <line x1="20" y1="0" x2="20" y2="12" stroke="#00f5ff" strokeWidth="1.5"
-                opacity={phase >= 2 ? 1 : 0}
-                style={{ transition: "opacity 0.4s ease 0.4s" }}
-              />
-              <line x1="20" y1="28" x2="20" y2="40" stroke="#00f5ff" strokeWidth="1.5"
-                opacity={phase >= 2 ? 1 : 0}
-                style={{ transition: "opacity 0.4s ease 0.4s" }}
-              />
-              <line x1="0" y1="20" x2="12" y2="20" stroke="#00f5ff" strokeWidth="1.5"
-                opacity={phase >= 2 ? 1 : 0}
-                style={{ transition: "opacity 0.4s ease 0.5s" }}
-              />
-              <line x1="28" y1="20" x2="40" y2="20" stroke="#00f5ff" strokeWidth="1.5"
-                opacity={phase >= 2 ? 1 : 0}
-                style={{ transition: "opacity 0.4s ease 0.5s" }}
-              />
-              <circle cx="20" cy="20" r="2" fill="#00f5ff"
-                opacity={phase >= 3 ? 1 : 0}
-                style={{ transition: "opacity 0.3s ease" }}
-              />
-            </svg>
-          </div>
-
-          {/* Rotating ring */}
-          <div
-            className="absolute inset-0 -m-3"
-            style={{
-              border: "1px solid rgba(0,245,255,0.15)",
-              borderRadius: "2px",
-              transform: `rotate(${phase >= 2 ? "45deg" : "0deg"})`,
-              transition: "transform 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.2s",
-            }}
-          />
-        </div>
-
-        {/* Title */}
-        <div className="text-center overflow-hidden">
-          <div
-            style={{
-              opacity: phase >= 2 ? 1 : 0,
-              transform: phase >= 2 ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s",
-            }}
-          >
-            <div
-              className="font-orbitron font-black tracking-[0.3em] leading-none"
-              style={{
-                fontSize: "clamp(2rem, 8vw, 4.5rem)",
-                color: "#00f5ff",
-                textShadow: phase >= 3
-                  ? "0 0 30px rgba(0,245,255,0.7), 0 0 60px rgba(0,245,255,0.3)"
-                  : "none",
-                transition: "text-shadow 0.6s ease",
-              }}
-            >
-              БПС
-            </div>
-            <div
-              className="font-orbitron font-black tracking-[0.15em] leading-none text-white"
-              style={{ fontSize: "clamp(1rem, 3vw, 1.8rem)" }}
-            >
-              БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ
-            </div>
-          </div>
-        </div>
-
-        {/* Subtitle */}
-        <div
-          style={{
-            opacity: phase >= 3 ? 1 : 0,
-            transform: phase >= 3 ? "translateY(0)" : "translateY(10px)",
-            transition: "opacity 0.5s ease, transform 0.5s ease",
-          }}
-        >
-          <div className="font-mono text-xs tracking-[0.35em] text-center" style={{ color: "rgba(0,245,255,0.5)" }}>
-            ПРОФЕССИОНАЛЬНАЯ ПЛАТФОРМА ОБУЧЕНИЯ БПС
-          </div>
-        </div>
-
-        {/* Loading bar */}
-        <div
-          className="w-48 h-px mt-4 overflow-hidden"
-          style={{
-            background: "rgba(0,245,255,0.1)",
-            opacity: phase >= 2 ? 1 : 0,
-            transition: "opacity 0.3s ease",
-          }}
-        >
-          <div
-            className="h-full"
-            style={{
-              background: "linear-gradient(90deg, transparent, #00f5ff, #00ff88)",
-              width: phase >= 3 ? "100%" : phase >= 2 ? "40%" : "0%",
-              transition: "width 0.8s ease",
-              boxShadow: "0 0 8px #00f5ff",
-            }}
-          />
-        </div>
-
-        {/* Status text */}
-        <div
-          style={{
-            opacity: phase >= 3 ? 1 : 0,
-            transition: "opacity 0.4s ease 0.2s",
-          }}
-        >
-          <span className="font-mono text-[10px] tracking-[0.3em]" style={{ color: "#00ff88" }}>
-            ◉ SYSTEM READY
+          <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
+          <span className="font-mono text-[10px] tracking-[0.5em] text-[#1e4060]">
+            SECURE BOOT // BPLA LEARNING SYSTEM // v3.0
           </span>
         </div>
+
+        {/* Main title with glitch */}
+        <div
+          className="mb-10 overflow-hidden"
+          style={{
+            opacity: titleVisible ? 1 : 0,
+            transform: titleVisible ? "translateY(0)" : "translateY(30px)",
+            transition: "opacity 0.7s ease, transform 0.7s ease",
+          }}
+        >
+          <div
+            className="font-orbitron font-black leading-none mb-2"
+            style={{
+              fontSize: "clamp(3rem, 12vw, 7rem)",
+              color: glitch ? "transparent" : "#00f5ff",
+              textShadow: glitch
+                ? "3px 0 #ff0040, -3px 0 #00ff88"
+                : "0 0 40px rgba(0,245,255,0.5), 0 0 80px rgba(0,245,255,0.2)",
+              letterSpacing: "0.15em",
+              transition: glitch ? "none" : "text-shadow 0.3s ease",
+              WebkitTextStroke: glitch ? "1px #00f5ff" : "0px transparent",
+            }}
+          >
+            БПС
+          </div>
+          <div
+            className="font-orbitron font-bold tracking-[0.12em] text-white"
+            style={{
+              fontSize: "clamp(0.65rem, 2.5vw, 1.2rem)",
+              opacity: 0.85,
+              textShadow: "0 0 20px rgba(255,255,255,0.2)",
+            }}
+          >
+            БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ
+          </div>
+        </div>
+
+        {/* Boot log terminal */}
+        <div
+          className="mb-8"
+          style={{
+            opacity: phase >= 1 ? 1 : 0,
+            transition: "opacity 0.4s ease 0.5s",
+          }}
+        >
+          <div
+            ref={linesRef}
+            className="font-mono text-xs space-y-1.5 overflow-hidden"
+            style={{ maxHeight: "160px" }}
+          >
+            {bootLines.map((line, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2"
+                style={{
+                  color: i === bootLines.length - 1 ? "#00ff88" : "rgba(0,245,255,0.45)",
+                  animation: "fadeInLine 0.3s ease",
+                }}
+              >
+                <span style={{ color: "#1e4060" }}>{">"}</span>
+                {line}
+                {i === bootLines.length - 1 && (
+                  <span
+                    className="inline-block w-2 h-3 ml-1"
+                    style={{
+                      background: "#00f5ff",
+                      animation: "blink 0.8s step-end infinite",
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-10">
+          <div
+            className="flex items-center justify-between mb-2"
+            style={{ opacity: phase >= 1 ? 1 : 0, transition: "opacity 0.3s ease 0.6s" }}
+          >
+            <span className="font-mono text-[10px] text-[#1e4060] tracking-widest">ЗАГРУЗКА СИСТЕМЫ</span>
+            <span className="font-mono text-[10px] text-[#00f5ff]">{progress}%</span>
+          </div>
+          <div
+            className="w-full h-0.5 overflow-hidden"
+            style={{
+              background: "rgba(0,245,255,0.08)",
+              opacity: phase >= 1 ? 1 : 0,
+              transition: "opacity 0.3s ease 0.6s",
+            }}
+          >
+            <div
+              className="h-full"
+              style={{
+                width: `${progress}%`,
+                background: "linear-gradient(90deg, #00f5ff, #00ff88)",
+                boxShadow: "0 0 10px rgba(0,245,255,0.8), 0 0 20px rgba(0,245,255,0.3)",
+                transition: "width 0.05s linear",
+              }}
+            />
+          </div>
+          {/* Segment ticks */}
+          <div className="flex justify-between mt-1">
+            {[0, 25, 50, 75, 100].map((tick) => (
+              <div
+                key={tick}
+                className="font-mono text-[8px]"
+                style={{ color: progress >= tick ? "rgba(0,245,255,0.4)" : "rgba(0,245,255,0.1)" }}
+              >
+                {tick}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Enter button */}
+        <div
+          style={{
+            opacity: finalVisible ? 1 : 0,
+            transform: finalVisible ? "translateY(0)" : "translateY(15px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease",
+          }}
+        >
+          <button
+            onClick={handleEnter}
+            className="group relative flex items-center gap-4 font-mono text-sm tracking-[0.3em] px-8 py-4 overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+            style={{
+              border: "1px solid rgba(0,245,255,0.5)",
+              color: "#00f5ff",
+              background: "rgba(0,245,255,0.04)",
+              boxShadow: "0 0 20px rgba(0,245,255,0.1)",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.boxShadow = "0 0 40px rgba(0,245,255,0.25), inset 0 0 20px rgba(0,245,255,0.05)";
+              (e.currentTarget as HTMLElement).style.background = "rgba(0,245,255,0.08)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px rgba(0,245,255,0.1)";
+              (e.currentTarget as HTMLElement).style.background = "rgba(0,245,255,0.04)";
+            }}
+          >
+            {/* Sweep animation */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg, transparent, rgba(0,245,255,0.06), transparent)",
+                transform: "translateX(-100%)",
+                animation: "sweep 2.5s ease infinite",
+              }}
+            />
+
+            <div className="relative flex items-center gap-3">
+              {/* Icon */}
+              <div
+                className="w-5 h-5 flex items-center justify-center"
+                style={{ border: "1px solid rgba(0,245,255,0.4)" }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
+              </div>
+              ВОЙТИ В СИСТЕМУ
+              {/* Arrow */}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="transition-transform duration-300 group-hover:translate-x-1">
+                <path d="M3 8H13M9 4l4 4-4 4" stroke="#00f5ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </button>
+
+          <div className="mt-4 font-mono text-[9px] text-[#1a3050] tracking-[0.3em]">
+            НАЖМИТЕ ДЛЯ ПРОДОЛЖЕНИЯ // ДОСТУП ТОЛЬКО ДЛЯ АВТОРИЗОВАННОГО СОСТАВА
+          </div>
+        </div>
       </div>
 
-      {/* Bottom coordinates */}
+      {/* Right side — decorative drone silhouette / grid lines */}
       <div
-        className="absolute bottom-8 flex gap-8"
-        style={{ opacity: phase >= 2 ? 1 : 0, transition: "opacity 0.5s ease 0.3s" }}
+        className="hidden lg:flex absolute right-0 top-0 bottom-0 w-1/3 items-center justify-center pointer-events-none"
+        style={{ opacity: titleVisible ? 1 : 0, transition: "opacity 1s ease 0.5s" }}
       >
-        <span className="font-mono text-[10px] text-[#1a3050] tracking-widest">LAT: 55.7522° N</span>
-        <span className="font-mono text-[10px] text-[#1a3050] tracking-widest">LON: 37.6156° E</span>
-        <span className="font-mono text-[10px] text-[#1a3050] tracking-widest">ALT: 0M</span>
+        <div className="relative">
+          {/* Concentric rings */}
+          {[120, 180, 240, 300].map((size, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: size,
+                height: size,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                border: `1px solid rgba(0,245,255,${0.12 - i * 0.02})`,
+                animation: `spin ${12 + i * 6}s linear infinite ${i % 2 === 1 ? "reverse" : ""}`,
+              }}
+            />
+          ))}
+          {/* Center crosshair */}
+          <div className="relative w-16 h-16 flex items-center justify-center">
+            <div className="absolute inset-0" style={{ border: "1px solid rgba(0,245,255,0.3)" }} />
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="8" stroke="#00f5ff" strokeWidth="1" opacity="0.8" />
+              <line x1="20" y1="0" x2="20" y2="10" stroke="#00f5ff" strokeWidth="1" />
+              <line x1="20" y1="30" x2="20" y2="40" stroke="#00f5ff" strokeWidth="1" />
+              <line x1="0" y1="20" x2="10" y2="20" stroke="#00f5ff" strokeWidth="1" />
+              <line x1="30" y1="20" x2="40" y2="20" stroke="#00f5ff" strokeWidth="1" />
+              <circle cx="20" cy="20" r="2" fill="#00ff88" />
+            </svg>
+          </div>
+          {/* Corner marks */}
+          {[[-1,-1],[1,-1],[-1,1],[1,1]].map(([dx, dy], i) => (
+            <div
+              key={i}
+              className="absolute w-4 h-4"
+              style={{
+                top: `calc(50% + ${dy * 130}px - 8px)`,
+                left: `calc(50% + ${dx * 130}px - 8px)`,
+                borderTop: dy < 0 ? "1px solid rgba(0,245,255,0.3)" : "none",
+                borderBottom: dy > 0 ? "1px solid rgba(0,245,255,0.3)" : "none",
+                borderLeft: dx < 0 ? "1px solid rgba(0,245,255,0.3)" : "none",
+                borderRight: dx > 0 ? "1px solid rgba(0,245,255,0.3)" : "none",
+              }}
+            />
+          ))}
+        </div>
       </div>
+
+      <style>{`
+        @keyframes scanBeam {
+          0% { top: -128px; }
+          100% { top: 100vh; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        @keyframes fadeInLine {
+          from { opacity: 0; transform: translateX(-8px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes sweep {
+          0% { transform: translateX(-100%); }
+          60%, 100% { transform: translateX(200%); }
+        }
+        @keyframes spin {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
