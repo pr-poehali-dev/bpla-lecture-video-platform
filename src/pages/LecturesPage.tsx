@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { api, FileItem } from "@/api";
+import { usePageData } from "@/hooks/usePageData";
 
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
@@ -67,7 +68,8 @@ export default function LecturesPage() {
     });
   }, []);
 
-  const categories = DOC_CATEGORIES;
+  const { header } = usePageData("lectures");
+  const categories = header?.categories ?? DOC_CATEGORIES;
 
   const filtered = files.filter((f) => {
     const matchCat = activeCategory === "Все" || f.category === activeCategory;
@@ -81,9 +83,9 @@ export default function LecturesPage() {
 
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
-        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// УЧЕБНЫЙ ЦЕНТР</span>
+        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// УЧЕБНЫЙ ЦЕНТР"}</span>
       </div>
-      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">ЛЕКЦИИ</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">{header?.title ?? "ЛЕКЦИИ"}</h1>
 
       {/* Search */}
       <div className="relative mb-6">

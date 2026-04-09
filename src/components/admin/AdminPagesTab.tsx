@@ -14,7 +14,8 @@ const BLOCK_TYPES = [
 ];
 
 const BLOCK_LABELS: Record<string, string> = {
-  hero: "Главный баннер", stats: "Статистика", features: "Карточки разделов", cta: "Призыв к действию", text: "Текст",
+  hero: "Главный баннер", stats: "Статистика", features: "Карточки разделов", cta: "Призыв к действию",
+  text: "Текст", header: "Заголовок страницы", "drone-list": "Список дронов",
 };
 
 function HeroEditor({ data, onChange }: { data: Record<string, string>; onChange: (d: Record<string, string>) => void }) {
@@ -128,6 +129,77 @@ function TextEditor({ data, onChange }: { data: Record<string, string>; onChange
   );
 }
 
+function HeaderEditor({ data, onChange }: { data: Record<string, unknown>; onChange: (d: unknown) => void }) {
+  const cats = Array.isArray(data.categories) ? (data.categories as string[]) : [];
+  const setCats = (arr: string[]) => onChange({ ...data, categories: arr });
+  return (
+    <div className="space-y-3">
+      {["title", "subtitle"].map(key => (
+        <div key={key}>
+          <label className="font-mono text-[10px] text-[#3a5570] uppercase tracking-widest block mb-1">{key}</label>
+          <input className="w-full bg-transparent border border-[#1a2a3a] px-3 py-2 font-plex text-sm text-white outline-none focus:border-[#00f5ff]"
+            value={(data[key] as string) ?? ""} onChange={e => onChange({ ...data, [key]: e.target.value })} />
+        </div>
+      ))}
+      <div>
+        <label className="font-mono text-[10px] text-[#3a5570] uppercase tracking-widest block mb-2">Категории (каждая с новой строки)</label>
+        <textarea rows={5} className="w-full bg-transparent border border-[#1a2a3a] px-3 py-2 font-mono text-xs text-white outline-none focus:border-[#00f5ff] resize-none"
+          value={cats.join("\n")}
+          onChange={e => setCats(e.target.value.split("\n").map(s => s.trim()).filter(Boolean))} />
+      </div>
+    </div>
+  );
+}
+
+interface DroneItem { id: number; code: string; name: string; category: string; range: string; payload: string; speed: string; endurance: string; emoji: string; color: string; description: string; tags: string[]; }
+
+function DroneListEditor({ data, onChange }: { data: DroneItem[]; onChange: (d: unknown) => void }) {
+  const update = (i: number, key: string, val: string) => {
+    onChange(data.map((item, idx) => idx === i ? { ...item, [key]: val } : item));
+  };
+  const updateTags = (i: number, val: string) => {
+    onChange(data.map((item, idx) => idx === i ? { ...item, tags: val.split(",").map(t => t.trim()).filter(Boolean) } : item));
+  };
+  const add = () => onChange([...data, { id: Date.now(), code: `TYPE-0${data.length + 1}`, name: "Новый тип", category: "Разведка", range: "0", payload: "0", speed: "0", endurance: "0", emoji: "✈️", color: "#00f5ff", description: "Описание", tags: [] }]);
+  const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i));
+  const DRONE_FIELDS: { key: string; label: string }[] = [
+    { key: "code", label: "Код" }, { key: "name", label: "Название" }, { key: "category", label: "Категория" },
+    { key: "range", label: "Дальность" }, { key: "payload", label: "Нагрузка" }, { key: "speed", label: "Скорость" },
+    { key: "endurance", label: "Время полёта" }, { key: "emoji", label: "Эмодзи" }, { key: "color", label: "Цвет (#hex)" }, { key: "description", label: "Описание" },
+  ];
+  return (
+    <div className="space-y-4">
+      {data.map((drone, i) => (
+        <div key={drone.id} className="p-3 space-y-2" style={{ border: "1px solid #1a2a3a" }}>
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px]" style={{ color: drone.color }}>{drone.emoji} {drone.name}</span>
+            <button onClick={() => remove(i)} className="text-[#3a5570] hover:text-[#ff2244]"><Icon name="X" size={12} /></button>
+          </div>
+          {DRONE_FIELDS.map(({ key, label }) => (
+            <div key={key}>
+              <label className="font-mono text-[10px] text-[#3a5570] block mb-0.5">{label}</label>
+              {key === "description"
+                ? <textarea rows={2} className="w-full bg-transparent border border-[#1a2a3a] px-2 py-1 font-plex text-xs text-white outline-none focus:border-[#00f5ff] resize-none"
+                    value={(drone as unknown as Record<string, string>)[key] ?? ""} onChange={e => update(i, key, e.target.value)} />
+                : <input className="w-full bg-transparent border border-[#1a2a3a] px-2 py-1 font-plex text-xs text-white outline-none focus:border-[#00f5ff]"
+                    value={(drone as unknown as Record<string, string>)[key] ?? ""} onChange={e => update(i, key, e.target.value)} />
+              }
+            </div>
+          ))}
+          <div>
+            <label className="font-mono text-[10px] text-[#3a5570] block mb-0.5">Теги (через запятую)</label>
+            <input className="w-full bg-transparent border border-[#1a2a3a] px-2 py-1 font-plex text-xs text-white outline-none focus:border-[#00f5ff]"
+              value={drone.tags.join(", ")} onChange={e => updateTags(i, e.target.value)} />
+          </div>
+        </div>
+      ))}
+      <button onClick={add} className="font-mono text-xs text-[#00ff88] border border-[rgba(0,255,136,0.3)] px-3 py-1.5 hover:bg-[rgba(0,255,136,0.05)]">
+        + Добавить тип дрона
+      </button>
+    </div>
+  );
+}
+
 function BlockEditor({ block, onSave, onDelete }: { block: Block; onSave: (id: number, data: unknown) => Promise<void>; onDelete: (id: number) => void }) {
   const [localData, setLocalData] = useState<unknown>(block.data);
   const [saving, setSaving] = useState(false);
@@ -148,6 +220,8 @@ function BlockEditor({ block, onSave, onDelete }: { block: Block; onSave: (id: n
       case "features": return <FeaturesEditor data={localData as { icon: string; title: string; desc: string; page: string }[]} onChange={setLocalData} />;
       case "cta": return <CtaEditor data={localData as Record<string, string>} onChange={setLocalData} />;
       case "text": return <TextEditor data={localData as Record<string, string>} onChange={setLocalData} />;
+      case "header": return <HeaderEditor data={localData as Record<string, unknown>} onChange={setLocalData} />;
+      case "drone-list": return <DroneListEditor data={localData as DroneItem[]} onChange={setLocalData} />;
       default: return <pre className="font-mono text-xs text-[#5a7a95] overflow-auto">{JSON.stringify(localData, null, 2)}</pre>;
     }
   };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
+import { usePageData } from "@/hooks/usePageData";
 
 const VIDEO_CATEGORIES = ["Все", "Боевые", "Учебные", "Технические", "Разбор миссий"];
 
@@ -83,6 +84,9 @@ export default function VideosPage() {
     });
   }, []);
 
+  const { header } = usePageData("videos");
+  const categories = header?.categories ?? VIDEO_CATEGORIES;
+
   const filtered = activeCategory === "Все"
     ? files
     : files.filter((f) => f.category === activeCategory);
@@ -96,13 +100,13 @@ export default function VideosPage() {
           <Icon name="Play" size={16} className="text-[#00f5ff]" />
         </div>
         <div>
-          <h1 className="font-mono text-lg text-white tracking-wider">ВИДЕОМАТЕРИАЛЫ</h1>
-          <p className="font-mono text-xs text-[#3a5570]">УЧЕБНЫЕ И БОЕВЫЕ ЗАПИСИ</p>
+          <h1 className="font-mono text-lg text-white tracking-wider">{header?.title ?? "ВИДЕОМАТЕРИАЛЫ"}</h1>
+          <p className="font-mono text-xs text-[#3a5570]">{header?.subtitle ?? "УЧЕБНЫЕ И БОЕВЫЕ ЗАПИСИ"}</p>
         </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {VIDEO_CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}

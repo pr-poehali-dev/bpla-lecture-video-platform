@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { type User } from "@/App";
 import { api } from "@/api";
+import { usePageData } from "@/hooks/usePageData";
 
 interface Props {
   user?: User;
@@ -120,13 +121,15 @@ export default function DiscussionsPage({ user }: Props) {
     }
   };
 
+  const { header } = usePageData("discussions");
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
-        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ФОРУМ СООБЩЕСТВА</span>
+        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// ФОРУМ СООБЩЕСТВА"}</span>
       </div>
-      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-6 sm:mb-8 tracking-wider">ОБСУЖДЕНИЯ</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-6 sm:mb-8 tracking-wider">{header?.title ?? "ОБСУЖДЕНИЯ"}</h1>
 
       {/* Create topic modal */}
       {showCreate && (

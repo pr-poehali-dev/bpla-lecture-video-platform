@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import { usePageData } from "@/hooks/usePageData";
 
 const droneTypes = [
   {
@@ -90,22 +91,25 @@ const droneTypes = [
 
 export default function DroneTypesPage() {
   const [selected, setSelected] = useState<number | null>(null);
+  const { header, getBlock } = usePageData("drone-types");
+  const dbDrones = getBlock("drone-list")?.data as typeof droneTypes | undefined;
+  const drones = dbDrones ?? droneTypes;
 
-  const selectedDrone = droneTypes.find((d) => d.id === selected);
+  const selectedDrone = drones.find((d) => d.id === selected);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
-        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// КЛАССИФИКАЦИЯ</span>
+        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// КЛАССИФИКАЦИЯ"}</span>
       </div>
-      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-2 tracking-wider">ТИПЫ БпЛА</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-2 tracking-wider">{header?.title ?? "ТИПЫ БпЛА"}</h1>
       <p className="font-plex text-sm text-[#5a7a95] mb-6 sm:mb-10">Выберите тип для подробной информации</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left: list */}
         <div className={`lg:col-span-1 space-y-2 ${selectedDrone ? "hidden lg:block" : "block"}`}>
-          {droneTypes.map((drone) => (
+          {drones.map((drone) => (
             <button
               key={drone.id}
               onClick={() => setSelected(drone.id === selected ? null : drone.id)}

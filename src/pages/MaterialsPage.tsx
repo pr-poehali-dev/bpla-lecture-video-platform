@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
 import { type User } from "@/App";
+import { usePageData } from "@/hooks/usePageData";
 
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
@@ -144,6 +145,9 @@ export default function MaterialsPage({ user }: Props) {
     });
   }, []);
 
+  const { header } = usePageData("materials");
+  const categories = header?.categories ?? DOC_CATEGORIES;
+
   const filtered = activeCategory === "Все"
     ? files
     : files.filter((f) => f.category === activeCategory);
@@ -157,13 +161,13 @@ export default function MaterialsPage({ user }: Props) {
           <Icon name="FileText" size={16} className="text-[#ff6b00]" />
         </div>
         <div>
-          <h1 className="font-mono text-lg text-white tracking-wider">МАТЕРИАЛЫ</h1>
-          <p className="font-mono text-xs text-[#3a5570]">ДОКУМЕНТЫ И РЕГЛАМЕНТЫ</p>
+          <h1 className="font-mono text-lg text-white tracking-wider">{header?.title ?? "МАТЕРИАЛЫ"}</h1>
+          <p className="font-mono text-xs text-[#3a5570]">{header?.subtitle ?? "ДОКУМЕНТЫ И РЕГЛАМЕНТЫ"}</p>
         </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {DOC_CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}

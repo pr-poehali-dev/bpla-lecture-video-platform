@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
 import { User } from "@/App";
+import { usePageData } from "@/hooks/usePageData";
 
 const FIRMWARE_CATEGORIES = ["Все", "Betaflight", "ArduPilot", "ExpressLRS", "OpenTX/EdgeTX", "Инструкции"];
 
@@ -179,6 +180,9 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
     input.click();
   };
 
+  const { header } = usePageData("firmware");
+  const categories = header?.categories ?? FIRMWARE_CATEGORIES;
+
   const filtered = activeCategory === "Все"
     ? files
     : files.filter((f) => f.category === activeCategory);
@@ -190,10 +194,9 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
       {/* Заголовок */}
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
-        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ХРАНИЛИЩЕ ФАЙЛОВ</span>
+        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// ЗАГРУЗКИ И ОБНОВЛЕНИЯ"}</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white tracking-wider">ЗАГРУЗКИ И ПРОШИВКИ</h1>
-      <p className="font-plex text-sm text-[#5a7a95]">Прошивки FPV-КТ, конфиги, документация — всё для работы</p>
+      <h1 className="font-orbitron text-3xl font-black text-white tracking-wider">{header?.title ?? "ЗАГРУЗКИ И ПРОШИВКИ"}</h1>
 
       {/* Вкладки */}
       <div className="flex gap-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
@@ -222,7 +225,7 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
       {tab === "firmware" && (
         <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">
-            {FIRMWARE_CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
