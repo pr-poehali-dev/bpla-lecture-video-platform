@@ -7,6 +7,7 @@ import AdminRolesTab from "@/components/admin/AdminRolesTab";
 import AdminRemovalTab from "@/components/admin/AdminRemovalTab";
 import AdminDiscussionsTab from "@/components/admin/AdminDiscussionsTab";
 import AdminLecturesTab from "@/components/admin/AdminLecturesTab";
+import AdminVideosTab from "@/components/admin/AdminVideosTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -19,7 +20,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures";
+type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos";
 
 interface Stats {
   total: number;
@@ -43,6 +44,7 @@ const tabLabels: Record<Tab, string> = {
   removals: "Заявки на удаление",
   discussions: "Обсуждения",
   lectures: "Лекции",
+  videos: "Видео",
 };
 
 const sidebarGroups = [
@@ -62,7 +64,8 @@ const sidebarGroups = [
     label: "КОНТЕНТ",
     items: [
       { key: "lectures" as Tab, label: "Лекции", icon: "BookOpen" },
-      { key: "files" as Tab, label: "Файлы (видео)", icon: "Upload" },
+      { key: "videos" as Tab, label: "Видео", icon: "Play" },
+      { key: "files" as Tab, label: "Загрузчик", icon: "Upload" },
       { key: "discussions" as Tab, label: "Обсуждения", icon: "MessageSquare" },
     ],
   },
@@ -372,6 +375,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "roles" && <AdminRolesTab />}
           {activeTab === "files" && <AdminFilesTab />}
           {activeTab === "lectures" && <AdminLecturesTab />}
+          {activeTab === "videos" && <AdminVideosTab />}
           {activeTab === "removals" && <AdminRemovalTab onPendingCount={setRemovalPendingCount} />}
           {activeTab === "discussions" && <AdminDiscussionsTab />}
         </main>
