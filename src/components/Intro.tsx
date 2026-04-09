@@ -74,6 +74,7 @@ export default function Intro({ onDone }: Props) {
   const [finalVisible, setFinalVisible] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const linesRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const audio = useAudio();
 
   const audioRef = useRef(audio);
@@ -116,7 +117,14 @@ export default function Intro({ onDone }: Props) {
     const tTitle = setTimeout(() => setTitleVisible(true), 1200);
 
     const tFinal = setTimeout(() => { setFinalVisible(true); a.tick(); }, 2800);
-    const tExit  = setTimeout(() => { a.enter(); setFadeOut(true); }, 4200);
+    const tExit  = setTimeout(() => {
+      a.enter();
+      if (wrapRef.current) {
+        wrapRef.current.style.transition = "opacity 0.7s ease";
+        wrapRef.current.style.opacity = "0";
+      }
+      setFadeOut(true);
+    }, 4200);
     const tDone  = setTimeout(() => onDoneRef.current(), 4900);
 
     return () => {
@@ -127,18 +135,18 @@ export default function Intro({ onDone }: Props) {
 
   const handleEnter = () => {
     audio.enter();
-    setFadeOut(true);
+    if (wrapRef.current) {
+      wrapRef.current.style.transition = "opacity 0.7s ease";
+      wrapRef.current.style.opacity = "0";
+    }
     setTimeout(onDone, 700);
   };
 
   return (
     <div
+      ref={wrapRef}
       className="fixed inset-0 z-[9999] flex overflow-hidden select-none"
-      style={{
-        background: "#020509",
-        opacity: fadeOut ? 0 : 1,
-        transition: fadeOut ? "opacity 0.7s ease" : "none",
-      }}
+      style={{ background: "#020509" }}
     >
       {/* Animated grid background */}
       <div
