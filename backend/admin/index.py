@@ -211,7 +211,46 @@ def handler(event: dict, context) -> dict:
         if row["role_inst_kt"]: by_role["инструктор кт"] = row["role_inst_kt"]
         if row["role_inst_fpv"]: by_role["инструктор fpv"] = row["role_inst_fpv"]
         if row["role_inst_saper"]: by_role["инструктор оператор-сапер"] = row["role_inst_saper"]
-        return ok({"total": row["total"], "pending": row["pending"], "approved": row["approved"], "admins": row["admins"], "by_role": by_role})
+
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('files')}")
+        files_count = cur.fetchone()["cnt"]
+
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('topics')}")
+        topics_count = cur.fetchone()["cnt"]
+
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('topic_replies')}")
+        replies_count = cur.fetchone()["cnt"]
+
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('messages')}")
+        messages_count = cur.fetchone()["cnt"]
+
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('chats')}")
+        chats_count = cur.fetchone()["cnt"]
+
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('file_removal_requests')} WHERE status = 'pending'")
+        removal_pending = cur.fetchone()["cnt"]
+
+        return ok({
+            "total": row["total"], "pending": row["pending"], "approved": row["approved"],
+            "admins": row["admins"], "by_role": by_role,
+            "files": files_count, "topics": topics_count, "replies": replies_count,
+            "messages": messages_count, "chats": chats_count, "removal_pending": removal_pending
+        })
+
+    # POST ?action=delete-user
+    if action == "delete-user" and method == "POST":
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        if user_id == admin["id"]:
+            return err("Нельзя удалить себя")
+        cur.execute(f"SELECT id, callsign, email FROM {q('users')} WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            return err("Пользователь не найден", 404)
+        cur.execute(f"DELETE FROM {q('users')} WHERE id = %s", (user_id,))
+        conn.commit()
+        return ok({"message": f"Пользователь {user['callsign'] or user['email']} удалён"})
 
     return err("Не найдено", 404)
 

@@ -45,9 +45,10 @@ interface Props {
   onMakeAdmin: (id: number) => void;
   onRemoveAdmin: (id: number) => void;
   onSetRole: (id: number, role: string) => void;
+  onDeleteUser?: (id: number) => void;
 }
 
-export default function AdminUsersTab({ users, loading, filter, setFilter, msg, onApprove, onReject, onMakeAdmin, onRemoveAdmin, onSetRole }: Props) {
+export default function AdminUsersTab({ users, loading, filter, setFilter, msg, onApprove, onReject, onMakeAdmin, onRemoveAdmin, onSetRole, onDeleteUser }: Props) {
   const filtered = users.filter((u) => filter === "all" || u.status === filter);
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
@@ -200,6 +201,15 @@ export default function AdminUsersTab({ users, loading, filter, setFilter, msg, 
                     >
                       <Icon name="Shield" size={11} />
                       ADMIN
+                    </button>
+                  )}
+                  {onDeleteUser && (
+                    <button
+                      onClick={() => { if (confirm(`Удалить пользователя ${user.callsign || user.name}?`)) onDeleteUser(user.id); }}
+                      className="flex items-center gap-1.5 px-2 py-1.5 font-mono text-xs transition-all"
+                      style={{ border: "1px solid rgba(255,34,68,0.2)", color: "#ff2244", background: "transparent" }}
+                    >
+                      <Icon name="Trash2" size={11} />
                     </button>
                   )}
                 </div>

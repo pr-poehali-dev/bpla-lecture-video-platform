@@ -5,6 +5,7 @@ import AdminUsersTab, { User } from "@/components/admin/AdminUsersTab";
 import AdminFilesTab from "@/components/admin/AdminFilesTab";
 import AdminRolesTab from "@/components/admin/AdminRolesTab";
 import AdminRemovalTab from "@/components/admin/AdminRemovalTab";
+import AdminDiscussionsTab from "@/components/admin/AdminDiscussionsTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,7 +18,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files" | "removals";
+type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions";
 
 interface Stats {
   total: number;
@@ -25,6 +26,12 @@ interface Stats {
   approved: number;
   admins: number;
   by_role: Record<string, number>;
+  files?: number;
+  topics?: number;
+  replies?: number;
+  messages?: number;
+  chats?: number;
+  removal_pending?: number;
 }
 
 const tabLabels: Record<Tab, string> = {
@@ -33,6 +40,7 @@ const tabLabels: Record<Tab, string> = {
   roles: "Доступы",
   files: "Файлы",
   removals: "Заявки на удаление",
+  discussions: "Обсуждения",
 };
 
 const sidebarGroups = [
@@ -50,7 +58,10 @@ const sidebarGroups = [
   },
   {
     label: "КОНТЕНТ",
-    items: [{ key: "files" as Tab, label: "Файлы", icon: "Upload" }],
+    items: [
+      { key: "files" as Tab, label: "Файлы", icon: "Upload" },
+      { key: "discussions" as Tab, label: "Обсуждения", icon: "MessageSquare" },
+    ],
   },
 ];
 
@@ -125,6 +136,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
   const makeAdmin = async (id: number) => { const res = await api.admin.makeAdmin(id); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
   const removeAdmin = async (id: number) => { const res = await api.admin.removeAdmin(id); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
   const setRole = async (id: number, role: string) => { const res = await api.admin.setRole(id, role); if (res.message) { showMsg(res.message); loadUsers(); } };
+  const deleteUser = async (id: number) => { const res = await api.admin.deleteUser(id); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
 
   const pendingCount = users.filter(u => u.status === "pending").length;
   const total = stats?.total || 1;
@@ -148,8 +160,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                 <Icon name="Crosshair" size={13} className="text-[#00f5ff]" />
               </div>
               <div>
-                <div className="font-orbitron text-[10px] font-bold leading-none tracking-[0.15em] text-[#00f5ff]">DRONE</div>
-                <div className="font-orbitron text-[10px] font-bold leading-none tracking-[0.15em] text-white">ACADEMY</div>
+                <div className="font-orbitron text-[10px] font-bold leading-none tracking-[0.15em] text-[#00f5ff]">БПС</div>
               </div>
             </div>
           )}
@@ -230,12 +241,20 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "dashboard" && (
             <div className="space-y-5">
 
-              {/* Stat cards */}
+              {/* Stat cards — users */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Всего бойцов" value={stats?.total ?? "—"} icon="Users" color="#00f5ff" change="+4.2% ↑" />
+                <StatCard label="Всего бойцов" value={stats?.total ?? "—"} icon="Users" color="#00f5ff" />
                 <StatCard label="Ожидают допуска" value={stats?.pending ?? "—"} icon="Clock" color="#ff6b00" change={pendingCount > 0 ? "Нужно внимание" : undefined} />
-                <StatCard label="Допущено" value={stats?.approved ?? "—"} icon="UserCheck" color="#00ff88" change="+5.2% ↑" />
-                <StatCard label="Администраторы" value={stats?.admins ?? "—"} icon="Shield" color="#a855f7" change="+2.2% ↑" />
+                <StatCard label="Допущено" value={stats?.approved ?? "—"} icon="UserCheck" color="#00ff88" />
+                <StatCard label="Администраторы" value={stats?.admins ?? "—"} icon="Shield" color="#a855f7" />
+              </div>
+
+              {/* Stat cards — content */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard label="Файлов загружено" value={stats?.files ?? "—"} icon="FileVideo" color="#00f5ff" />
+                <StatCard label="Тем обсуждений" value={stats?.topics ?? "—"} icon="MessageSquare" color="#00ff88" />
+                <StatCard label="Сообщений в чатах" value={stats?.messages ?? "—"} icon="MessageCircle" color="#a855f7" />
+                <StatCard label="Заявок на удаление" value={stats?.removal_pending ?? "—"} icon="Trash2" color="#ff6b00" change={stats?.removal_pending ? "Ожидают" : undefined} />
               </div>
 
               {/* Charts */}
@@ -345,11 +364,12 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
 
           {activeTab === "users" && (
             <AdminUsersTab users={users} loading={loading} filter={filter} setFilter={setFilter} msg=""
-              onApprove={approve} onReject={reject} onMakeAdmin={makeAdmin} onRemoveAdmin={removeAdmin} onSetRole={setRole} />
+              onApprove={approve} onReject={reject} onMakeAdmin={makeAdmin} onRemoveAdmin={removeAdmin} onSetRole={setRole} onDeleteUser={deleteUser} />
           )}
           {activeTab === "roles" && <AdminRolesTab />}
           {activeTab === "files" && <AdminFilesTab />}
           {activeTab === "removals" && <AdminRemovalTab onPendingCount={setRemovalPendingCount} />}
+          {activeTab === "discussions" && <AdminDiscussionsTab />}
         </main>
       </div>
     </div>

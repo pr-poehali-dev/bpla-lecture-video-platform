@@ -1,5 +1,7 @@
 {
   "removal-requests": "https://functions.poehali.dev/c72247bf-756d-4755-9c5d-88a1c31e0f01",
+  "messages": "https://functions.poehali.dev/64d88e88-79a2-48b8-8ac8-d37bfa8eb51e",
   "files": "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559",
+  "auth": "https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199",
   "admin": "https://functions.poehali.dev/5407bcc9-7143-4278-8422-e2a603eb0135"
 }

@@ -84,6 +84,9 @@ export const api = {
     removeAdmin: (user_id: number) =>
       fetch(`${ADMIN_URL}/?action=remove-admin`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
 
+    deleteUser: (user_id: number) =>
+      fetch(`${ADMIN_URL}/?action=delete-user`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
+
     stats: () =>
       fetch(`${ADMIN_URL}/?action=stats`, { headers: authHeaders() }).then((r) => r.json()),
   },
