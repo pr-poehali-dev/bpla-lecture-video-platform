@@ -89,6 +89,12 @@ export const api = {
 
     stats: () =>
       fetch(`${ADMIN_URL}/?action=stats`, { headers: authHeaders() }).then((r) => r.json()),
+
+    getSettings: () =>
+      fetch(`${ADMIN_URL}/?action=get-settings`).then((r) => r.json()),
+
+    setSettings: (settings: Record<string, string>) =>
+      fetch(`${ADMIN_URL}/?action=set-settings`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ settings }) }).then((r) => r.json()),
   },
 
   msg: {

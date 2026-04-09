@@ -43,8 +43,19 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [siteEnabled, setSiteEnabled] = useState(true);
+  const [maintenanceMessage, setMaintenanceMessage] = useState("Сайт временно недоступен. Ведутся технические работы.");
 
   const [introDone, setIntroDone] = useState(() => !!sessionStorage.getItem("intro_done"));
+
+  useEffect(() => {
+    api.admin.getSettings().then((res) => {
+      if (res.settings) {
+        if (res.settings.site_enabled === "false") setSiteEnabled(false);
+        if (res.settings.maintenance_message) setMaintenanceMessage(res.settings.maintenance_message);
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("drone_token");
@@ -95,6 +106,28 @@ export default function App() {
   }
 
   if (!user) {
+    if (!siteEnabled) {
+      return (
+        <TooltipProvider>
+          <div className="min-h-screen flex items-center justify-center grid-bg" style={{ background: "#050810" }}>
+            <div className="text-center max-w-md px-6">
+              <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ border: "1px solid rgba(255,107,0,0.5)", boxShadow: "0 0 30px rgba(255,107,0,0.2)" }}>
+                <Icon name="Wrench" size={28} className="text-[#ff6b00]" />
+              </div>
+              <div className="font-mono text-xs text-[#ff6b00] tracking-[0.4em] mb-4">// ТЕХНИЧЕСКИЕ РАБОТЫ</div>
+              <div className="font-orbitron text-2xl font-black text-white mb-4 tracking-wider">САЙТ НЕДОСТУПЕН</div>
+              <p className="font-plex text-sm text-[#5a7a95] leading-relaxed mb-8">{maintenanceMessage}</p>
+              <button
+                onClick={() => setAuthPage("login")}
+                className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors underline"
+              >
+                Войти как администратор
+              </button>
+            </div>
+          </div>
+        </TooltipProvider>
+      );
+    }
     return (
       <TooltipProvider>
         <Toaster />
@@ -103,6 +136,29 @@ export default function App() {
           ? <RegisterPage onBack={() => setAuthPage("login")} />
           : <LoginPage onLogin={handleLogin} onRegister={() => setAuthPage("register")} />
         }
+      </TooltipProvider>
+    );
+  }
+
+  if (!siteEnabled && !user.is_admin) {
+    return (
+      <TooltipProvider>
+        <div className="min-h-screen flex items-center justify-center grid-bg" style={{ background: "#050810" }}>
+          <div className="text-center max-w-md px-6">
+            <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6" style={{ border: "1px solid rgba(255,107,0,0.5)", boxShadow: "0 0 30px rgba(255,107,0,0.2)" }}>
+              <Icon name="Wrench" size={28} className="text-[#ff6b00]" />
+            </div>
+            <div className="font-mono text-xs text-[#ff6b00] tracking-[0.4em] mb-4">// ТЕХНИЧЕСКИЕ РАБОТЫ</div>
+            <div className="font-orbitron text-2xl font-black text-white mb-4 tracking-wider">САЙТ НЕДОСТУПЕН</div>
+            <p className="font-plex text-sm text-[#5a7a95] leading-relaxed mb-8">{maintenanceMessage}</p>
+            <button
+              onClick={handleLogout}
+              className="font-mono text-xs text-[#3a5570] hover:text-[#ff2244] transition-colors"
+            >
+              Выйти
+            </button>
+          </div>
+        </div>
       </TooltipProvider>
     );
   }

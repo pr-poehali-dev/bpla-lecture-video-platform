@@ -69,6 +69,14 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return result if result else err("Не найдено", 404)
 
+    # GET ?action=get-settings — публичный, вызывается из App.tsx при старте
+    if action == "get-settings" and method == "GET":
+        cur.execute(f"SELECT key, value FROM {q('site_settings')}")
+        rows = cur.fetchall()
+        settings = {r["key"]: r["value"] for r in rows}
+        conn.close()
+        return ok({"settings": settings})
+
     admin = get_admin(event, cur)
     if not admin:
         return err("Доступ запрещён", 403)
@@ -251,6 +259,28 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"DELETE FROM {q('users')} WHERE id = %s", (user_id,))
         conn.commit()
         return ok({"message": f"Пользователь {user['callsign'] or user['email']} удалён"})
+
+    # GET ?action=get-settings  (публичный — без проверки админа, вызывается из App.tsx)
+    # Примечание: этот action проверяется до get_admin выше, но здесь оставлен для полноты
+    if action == "get-settings" and method == "GET":
+        cur.execute(f"SELECT key, value FROM {q('site_settings')}")
+        rows = cur.fetchall()
+        settings = {r["key"]: r["value"] for r in rows}
+        return ok({"settings": settings})
+
+    # POST ?action=set-settings
+    if action == "set-settings" and method == "POST":
+        settings = body.get("settings")
+        if not isinstance(settings, dict):
+            return err("settings должен быть объектом")
+        for key, value in settings.items():
+            cur.execute(
+                f"INSERT INTO {q('site_settings')} (key, value, updated_at) VALUES (%s, %s, NOW()) "
+                f"ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()",
+                (key, str(value))
+            )
+        conn.commit()
+        return ok({"message": "Настройки сохранены"})
 
     return err("Не найдено", 404)
 
