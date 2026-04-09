@@ -76,21 +76,25 @@ export default function Intro({ onDone }: Props) {
   const linesRef = useRef<HTMLDivElement>(null);
   const audio = useAudio();
 
-  useEffect(() => {
-    // Phase 0 → 1: start
-    const t0 = setTimeout(() => { setPhase(1); audio.tick(); }, 200);
+  const audioRef = useRef(audio);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => { audioRef.current = audio; }, [audio]);
+  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
-    // Boot lines appear one by one
-    BOOT_LINES.forEach((line, i) => {
+  useEffect(() => {
+    const a = audioRef.current;
+
+    const t0 = setTimeout(() => { setPhase(1); a.tick(); }, 200);
+
+    const lineTimers = BOOT_LINES.map((line, i) =>
       setTimeout(() => {
         setBootLines((prev) => [...prev, line]);
         if (linesRef.current) linesRef.current.scrollTop = linesRef.current.scrollHeight;
-        if (i === BOOT_LINES.length - 1) audio.ready();
-        else audio.bootLine();
-      }, 400 + i * 340);
-    });
+        if (i === BOOT_LINES.length - 1) a.ready();
+        else a.bootLine();
+      }, 400 + i * 340)
+    );
 
-    // Progress bar — periodic ticks
     let lastTickAt = 0;
     const progressInterval = setInterval(() => {
       setProgress((p) => {
@@ -98,32 +102,25 @@ export default function Intro({ onDone }: Props) {
         const next = p + 2;
         if (Math.floor(next / 25) > Math.floor(lastTickAt / 25)) {
           lastTickAt = next;
-          audio.tick();
+          a.tick();
         }
         return next;
       });
     }, 42);
 
-    // Glitch the title
-    const tGlitch1 = setTimeout(() => { setGlitch(true); audio.glitchSound(); }, 1500);
+    const tGlitch1 = setTimeout(() => { setGlitch(true); a.glitchSound(); }, 1500);
     const tGlitch2 = setTimeout(() => setGlitch(false), 1650);
-    const tGlitch3 = setTimeout(() => { setGlitch(true); }, 1800);
+    const tGlitch3 = setTimeout(() => setGlitch(true), 1800);
     const tGlitch4 = setTimeout(() => setGlitch(false), 1900);
 
-    // Title appears
     const tTitle = setTimeout(() => setTitleVisible(true), 1200);
 
-    // Final CTA появляется, потом авто-переход
-    const tFinal = setTimeout(() => { setFinalVisible(true); audio.ready(); }, 2800);
-    const tExit = setTimeout(() => { audio.enter(); setFadeOut(true); }, 4200);
-    const tDone = setTimeout(() => onDone(), 4900);
+    const tFinal = setTimeout(() => { setFinalVisible(true); a.tick(); }, 2800);
+    const tExit  = setTimeout(() => { a.enter(); setFadeOut(true); }, 4200);
+    const tDone  = setTimeout(() => onDoneRef.current(), 4900);
 
     return () => {
-      clearTimeout(t0);
-      clearTimeout(tGlitch1); clearTimeout(tGlitch2);
-      clearTimeout(tGlitch3); clearTimeout(tGlitch4);
-      clearTimeout(tTitle); clearTimeout(tFinal);
-      clearTimeout(tExit); clearTimeout(tDone);
+      [t0, ...lineTimers, tGlitch1, tGlitch2, tGlitch3, tGlitch4, tTitle, tFinal, tExit, tDone].forEach(clearTimeout);
       clearInterval(progressInterval);
     };
   }, []);
