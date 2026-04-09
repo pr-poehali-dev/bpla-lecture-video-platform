@@ -17,6 +17,7 @@ import MessagesPage from "@/pages/MessagesPage";
 import ContentUploadPage from "@/pages/ContentUploadPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
+import AdminPage from "@/pages/AdminPage";
 import { api } from "@/api";
 
 export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "profile" | "messages" | "content-upload";
@@ -41,6 +42,7 @@ export default function App() {
   const [authPage, setAuthPage] = useState<AuthPage>("login");
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const [introDone, setIntroDone] = useState(() => !!sessionStorage.getItem("intro_done"));
 
@@ -127,17 +129,31 @@ export default function App() {
       case "discussions": return <DiscussionsPage user={user} />;
       case "content-upload": return <ContentUploadPage user={user} />;
       case "firmware": return <FirmwarePage user={user} />;
-      case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} onNavigate={navigate} />;
+      case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} onNavigate={navigate} onGoToAdmin={user.is_admin ? () => setShowAdmin(true) : undefined} />;
       case "messages": return <MessagesPage user={user} />;
       default: return <HomePage onNavigate={navigate} />;
     }
   };
 
+  if (showAdmin && user?.is_admin) {
+    return (
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AdminPage
+          currentUser={user}
+          onLogout={() => { handleLogout(); setShowAdmin(false); }}
+          onGoToSite={() => setShowAdmin(false)}
+        />
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout}>
+      <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout} onGoToAdmin={user?.is_admin ? () => setShowAdmin(true) : undefined}>
         {renderPage()}
       </Layout>
     </TooltipProvider>

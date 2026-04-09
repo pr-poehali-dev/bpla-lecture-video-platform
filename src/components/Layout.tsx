@@ -38,9 +38,10 @@ interface LayoutProps {
   children: React.ReactNode;
   user?: User;
   onLogout?: () => void;
+  onGoToAdmin?: () => void;
 }
 
-export default function Layout({ currentPage, onNavigate, children, user, onLogout }: LayoutProps) {
+export default function Layout({ currentPage, onNavigate, children, user, onLogout, onGoToAdmin }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const serverOnline = useServerStatus();
@@ -203,13 +204,13 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                           <Icon name="User" size={12} />
                           ЛИЧНОЕ ДЕЛО
                         </button>
-                        {user.is_admin && (
+                        {user.is_admin && onGoToAdmin && (
                           <button
-                            onClick={() => { onNavigate("content-upload"); setProfileOpen(false); }}
-                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs hover:bg-[rgba(255,170,0,0.05)] transition-all"
-                            style={{ color: "#ffaa00" }}
+                            onClick={() => { onGoToAdmin(); setProfileOpen(false); }}
+                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs hover:bg-[rgba(255,107,0,0.05)] transition-all"
+                            style={{ color: "#ff6b00" }}
                           >
-                            <Icon name="ShieldCheck" size={12} />
+                            <Icon name="LayoutDashboard" size={12} />
                             ПАНЕЛЬ АДМИНИСТРАТОРА
                           </button>
                         )}
@@ -266,7 +267,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 Личное Дело
               </button>
             )}
-            {user && (user.role === "инструктор" || user.is_admin) && (
+            {user && (user.role?.startsWith("инструктор") || user.is_admin) && (
               <button
                 onClick={() => { onNavigate("content-upload"); setMobileOpen(false); }}
                 className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
@@ -275,6 +276,16 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               >
                 <Icon name="Upload" size={15} />
                 Загрузить материал
+              </button>
+            )}
+            {user?.is_admin && onGoToAdmin && (
+              <button
+                onClick={() => { onGoToAdmin(); setMobileOpen(false); }}
+                className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors"
+                style={{ color: "#ff6b00" }}
+              >
+                <Icon name="LayoutDashboard" size={15} />
+                Панель администратора
               </button>
             )}
             {user && (

@@ -3,15 +3,12 @@ import Icon from "@/components/ui/icon";
 import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 import { User, Page } from "@/App";
-import AdminUsersTab, { User as AdminUser } from "@/components/admin/AdminUsersTab";
-import AdminFilesTab from "@/components/admin/AdminFilesTab";
-import AdminRolesTab from "@/components/admin/AdminRolesTab";
-import AdminRemovalTab from "@/components/admin/AdminRemovalTab";
 
 interface ProfilePageProps {
   user: User;
   onUpdate: (user: User) => void;
   onNavigate: (page: Page) => void;
+  onGoToAdmin?: () => void;
   onLogout?: () => void;
 }
 
@@ -23,119 +20,7 @@ const RANKS = [
   "Генерал-майор", "Генерал-лейтенант", "Генерал-полковник", "Генерал армии",
 ];
 
-type AdminTab = "users" | "roles" | "files" | "removals";
-
-function AdminPanel({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<AdminTab>("users");
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("pending");
-  const [msg, setMsg] = useState("");
-  const [removalPending, setRemovalPending] = useState(0);
-
-  const loadUsers = async () => {
-    setLoading(true);
-    const res = await api.admin.users();
-    if (res.users) setUsers(res.users);
-    setLoading(false);
-  };
-
-  useEffect(() => { loadUsers(); }, []);
-
-  const showMsg = (text: string) => {
-    setMsg(text);
-    setTimeout(() => setMsg(""), 3500);
-  };
-
-  const approve = async (id: number) => {
-    const res = await api.admin.approve(id);
-    if (res.message) { showMsg(res.message); loadUsers(); }
-  };
-  const reject = async (id: number) => {
-    const res = await api.admin.reject(id);
-    if (res.message) { showMsg(res.message); loadUsers(); }
-  };
-  const makeAdmin = async (id: number) => {
-    const res = await api.admin.makeAdmin(id);
-    if (res.message) { showMsg(res.message); loadUsers(); }
-  };
-  const removeAdmin = async (id: number) => {
-    const res = await api.admin.removeAdmin(id);
-    if (res.message) { showMsg(res.message); loadUsers(); }
-  };
-  const setRole = async (id: number, role: string) => {
-    const res = await api.admin.setRole(id, role);
-    if (res.message) { showMsg(res.message); loadUsers(); }
-  };
-
-  const pendingCount = users.filter((u) => u.status === "pending").length;
-
-  const tabs: { key: AdminTab; label: string; icon: string; badge?: number }[] = [
-    { key: "users", label: "ЛИЧНЫЙ СОСТАВ", icon: "Users", badge: pendingCount },
-    { key: "roles", label: "ДОСТУПЫ", icon: "Shield" },
-    { key: "files", label: "ФАЙЛЫ", icon: "Upload" },
-    { key: "removals", label: "ЗАЯВКИ", icon: "Trash2", badge: removalPending },
-  ];
-
-  return (
-    <div className="mt-8">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-8 h-px bg-[#ff6b00]" />
-        <span className="font-mono text-xs text-[#ff6b00] tracking-[0.3em]">// ПАНЕЛЬ АДМИНИСТРАТОРА</span>
-      </div>
-
-      {msg && (
-        <div className="mb-4 p-3 font-mono text-sm text-[#00ff88]" style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.2)" }}>
-          ✓ {msg}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className="flex items-center gap-1.5 font-mono text-xs px-3 py-2 tracking-wider transition-all whitespace-nowrap flex-shrink-0"
-            style={{
-              border: `1px solid ${activeTab === tab.key ? "#00f5ff" : "#1a2a3a"}`,
-              color: activeTab === tab.key ? "#050810" : "#3a5570",
-              background: activeTab === tab.key ? "#00f5ff" : "transparent",
-            }}
-          >
-            <Icon name={tab.icon as "Users"} size={12} />
-            {tab.label}
-            {tab.badge && tab.badge > 0 ? (
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold" style={{ background: "#ff6b00", color: "#fff" }}>
-                {tab.badge}
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "users" && (
-        <AdminUsersTab
-          users={users}
-          loading={loading}
-          filter={filter}
-          setFilter={setFilter}
-          msg=""
-          onApprove={approve}
-          onReject={reject}
-          onMakeAdmin={makeAdmin}
-          onRemoveAdmin={removeAdmin}
-          onSetRole={setRole}
-        />
-      )}
-      {activeTab === "roles" && <AdminRolesTab />}
-      {activeTab === "files" && <AdminFilesTab isAdmin={true} />}
-      {activeTab === "removals" && <AdminRemovalTab onPendingCount={setRemovalPending} />}
-    </div>
-  );
-}
-
-export default function ProfilePage({ user, onUpdate, onNavigate, onLogout }: ProfilePageProps) {
+export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, onLogout }: ProfilePageProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name || "");
   const [rank, setRank] = useState(user.rank || "");
@@ -330,7 +215,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onLogout }: Pr
 
         {/* Быстрые действия */}
         <div className="space-y-2 mb-6">
-          {(user.is_admin || user.role === "инструктор") && (
+          {(user.is_admin || user.role?.startsWith("инструктор")) && (
             <button
               onClick={() => onNavigate("content-upload")}
               className="w-full flex items-center gap-3 px-5 py-4 transition-all group"
@@ -344,6 +229,22 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onLogout }: Pr
                 <div className="font-mono text-xs text-[#3a5570] mt-0.5">Видео, документы, прошивки</div>
               </div>
               <Icon name="ChevronRight" size={16} className="text-[#3a5570] group-hover:text-[#00ff88] transition-colors" />
+            </button>
+          )}
+          {user.is_admin && onGoToAdmin && (
+            <button
+              onClick={onGoToAdmin}
+              className="w-full flex items-center gap-3 px-5 py-4 transition-all group"
+              style={{ border: "1px solid rgba(255,107,0,0.35)", background: "rgba(255,107,0,0.04)" }}
+            >
+              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(255,107,0,0.4)", background: "rgba(255,107,0,0.08)" }}>
+                <Icon name="LayoutDashboard" size={16} className="text-[#ff6b00]" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="font-orbitron text-sm font-bold text-[#ff6b00] tracking-wider group-hover:text-white transition-colors">ПАНЕЛЬ АДМИНИСТРАТОРА</div>
+                <div className="font-mono text-xs text-[#3a5570] mt-0.5">Управление составом, контентом, правами</div>
+              </div>
+              <Icon name="ChevronRight" size={16} className="text-[#3a5570] group-hover:text-[#ff6b00] transition-colors" />
             </button>
           )}
         </div>
@@ -360,8 +261,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onLogout }: Pr
         </div>
       </div>
 
-      {/* Панель администратора — только для is_admin */}
-      {user.is_admin && <AdminPanel user={user} />}
+
     </div>
   );
 }
