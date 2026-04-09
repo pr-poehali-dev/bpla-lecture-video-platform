@@ -113,14 +113,17 @@ export default function Intro({ onDone }: Props) {
     // Title appears
     const tTitle = setTimeout(() => setTitleVisible(true), 1200);
 
-    // Final CTA
-    const tFinal = setTimeout(() => { setFinalVisible(true); audio.tick(); }, 2800);
+    // Final CTA появляется, потом авто-переход
+    const tFinal = setTimeout(() => { setFinalVisible(true); audio.ready(); }, 2800);
+    const tExit = setTimeout(() => { audio.enter(); setFadeOut(true); }, 4200);
+    const tDone = setTimeout(() => onDone(), 4900);
 
     return () => {
       clearTimeout(t0);
       clearTimeout(tGlitch1); clearTimeout(tGlitch2);
       clearTimeout(tGlitch3); clearTimeout(tGlitch4);
       clearTimeout(tTitle); clearTimeout(tFinal);
+      clearTimeout(tExit); clearTimeout(tDone);
       clearInterval(progressInterval);
     };
   }, []);
