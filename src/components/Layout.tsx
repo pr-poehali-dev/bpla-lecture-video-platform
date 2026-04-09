@@ -303,12 +303,45 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
       </header>
 
       {/* Main content */}
-      <main className="pt-16">
+      <main className="pt-16 pb-16 sm:pb-0">
         {children}
       </main>
 
       {/* Chat widget */}
       {user && currentPage !== "messages" && <ChatWidget user={user} />}
+
+      {/* Bottom navigation — mobile only */}
+      {user && (
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-40 flex sm:hidden"
+          style={{ background: "rgba(5,8,16,0.97)", borderTop: "1px solid rgba(0,245,255,0.15)", backdropFilter: "blur(12px)" }}
+        >
+          {[
+            { id: "home" as Page, icon: "Home", label: "Главная" },
+            { id: "lectures" as Page, icon: "BookOpen", label: "Лекции" },
+            { id: "videos" as Page, icon: "Play", label: "Видео" },
+            { id: "discussions" as Page, icon: "MessageSquare", label: "Форум" },
+            { id: "messages" as Page, icon: "MessageCircle", label: "Чат" },
+            { id: "profile" as Page, icon: "User", label: "Профиль" },
+          ].map((item) => {
+            const isActive = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                className="flex-1 relative flex flex-col items-center justify-center gap-0.5 py-2 transition-all"
+                style={{ color: isActive ? "#00f5ff" : "#3a5570" }}
+              >
+                <Icon name={item.icon} size={isActive ? 20 : 18} />
+                <span className="font-mono text-[9px] tracking-wider">{item.label.toUpperCase()}</span>
+                {isActive && (
+                  <div className="absolute bottom-0 w-6 h-0.5" style={{ background: "#00f5ff", boxShadow: "0 0 6px #00f5ff" }} />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Footer */}
       <footer className="mt-12 sm:mt-20 border-t py-6 sm:py-8" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(5,8,16,0.8)" }}>
