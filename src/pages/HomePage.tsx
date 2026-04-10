@@ -105,6 +105,39 @@ export default function HomePage({ onNavigate }: Props) {
         </div>
       </section>
 
+      {/* Intro Video */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="flex items-center gap-4 mb-6 sm:mb-8">
+          <div className="w-8 h-px bg-[#00f5ff] flex-shrink-0" />
+          <h2 className="section-title text-lg sm:text-xl text-white whitespace-nowrap">О платформе</h2>
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, rgba(0,245,255,0.3), transparent)" }} />
+        </div>
+        <div
+          className="relative w-full rounded-sm overflow-hidden"
+          style={{ border: "1px solid rgba(0,245,255,0.2)", background: "#070d18", aspectRatio: "16/9" }}
+        >
+          {/* Placeholder content */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+            <div
+              className="w-20 h-20 flex items-center justify-center rounded-full"
+              style={{ border: "2px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.06)", boxShadow: "0 0 40px rgba(0,245,255,0.15)" }}
+            >
+              <Icon name="Play" size={32} className="text-[#00f5ff] ml-1" />
+            </div>
+            <div className="text-center">
+              <div className="font-orbitron text-sm font-bold text-white tracking-wider mb-2">ИНТРО-ВИДЕО</div>
+              <div className="font-mono text-xs text-[#3a5570] tracking-widest">// СКОРО</div>
+            </div>
+          </div>
+          {/* Corner decorations */}
+          <div className="absolute top-3 left-3 w-5 h-5 border-t border-l" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+          <div className="absolute top-3 right-3 w-5 h-5 border-t border-r" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+          <div className="absolute bottom-3 left-3 w-5 h-5 border-b border-l" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+          <div className="absolute bottom-3 right-3 w-5 h-5 border-b border-r" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 font-mono text-[10px] text-[#1a3a50] tracking-widest">REC ◉</div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="flex items-center gap-4 mb-8 sm:mb-12">
