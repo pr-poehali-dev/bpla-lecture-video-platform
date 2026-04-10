@@ -19,7 +19,7 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
     fetch("https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199/?action=me", {
       signal: AbortSignal.timeout(5000),
     })
-      .then(() => setServerOnline(true))
+      .then((r) => setServerOnline(r.status < 500))
       .catch(() => setServerOnline(false));
   }, []);
 
