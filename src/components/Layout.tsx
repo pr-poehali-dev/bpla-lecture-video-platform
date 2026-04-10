@@ -267,10 +267,10 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
 
           {/* Mobile menu button */}
           <button
-            className="lg:hidden text-[#00f5ff] p-2"
+            className="lg:hidden text-[#00f5ff] p-3 -mr-1"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            <Icon name={mobileOpen ? "X" : "Menu"} size={20} />
+            <Icon name={mobileOpen ? "X" : "Menu"} size={22} />
           </button>
         </div>
 
@@ -281,11 +281,11 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               <button
                 key={item.id}
                 onClick={() => { onNavigate(item.id); setMobileOpen(false); }}
-                className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
+                className={`flex items-center gap-3 w-full px-6 py-4 font-plex text-sm tracking-wider uppercase transition-colors ${
                   currentPage === item.id ? "text-[#00f5ff] bg-[rgba(0,245,255,0.06)]" : "text-[#7a9bb5]"
                 }`}
               >
-                <Icon name={item.icon} size={15} />
+                <Icon name={item.icon} size={16} />
                 {item.label}
               </button>
             ))}
@@ -363,11 +363,11 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className="flex-1 relative flex flex-col items-center justify-center gap-0.5 py-2 transition-all"
+                className="flex-1 relative flex flex-col items-center justify-center gap-1 py-3 transition-all"
                 style={{ color: isActive ? "#00f5ff" : "#3a5570" }}
               >
                 <div className="relative">
-                  <Icon name={item.icon} size={isActive ? 20 : 18} />
+                  <Icon name={item.icon} size={isActive ? 22 : 20} />
                   {badge > 0 && (
                     <span
                       className="absolute -top-1.5 -right-2 min-w-[16px] h-4 flex items-center justify-center font-mono text-[9px] font-bold rounded-full px-1"
@@ -377,7 +377,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     </span>
                   )}
                 </div>
-                <span className="font-mono text-[9px] tracking-wider">{item.label.toUpperCase()}</span>
+                <span className="font-mono text-[10px] tracking-wider">{item.label.toUpperCase()}</span>
                 {isActive && (
                   <div className="absolute bottom-0 w-6 h-0.5" style={{ background: "#00f5ff", boxShadow: "0 0 6px #00f5ff" }} />
                 )}

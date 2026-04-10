@@ -130,26 +130,29 @@ export default function LecturesPage() {
           <div className="font-mono text-xs text-[#1a2a3a] mt-1">Инструктор ещё не добавил материалы</div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {filtered.map((file, i) => (
             <div
               key={file.id}
               onClick={() => setViewing(file)}
-              className="card-drone flex items-center gap-4 p-4 cursor-pointer hover:border-[rgba(0,245,255,0.3)] transition-all animate-fade-in"
+              className="card-drone flex items-center gap-3 sm:gap-4 p-3 sm:p-4 cursor-pointer hover:border-[rgba(0,245,255,0.3)] transition-all animate-fade-in"
               style={{ animationDelay: `${i * 0.04}s` }}
             >
-              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.04)" }}>
-                <Icon name="FileText" size={16} className="text-[#00f5ff]" />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.04)" }}>
+                <Icon name="FileText" size={18} className="text-[#00f5ff]" />
               </div>
 
               <div className="flex-1 min-w-0">
                 {file.category && (
-                  <div className="font-mono text-[10px] text-[#3a5570] mb-1">{file.category}</div>
+                  <div className="font-mono text-[10px] text-[#3a5570] mb-0.5">{file.category}</div>
                 )}
-                <div className="font-plex text-sm text-white truncate">{file.title}</div>
+                <div className="font-plex text-sm text-white truncate leading-snug">{file.title}</div>
                 {file.description && (
-                  <div className="font-mono text-xs text-[#3a5570] truncate mt-0.5">{file.description}</div>
+                  <div className="font-mono text-xs text-[#3a5570] truncate mt-0.5 hidden sm:block">{file.description}</div>
                 )}
+                <div className="flex items-center gap-3 mt-0.5 sm:hidden text-[#3a5570]">
+                  {file.file_size > 0 && <span className="font-mono text-[10px]">{formatSize(file.file_size)}</span>}
+                </div>
               </div>
 
               <div className="hidden md:flex items-center gap-4 flex-shrink-0 text-[#3a5570]">
@@ -157,8 +160,8 @@ export default function LecturesPage() {
                 {file.file_size > 0 && <span className="font-mono text-xs">{formatSize(file.file_size)}</span>}
               </div>
 
-              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors">
-                <Icon name="Eye" size={18} />
+              <div className="flex-shrink-0 w-11 h-11 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors rounded-sm">
+                <Icon name="Eye" size={20} />
               </div>
             </div>
           ))}

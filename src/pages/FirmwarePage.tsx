@@ -261,26 +261,28 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
                 return (
                   <div
                     key={file.id}
-                    className="flex items-center px-4 py-3 transition-colors hover:bg-[#0a1520] cursor-pointer gap-3"
+                    className="flex flex-col sm:flex-row sm:items-center px-3 sm:px-4 py-3 gap-2 sm:gap-3 transition-colors hover:bg-[#0a1520] cursor-pointer"
                     style={{ borderBottom: i < filtered.length - 1 ? "1px solid #0d1a28" : "none" }}
                     onClick={() => setViewing(file)}
                   >
-                    <span className="font-mono text-xs text-[#1a2a3a] w-6 flex-shrink-0">{i + 1}</span>
-                    <span className="font-mono text-xs px-1.5 py-0.5 flex-shrink-0" style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}66`, color: meta.color }}>
-                      {meta.label}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-mono text-sm text-white truncate">{file.title}</div>
-                      {file.description && <div className="font-mono text-xs text-[#3a5570] truncate">{file.description}</div>}
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <span className="font-mono text-xs text-[#1a2a3a] w-5 flex-shrink-0 hidden sm:block">{i + 1}</span>
+                      <span className="font-mono text-[10px] sm:text-xs px-1.5 py-0.5 flex-shrink-0" style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}66`, color: meta.color }}>
+                        {meta.label}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-plex text-sm text-white truncate">{file.title}</div>
+                        {file.description && <div className="font-mono text-xs text-[#3a5570] truncate">{file.description}</div>}
+                      </div>
                     </div>
-                    {file.category && <span className="font-mono text-xs text-[#3a5570] hidden md:block">{file.category}</span>}
-                    <span className="font-mono text-xs text-[#1a2a3a]">{formatSize(file.file_size)}</span>
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => setViewing(file)} className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Открыть">
-                        <Icon name="Eye" size={16} />
+                    <div className="flex items-center gap-2 sm:gap-3 pl-7 sm:pl-0" onClick={(e) => e.stopPropagation()}>
+                      {file.category && <span className="font-mono text-xs text-[#3a5570] hidden md:block flex-shrink-0">{file.category}</span>}
+                      <span className="font-mono text-xs text-[#1a2a3a] flex-shrink-0">{formatSize(file.file_size)}</span>
+                      <button onClick={() => setViewing(file)} className="w-10 h-10 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0" title="Открыть">
+                        <Icon name="Eye" size={18} />
                       </button>
-                      <a href={file.cdn_url} download={file.original_name} className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Скачать">
-                        <Icon name="Download" size={16} />
+                      <a href={file.cdn_url} download={file.original_name} className="w-10 h-10 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0" title="Скачать">
+                        <Icon name="Download" size={18} />
                       </a>
                     </div>
                   </div>

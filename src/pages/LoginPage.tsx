@@ -59,7 +59,7 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
         </div>
 
         {/* Form */}
-        <div className="card-drone p-8" style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
+        <div className="card-drone p-5 sm:p-8" style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
           <div
             className="flex items-center gap-2 mb-6 relative group cursor-default"
             onMouseEnter={() => setHintVisible(true)}

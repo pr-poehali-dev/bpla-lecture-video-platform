@@ -133,7 +133,7 @@ export default function VideosPage() {
           <div className="font-mono text-xs text-[#1a2a3a] mt-1">Администратор ещё не добавил видео</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map((file) => (
             <div
               key={file.id}
@@ -176,14 +176,14 @@ export default function VideosPage() {
                   </span>
                 )}
               </div>
-              <div className="p-3">
-                <div className="font-mono text-sm text-white mb-1 truncate">{file.title}</div>
+              <div className="p-3 sm:p-4">
+                <div className="font-plex text-sm text-white mb-1 truncate">{file.title}</div>
                 {file.description && (
                   <div className="font-mono text-xs text-[#3a5570] mb-2 line-clamp-2">{file.description}</div>
                 )}
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs text-[#1a2a3a]">{formatSize(file.file_size)}</span>
-                  <span className="font-mono text-xs text-[#3a5570]">{file.uploader}</span>
+                  <span className="font-mono text-xs text-[#3a5570] truncate ml-2">{file.uploader}</span>
                 </div>
               </div>
             </div>

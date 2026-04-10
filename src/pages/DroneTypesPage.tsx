@@ -113,7 +113,7 @@ export default function DroneTypesPage() {
             <button
               key={drone.id}
               onClick={() => setSelected(drone.id === selected ? null : drone.id)}
-              className={`w-full flex items-center gap-4 p-4 text-left transition-all duration-200 ${
+              className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 text-left transition-all duration-200 ${
                 selected === drone.id ? "border" : "card-drone"
               }`}
               style={
@@ -144,11 +144,11 @@ export default function DroneTypesPage() {
                 <Icon name="ChevronLeft" size={14} />
                 Все типы
               </button>
-              <div className="flex items-start gap-4 mb-6">
-                <div className="text-5xl">{selectedDrone.emoji}</div>
+              <div className="flex items-start gap-3 sm:gap-4 mb-5 sm:mb-6">
+                <div className="text-3xl sm:text-5xl">{selectedDrone.emoji}</div>
                 <div>
                   <div className="font-mono text-sm mb-1" style={{ color: selectedDrone.color }}>{selectedDrone.code}</div>
-                  <h2 className="font-orbitron text-2xl font-black text-white mb-1">{selectedDrone.name}</h2>
+                  <h2 className="font-orbitron text-xl sm:text-2xl font-black text-white mb-1">{selectedDrone.name}</h2>
                   <div className="font-plex text-sm text-[#5a7a95]">{selectedDrone.category}</div>
                 </div>
               </div>

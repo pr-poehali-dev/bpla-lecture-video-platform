@@ -217,7 +217,7 @@ export default function DiscussionsPage({ user }: Props) {
               <button
                 key={t.id}
                 onClick={() => openTopic(t.id)}
-                className="w-full text-left p-4 transition-all duration-200 relative group"
+                className="w-full text-left p-3 sm:p-4 transition-all duration-200 relative group"
                 style={
                   selectedId === t.id
                     ? { background: "rgba(0,245,255,0.06)", border: "1px solid rgba(0,245,255,0.3)" }
@@ -290,7 +290,7 @@ export default function DiscussionsPage({ user }: Props) {
               </div>
 
               {/* Replies */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4" style={{ maxHeight: "420px" }}>
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4" style={{ maxHeight: "min(420px, 45vh)" }}>
                 {replies.length === 0 ? (
                   <div className="text-center py-8 font-mono text-xs text-[#3a5570]">Комментариев пока нет. Будьте первым!</div>
                 ) : (

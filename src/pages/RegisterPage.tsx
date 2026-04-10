@@ -138,7 +138,7 @@ export default function RegisterPage({ onBack }: Props) {
           <div className="font-mono text-xs text-[#3a5570] tracking-[0.3em]">// ЗАПРОС ДОСТУПА</div>
         </div>
 
-        <div className="card-drone p-8" style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
+        <div className="card-drone p-5 sm:p-8" style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
           {done ? (
             <div className="text-center py-6">
               <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4" style={{ border: "1px solid rgba(0,255,136,0.4)", boxShadow: "0 0 30px rgba(0,255,136,0.2)" }}>
