@@ -223,7 +223,7 @@ export default function MessagesPage({ user }: MessagesPageProps) {
     : messages;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90" onClick={() => setLightbox(null)}>
@@ -232,12 +232,17 @@ export default function MessagesPage({ user }: MessagesPageProps) {
         </div>
       )}
 
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-8 h-px bg-[#00f5ff]" />
-        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ЗАЩИЩЁННАЯ СВЯЗЬ</span>
-      </div>
-
-      <div className="flex gap-4 h-[calc(100vh-200px)] min-h-[500px]">
+      {/* Single unified window */}
+      <div
+        className="flex overflow-hidden"
+        style={{
+          height: "calc(100vh - 160px)",
+          minHeight: 520,
+          border: "1px solid rgba(0,245,255,0.2)",
+          background: "rgba(4,7,14,0.97)",
+          boxShadow: "0 0 60px rgba(0,245,255,0.05), 0 24px 80px rgba(0,0,0,0.6)",
+        }}
+      >
         <MsgSidebar
           tab={tab}
           setTab={setTab}
@@ -257,14 +262,16 @@ export default function MessagesPage({ user }: MessagesPageProps) {
         />
 
         {/* Chat area */}
-        <div className="flex-1 flex flex-col" style={{ border: "1px solid rgba(0,245,255,0.15)", background: "rgba(5,8,16,0.6)" }}>
+        <div className="flex-1 flex flex-col min-w-0">
           {!activeChat ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4" style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.04)" }}>
+                <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4"
+                  style={{ border: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,245,255,0.03)" }}>
                   <Icon name="MessageSquare" size={28} className="text-[#2a4060]" />
                 </div>
                 <div className="font-orbitron text-sm text-[#3a5570] tracking-wider">ВЫБЕРИТЕ ЧАТ</div>
+                <div className="font-mono text-[11px] text-[#2a4060] mt-1">или добавьте контакт</div>
               </div>
             </div>
           ) : (
