@@ -45,7 +45,7 @@ export const api = {
     fetch(`${AUTH_URL}/?action=register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
 
   login: (data: { callsign: string; password: string }) =>
-    fetch(`${AUTH_URL}/?action=login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+    fetch(`${AUTH_URL}/?action=login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data), signal: AbortSignal.timeout(10000) }).then((r) => r.json()).catch(() => ({ error: "Нет соединения с сервером. Проверьте интернет и попробуйте снова." })),
 
   me: () =>
     fetch(`${AUTH_URL}/?action=me`, { headers: authHeaders() }).then((r) => r.json()),
