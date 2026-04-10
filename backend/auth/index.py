@@ -15,7 +15,7 @@ from psycopg2.extras import RealDictCursor
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, X-Authorization, Authorization",
 }
 
 def get_schema():
