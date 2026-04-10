@@ -92,17 +92,8 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("home")}>
-            <div className="w-8 h-8 relative flex items-center justify-center" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
+            <div className="w-8 h-8 flex items-center justify-center" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
               <Icon name="Crosshair" size={18} className="text-[#00f5ff]" />
-              <div
-                className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-[#050810]"
-                title={serverOnline === null ? "Проверка..." : serverOnline ? "Сервер работает" : "Сервер недоступен"}
-                style={{
-                  background: serverOnline === null ? "#3a5570" : serverOnline ? "#00ff88" : "#ff2244",
-                  boxShadow: serverOnline === null ? "none" : serverOnline ? "0 0 6px #00ff88" : "0 0 6px #ff2244",
-                  animation: serverOnline === true ? "pulse 2s infinite" : "none",
-                }}
-              />
             </div>
             <div>
               <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БПС</div>
