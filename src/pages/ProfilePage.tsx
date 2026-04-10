@@ -48,7 +48,14 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
     setError("");
     const res = await api.updateProfile({ name: name.trim(), rank, contacts, gender });
     setSaving(false);
-    if (res.error) { setError(res.error); return; }
+    if (res.error) {
+      if (res.error === "Сессия недействительна" || res.statusCode === 401) {
+        setError("Сессия истекла. Перезайдите в систему.");
+      } else {
+        setError(res.error);
+      }
+      return;
+    }
     onUpdate(res.user as User);
     setSuccess(true);
     setTimeout(() => setSuccess(false), 2500);

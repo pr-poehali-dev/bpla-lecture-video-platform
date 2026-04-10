@@ -54,7 +54,7 @@ export const api = {
     fetch(`${AUTH_URL}/?action=logout`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
 
   updateProfile: (data: { name: string; rank: string; contacts: string; gender: string }) =>
-    fetch(`${AUTH_URL}/?action=update-profile`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()),
+    fetch(`${AUTH_URL}/?action=update-profile`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()).catch(() => ({ error: "Нет соединения с сервером" })),
 
   uploadAvatar: (image_data: string, image_ext: string) =>
     fetch(`${AUTH_URL}/?action=upload-avatar`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ image_data, image_ext }) }).then((r) => r.json()),
