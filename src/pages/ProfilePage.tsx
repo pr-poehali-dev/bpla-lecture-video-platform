@@ -148,6 +148,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
           {!editing ? (
             <div className="space-y-4">
               <Field label="ИМЯ" value={user.name} icon="UserCheck" />
+              <Field label="ПОЛ" value={user.gender === "male" ? "Мужской" : user.gender === "female" ? "Женский" : undefined} icon="User" />
               <Field label="ЗВАНИЕ" value={user.rank} icon="Award" />
               <Field label="КОНТАКТЫ" value={user.contacts} icon="Phone" />
               <Field label="EMAIL" value={user.email} icon="Mail" locked />
