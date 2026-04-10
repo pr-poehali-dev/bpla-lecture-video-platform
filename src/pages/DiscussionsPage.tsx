@@ -18,14 +18,17 @@ interface Topic {
   author_name: string;
   author_callsign: string;
   replies_count: number;
+  is_pinned?: boolean;
 }
 
 interface Reply {
   id: number;
   text: string;
   created_at: string;
+  updated_at?: string;
   author_name: string;
   author_callsign: string;
+  author_id?: number;
 }
 
 const CATEGORIES = ["Общее", "Техника", "Тактика", "Настройка", "Разбор", "Вопросы"];
@@ -45,12 +48,16 @@ export default function DiscussionsPage({ user }: Props) {
   const canCreate = user?.is_admin || ["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user?.role || "");
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("Все");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [topicLoading, setTopicLoading] = useState(false);
   const [newReply, setNewReply] = useState("");
   const [sending, setSending] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: "", category: "Общее", text: "" });
   const [creating, setCreating] = useState(false);
@@ -103,6 +110,24 @@ export default function DiscussionsPage({ user }: Props) {
     if (!confirm("Удалить ответ?")) return;
     await api.discussions.deleteReply(replyId);
     if (selectedId) openTopic(selectedId);
+  };
+
+  const handleEditReply = (reply: Reply) => {
+    setEditingReplyId(reply.id);
+    setEditingText(reply.text);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingReplyId || !editingText.trim()) return;
+    await api.discussions.editReply(editingReplyId, editingText.trim());
+    setEditingReplyId(null);
+    setEditingText("");
+    if (selectedId) openTopic(selectedId);
+  };
+
+  const handlePinTopic = async (topicId: number) => {
+    await api.discussions.pinTopic(topicId);
+    loadTopics();
   };
 
   const handleCreate = async () => {
@@ -195,7 +220,7 @@ export default function DiscussionsPage({ user }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
         {/* Topics list */}
         <div className={`lg:col-span-2 space-y-2 ${selectedId ? "hidden lg:block" : "block"}`}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <span className="font-mono text-xs text-[#3a5570]">{topics.length} ТОПИКОВ</span>
             {canCreate && (
               <button onClick={() => setShowCreate(true)} className="btn-neon text-[10px] px-3 py-1.5 flex items-center gap-1">
@@ -205,6 +230,41 @@ export default function DiscussionsPage({ user }: Props) {
             )}
           </div>
 
+          {/* Search */}
+          <div className="relative mb-2">
+            <Icon name="Search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a5570]" />
+            <input
+              type="text"
+              placeholder="ПОИСК..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-[#0a1020] border border-[rgba(0,245,255,0.12)] text-[#e0f4ff] font-mono text-xs pl-8 pr-3 py-2 outline-none focus:border-[rgba(0,245,255,0.4)] placeholder:text-[#2a4060]"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#3a5570] hover:text-white">
+                <Icon name="X" size={11} />
+              </button>
+            )}
+          </div>
+
+          {/* Category filter */}
+          <div className="flex flex-wrap gap-1 mb-3">
+            {["Все", ...CATEGORIES].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className="font-mono text-[9px] px-2 py-0.5 transition-all"
+                style={{
+                  border: `1px solid ${activeCategory === cat ? "#00f5ff" : "#1a2a3a"}`,
+                  color: activeCategory === cat ? "#00f5ff" : "#3a5570",
+                  background: activeCategory === cat ? "rgba(0,245,255,0.05)" : "transparent",
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
           {loading ? (
             <div className="font-mono text-xs text-[#3a5570] animate-pulse py-8 text-center">ЗАГРУЗКА...</div>
           ) : topics.length === 0 ? (
@@ -212,8 +272,15 @@ export default function DiscussionsPage({ user }: Props) {
               Обсуждений пока нет
               {canCreate && <div className="mt-2 text-[#1a2a3a]">Создайте первое</div>}
             </div>
-          ) : (
-            topics.map((t) => (
+          ) : (() => {
+            const visibleTopics = topics.filter((t) => {
+              const matchCat = activeCategory === "Все" || t.category === activeCategory;
+              const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
+              return matchCat && matchSearch;
+            });
+            return visibleTopics.length === 0 ? (
+              <div className="font-mono text-xs text-[#3a5570] py-8 text-center" style={{ border: "1px solid #1a2a3a" }}>Ничего не найдено</div>
+            ) : visibleTopics.map((t) => (
               <button
                 key={t.id}
                 onClick={() => openTopic(t.id)}
@@ -225,15 +292,27 @@ export default function DiscussionsPage({ user }: Props) {
                 }
               >
                 {user?.is_admin && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id); }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-[#3a5570] hover:text-[#ff2244] transition-all"
-                    title="Удалить"
-                  >
-                    <Icon name="Trash2" size={13} />
-                  </button>
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 transition-all">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handlePinTopic(t.id); }}
+                      title={t.is_pinned ? "Открепить" : "Закрепить"}
+                      className="text-[#3a5570] hover:text-[#ffbe32] transition-colors"
+                    >
+                      <Icon name="Pin" size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteTopic(t.id); }}
+                      title="Удалить"
+                      className="text-[#3a5570] hover:text-[#ff2244] transition-colors"
+                    >
+                      <Icon name="Trash2" size={12} />
+                    </button>
+                  </div>
                 )}
                 <div className="flex items-start gap-2 mb-2">
+                  {t.is_pinned && (
+                    <span className="font-mono text-[9px] px-1.5 py-0.5" style={{ border: "1px solid rgba(255,190,50,0.4)", color: "#ffbe32" }}>📌</span>
+                  )}
                   <span className="font-mono text-[9px] px-1.5 py-0.5" style={{ border: "1px solid #1a2a3a", color: "#3a5570" }}>{t.category}</span>
                 </div>
                 <div className="font-plex text-sm text-white leading-snug mb-2">{t.title}</div>
@@ -246,8 +325,8 @@ export default function DiscussionsPage({ user }: Props) {
                   <span className="font-mono text-[10px]">{timeAgo(t.updated_at)}</span>
                 </div>
               </button>
-            ))
-          )}
+            ));
+          })()}
         </div>
 
         {/* Thread */}
@@ -300,22 +379,43 @@ export default function DiscussionsPage({ user }: Props) {
                         {(r.author_callsign || r.author_name || "?")[0].toUpperCase()}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="font-mono text-xs text-[#00f5ff]">@{r.author_callsign || r.author_name}</span>
                           <span className="font-mono text-[10px] text-[#3a5570]">{timeAgo(r.created_at)}</span>
-                          {user?.is_admin && (
-                            <button
-                              onClick={() => handleDeleteReply(r.id)}
-                              className="ml-auto text-[#3a5570] hover:text-[#ff2244] transition-colors"
-                              title="Удалить ответ"
-                            >
-                              <Icon name="Trash2" size={12} />
-                            </button>
-                          )}
+                          {r.updated_at && <span className="font-mono text-[9px] text-[#2a4060]">(ред.)</span>}
+                          <div className="ml-auto flex items-center gap-1">
+                            {user && (
+                              <button onClick={() => handleEditReply(r)} className="text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Редактировать">
+                                <Icon name="Pencil" size={11} />
+                              </button>
+                            )}
+                            {user?.is_admin && (
+                              <button onClick={() => handleDeleteReply(r.id)} className="text-[#3a5570] hover:text-[#ff2244] transition-colors" title="Удалить ответ">
+                                <Icon name="Trash2" size={11} />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="font-plex text-sm text-[#8ab0cc] leading-relaxed p-3" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                          {r.text}
-                        </div>
+                        {editingReplyId === r.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              rows={3}
+                              className="w-full bg-[#050810] border border-[rgba(0,245,255,0.3)] text-[#e0f4ff] font-plex text-sm px-3 py-2 outline-none resize-none"
+                            />
+                            <div className="flex gap-2">
+                              <button onClick={handleSaveEdit} className="font-mono text-xs px-3 py-1 flex items-center gap-1" style={{ border: "1px solid rgba(0,245,255,0.4)", color: "#00f5ff" }}>
+                                <Icon name="Check" size={11} />Сохранить
+                              </button>
+                              <button onClick={() => setEditingReplyId(null)} className="font-mono text-xs px-3 py-1 text-[#3a5570]" style={{ border: "1px solid #1a2a3a" }}>Отмена</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="font-plex text-sm text-[#8ab0cc] leading-relaxed p-3" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                            {r.text}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))

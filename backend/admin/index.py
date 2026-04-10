@@ -457,13 +457,14 @@ def handle_discussions(event, method, action, body, conn, cur):
     if action == "disc-topics" and method == "GET":
         cur.execute(f"""
             SELECT t.id, t.title, t.category, t.views, t.created_at, t.updated_at,
+                   t.is_pinned,
                    u.name as author_name, u.callsign as author_callsign,
                    COUNT(r.id) as replies_count
             FROM {q('topics')} t
             JOIN {q('users')} u ON t.author_id = u.id
             LEFT JOIN {q('topic_replies')} r ON r.topic_id = t.id
             GROUP BY t.id, u.name, u.callsign
-            ORDER BY t.updated_at DESC
+            ORDER BY t.is_pinned DESC, t.updated_at DESC
         """)
         topics = [dict(t) for t in cur.fetchall()]
         return ok({"topics": topics, "categories": DISC_CATEGORIES})
@@ -541,6 +542,38 @@ def handle_discussions(event, method, action, body, conn, cur):
         cur.execute(f"UPDATE {q('topics')} SET updated_at = NOW() WHERE id = %s", (row["topic_id"],))
         conn.commit()
         return ok({"ok": True})
+
+    # POST edit reply (автор или админ)
+    if action == "disc-edit-reply" and method == "POST":
+        if not user:
+            return err("Требуется авторизация", 401)
+        reply_id = body.get("reply_id")
+        text = (body.get("text") or "").strip()
+        if not reply_id or not text:
+            return err("Укажите reply_id и текст")
+        cur.execute(f"SELECT id, author_id FROM {q('topic_replies')} WHERE id = %s", (reply_id,))
+        row = cur.fetchone()
+        if not row:
+            return err("Ответ не найден", 404)
+        if not user["is_admin"] and row["author_id"] != user["id"]:
+            return err("Нет прав", 403)
+        cur.execute(f"UPDATE {q('topic_replies')} SET text = %s, updated_at = NOW() WHERE id = %s", (text, reply_id))
+        conn.commit()
+        return ok({"ok": True})
+
+    # POST pin/unpin topic (только для админов)
+    if action == "disc-pin-topic" and method == "POST":
+        if not user or not user["is_admin"]:
+            return err("Доступ запрещён", 403)
+        if not topic_id:
+            return err("Укажите topic_id")
+        cur.execute(f"SELECT is_pinned FROM {q('topics')} WHERE id = %s", (topic_id,))
+        row = cur.fetchone()
+        if not row:
+            return err("Топик не найден", 404)
+        cur.execute(f"UPDATE {q('topics')} SET is_pinned = %s WHERE id = %s", (not row["is_pinned"], topic_id))
+        conn.commit()
+        return ok({"is_pinned": not row["is_pinned"]})
 
     # POST add reply
     if action == "disc-reply" and method == "POST":

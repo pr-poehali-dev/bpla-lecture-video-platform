@@ -53,12 +53,33 @@ function DocModal({ file, onClose }: { file: FileItem; onClose: () => void }) {
   );
 }
 
+type SortOption = "newest" | "oldest" | "title" | "size";
+
+function useLocalSet(key: string) {
+  const [set, setSet] = useState<Set<number>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(key) || "[]") as number[]); } catch { return new Set<number>(); }
+  });
+  const toggle = (id: number) => {
+    setSet(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      localStorage.setItem(key, JSON.stringify([...next]));
+      return next;
+    });
+  };
+  return { set, toggle };
+}
+
 export default function LecturesPage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortOption>("newest");
   const [viewing, setViewing] = useState<FileItem | null>(null);
+  const { set: bookmarks, toggle: toggleBookmark } = useLocalSet("lecture_bookmarks");
+  const { set: read, toggle: toggleRead } = useLocalSet("lecture_read");
+  const [showBookmarks, setShowBookmarks] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -71,11 +92,19 @@ export default function LecturesPage() {
   const { header } = usePageData("lectures");
   const categories = header?.categories ?? DOC_CATEGORIES;
 
-  const filtered = files.filter((f) => {
-    const matchCat = activeCategory === "Все" || f.category === activeCategory;
-    const matchSearch = f.title.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const filtered = files
+    .filter((f) => {
+      const matchCat = activeCategory === "Все" || f.category === activeCategory;
+      const matchSearch = f.title.toLowerCase().includes(search.toLowerCase()) || (f.description || "").toLowerCase().includes(search.toLowerCase());
+      const matchBookmark = !showBookmarks || bookmarks.has(f.id);
+      return matchCat && matchSearch && matchBookmark;
+    })
+    .sort((a, b) => {
+      if (sort === "title") return a.title.localeCompare(b.title, "ru");
+      if (sort === "size") return b.file_size - a.file_size;
+      if (sort === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -87,16 +116,33 @@ export default function LecturesPage() {
       </div>
       <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">{header?.title ?? "ЛЕКЦИИ"}</h1>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a5570]" />
-        <input
-          type="text"
-          placeholder="ПОИСК..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-mono text-sm pl-9 pr-4 py-2.5 outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060] tracking-widest"
-        />
+      {/* Search + Sort */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1">
+          <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a5570]" />
+          <input
+            type="text"
+            placeholder="ПОИСК..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-mono text-sm pl-9 pr-4 py-2.5 outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060] tracking-widest"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3a5570] hover:text-white">
+              <Icon name="X" size={13} />
+            </button>
+          )}
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortOption)}
+          className="bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#5a7a95] font-mono text-xs px-3 py-2.5 outline-none focus:border-[rgba(0,245,255,0.4)] sm:w-44"
+        >
+          <option value="newest">НОВЫЕ</option>
+          <option value="oldest">СТАРЫЕ</option>
+          <option value="title">А — Я</option>
+          <option value="size">ПО РАЗМЕРУ</option>
+        </select>
       </div>
 
       {/* Categories */}
@@ -118,7 +164,21 @@ export default function LecturesPage() {
         ))}
       </div>
 
-      <div className="font-mono text-xs text-[#3a5570] mb-6">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
+        <button
+          onClick={() => setShowBookmarks(!showBookmarks)}
+          className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all"
+          style={{
+            border: `1px solid ${showBookmarks ? "rgba(255,190,50,0.5)" : "rgba(0,245,255,0.15)"}`,
+            color: showBookmarks ? "#ffbe32" : "#3a5570",
+            background: showBookmarks ? "rgba(255,190,50,0.06)" : "transparent",
+          }}
+        >
+          <Icon name="Bookmark" size={12} />
+          {showBookmarks ? `ЗАКЛАДКИ (${bookmarks.size})` : "ЗАКЛАДКИ"}
+        </button>
+      </div>
 
       {/* List */}
       {loading ? (
@@ -136,7 +196,7 @@ export default function LecturesPage() {
               key={file.id}
               onClick={() => setViewing(file)}
               className="card-drone flex items-center gap-3 sm:gap-4 p-3 sm:p-4 cursor-pointer hover:border-[rgba(0,245,255,0.3)] transition-all animate-fade-in"
-              style={{ animationDelay: `${i * 0.04}s` }}
+              style={{ animationDelay: `${i * 0.04}s`, opacity: read.has(file.id) ? 0.65 : 1 }}
             >
               <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.04)" }}>
                 <Icon name="FileText" size={18} className="text-[#00f5ff]" />
@@ -160,8 +220,26 @@ export default function LecturesPage() {
                 {file.file_size > 0 && <span className="font-mono text-xs">{formatSize(file.file_size)}</span>}
               </div>
 
-              <div className="flex-shrink-0 w-11 h-11 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors rounded-sm">
-                <Icon name="Eye" size={20} />
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleBookmark(file.id); }}
+                  title={bookmarks.has(file.id) ? "Убрать закладку" : "В закладки"}
+                  className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[rgba(255,190,50,0.1)]"
+                  style={{ color: bookmarks.has(file.id) ? "#ffbe32" : "#2a4060" }}
+                >
+                  <Icon name="Bookmark" size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleRead(file.id); }}
+                  title={read.has(file.id) ? "Снять отметку" : "Отметить прочитанным"}
+                  className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[rgba(0,255,136,0.1)]"
+                  style={{ color: read.has(file.id) ? "#00ff88" : "#2a4060" }}
+                >
+                  <Icon name="CheckCircle" size={14} />
+                </button>
+                <div className="w-9 h-9 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors rounded-sm">
+                  <Icon name="Eye" size={18} />
+                </div>
               </div>
             </div>
           ))}

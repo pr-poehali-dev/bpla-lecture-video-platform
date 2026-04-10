@@ -29,6 +29,14 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPassword2, setNewPassword2] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+
   useEffect(() => {
     if (!editing) {
       setName(user.name || "");
@@ -41,6 +49,20 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !newPassword2) { setPwError("Заполните все поля"); return; }
+    if (newPassword !== newPassword2) { setPwError("Новые пароли не совпадают"); return; }
+    if (newPassword.length < 6) { setPwError("Минимум 6 символов"); return; }
+    setPwSaving(true);
+    setPwError("");
+    const res = await api.changePassword(currentPassword, newPassword);
+    setPwSaving(false);
+    if (res.error) { setPwError(res.error); return; }
+    setPwSuccess(true);
+    setCurrentPassword(""); setNewPassword(""); setNewPassword2("");
+    setTimeout(() => { setPwSuccess(false); setShowChangePassword(false); }, 2000);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { setError("Имя не может быть пустым"); return; }
@@ -270,6 +292,59 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
               </div>
               <Icon name="ChevronRight" size={16} className="text-[#3a5570] group-hover:text-[#ff6b00] transition-colors" />
             </button>
+          )}
+        </div>
+
+        {/* Change password */}
+        <div className="p-4" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.02)" }}>
+          <button
+            onClick={() => { setShowChangePassword(!showChangePassword); setPwError(""); }}
+            className="w-full flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-2">
+              <Icon name="KeyRound" size={13} className="text-[#3a5570]" />
+              <span className="font-mono text-xs text-[#3a5570] tracking-wider group-hover:text-[#00f5ff] transition-colors">СМЕНИТЬ ПАРОЛЬ</span>
+            </div>
+            <Icon name={showChangePassword ? "ChevronUp" : "ChevronDown"} size={13} className="text-[#3a5570]" />
+          </button>
+
+          {showChangePassword && (
+            <div className="mt-4 space-y-3">
+              {(["Текущий пароль", "Новый пароль", "Повторите новый"] as const).map((label, i) => {
+                const vals = [currentPassword, newPassword, newPassword2];
+                const setters = [setCurrentPassword, setNewPassword, setNewPassword2];
+                return (
+                  <div key={label}>
+                    <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">{label.toUpperCase()}</label>
+                    <input
+                      type="password"
+                      value={vals[i]}
+                      onChange={(e) => setters[i](e.target.value)}
+                      className="w-full bg-transparent border font-plex text-sm text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors"
+                      style={{ borderColor: "rgba(0,245,255,0.2)" }}
+                    />
+                  </div>
+                );
+              })}
+              {pwError && (
+                <div className="flex items-center gap-2 font-mono text-xs text-[#ff2244]">
+                  <Icon name="AlertCircle" size={12} />{pwError}
+                </div>
+              )}
+              {pwSuccess && (
+                <div className="flex items-center gap-2 font-mono text-xs text-[#00ff88]">
+                  <Icon name="CheckCircle" size={12} />Пароль изменён
+                </div>
+              )}
+              <button
+                onClick={handleChangePassword}
+                disabled={pwSaving}
+                className="btn-neon flex items-center gap-2 disabled:opacity-50"
+              >
+                {pwSaving ? <Icon name="Loader" size={12} className="animate-spin" /> : <Icon name="Save" size={12} />}
+                {pwSaving ? "СОХРАНЕНИЕ..." : "СОХРАНИТЬ"}
+              </button>
+            </div>
           )}
         </div>
 

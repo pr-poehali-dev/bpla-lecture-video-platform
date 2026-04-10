@@ -56,6 +56,9 @@ export const api = {
   updateProfile: (data: { name: string; rank: string; contacts: string; gender: string }) =>
     fetch(`${AUTH_URL}/?action=update-profile`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()).catch(() => ({ error: "Нет соединения с сервером" })),
 
+  changePassword: (current_password: string, new_password: string) =>
+    fetch(`${AUTH_URL}/?action=change-password`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ current_password, new_password }) }).then((r) => r.json()).catch(() => ({ error: "Нет соединения с сервером" })),
+
   uploadAvatar: (image_data: string, image_ext: string) =>
     fetch(`${AUTH_URL}/?action=upload-avatar`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ image_data, image_ext }) }).then((r) => r.json()),
 
@@ -196,6 +199,10 @@ export const api = {
       fetch(`${ADMIN_URL}/?action=disc-delete-topic&topic_id=${topic_id}`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
     deleteReply: (reply_id: number) =>
       fetch(`${ADMIN_URL}/?action=disc-delete-reply`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ reply_id }) }).then((r) => r.json()),
+    editReply: (reply_id: number, text: string) =>
+      fetch(`${ADMIN_URL}/?action=disc-edit-reply`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ reply_id, text }) }).then((r) => r.json()),
+    pinTopic: (topic_id: number) =>
+      fetch(`${ADMIN_URL}/?action=disc-pin-topic&topic_id=${topic_id}`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
   },
 
   removal: {

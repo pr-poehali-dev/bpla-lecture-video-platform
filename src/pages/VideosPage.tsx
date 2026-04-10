@@ -71,10 +71,14 @@ function VideoPlayerModal({ file, onClose }: { file: FileItem; onClose: () => vo
   );
 }
 
+type SortOption = "newest" | "oldest" | "title";
+
 export default function VideosPage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortOption>("newest");
   const [playing, setPlaying] = useState<FileItem | null>(null);
 
   useEffect(() => {
@@ -87,9 +91,17 @@ export default function VideosPage() {
   const { header } = usePageData("videos");
   const categories = header?.categories ?? VIDEO_CATEGORIES;
 
-  const filtered = activeCategory === "Все"
-    ? files
-    : files.filter((f) => f.category === activeCategory);
+  const filtered = files
+    .filter((f) => {
+      const matchCat = activeCategory === "Все" || f.category === activeCategory;
+      const matchSearch = !search || f.title.toLowerCase().includes(search.toLowerCase()) || (f.description || "").toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    })
+    .sort((a, b) => {
+      if (sort === "title") return a.title.localeCompare(b.title, "ru");
+      if (sort === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -103,6 +115,34 @@ export default function VideosPage() {
           <h1 className="font-mono text-lg text-white tracking-wider">{header?.title ?? "ВИДЕОМАТЕРИАЛЫ"}</h1>
           <p className="font-mono text-xs text-[#3a5570]">{header?.subtitle ?? "УЧЕБНЫЕ И БОЕВЫЕ ЗАПИСИ"}</p>
         </div>
+      </div>
+
+      {/* Search + Sort */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-1">
+        <div className="relative flex-1">
+          <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a5570]" />
+          <input
+            type="text"
+            placeholder="ПОИСК..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-mono text-sm pl-9 pr-4 py-2.5 outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060] tracking-widest"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3a5570] hover:text-white">
+              <Icon name="X" size={13} />
+            </button>
+          )}
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortOption)}
+          className="bg-[#0a1020] border border-[rgba(0,245,255,0.15)] text-[#5a7a95] font-mono text-xs px-3 py-2.5 outline-none focus:border-[rgba(0,245,255,0.4)] sm:w-40"
+        >
+          <option value="newest">НОВЫЕ</option>
+          <option value="oldest">СТАРЫЕ</option>
+          <option value="title">А — Я</option>
+        </select>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -121,6 +161,7 @@ export default function VideosPage() {
           </button>
         ))}
       </div>
+      <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
 
       {loading ? (
         <div className="text-center py-20">

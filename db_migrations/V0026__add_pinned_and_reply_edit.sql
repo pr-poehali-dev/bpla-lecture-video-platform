@@ -1,0 +1,2 @@
+ALTER TABLE t_p1589553_bpla_lecture_video_p.topics ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
+ALTER TABLE t_p1589553_bpla_lecture_video_p.topic_replies ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;

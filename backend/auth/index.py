@@ -285,4 +285,32 @@ def handler(event: dict, context) -> dict:
 
         return ok({"avatar_url": avatar_url})
 
+    # change-password
+    if action == "change-password" and method == "POST":
+        auth = event.get("headers", {}).get("X-Authorization") or event.get("headers", {}).get("x-authorization") or ""
+        token = auth.replace("Bearer ", "").strip()
+        if not token:
+            return err("Не авторизован", 401)
+
+        cur.execute(f"SELECT id FROM {q('users')} WHERE session_token = %s", (token,))
+        user = cur.fetchone()
+        if not user:
+            return err("Сессия недействительна", 401)
+
+        current_password = body.get("current_password") or ""
+        new_password = body.get("new_password") or ""
+
+        if not current_password or not new_password:
+            return err("Заполните все поля")
+        if len(new_password) < 6:
+            return err("Новый пароль минимум 6 символов")
+
+        cur.execute(f"SELECT id FROM {q('users')} WHERE id = %s AND password_hash = %s", (user["id"], hash_password(current_password)))
+        if not cur.fetchone():
+            return err("Неверный текущий пароль")
+
+        cur.execute(f"UPDATE {q('users')} SET password_hash = %s WHERE id = %s", (hash_password(new_password), user["id"]))
+        conn.commit()
+        return ok({"message": "Пароль изменён"})
+
     return err("Не найдено", 404)
