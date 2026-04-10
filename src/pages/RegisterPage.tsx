@@ -7,6 +7,99 @@ interface Props {
   onBack: () => void;
 }
 
+const RULES = [
+  {
+    num: "01",
+    title: "Конфиденциальность",
+    text: "Все материалы платформы являются закрытыми. Запрещено передавать, копировать или публиковать учебные материалы, видео, схемы и любые другие данные платформы третьим лицам.",
+  },
+  {
+    num: "02",
+    title: "Достоверность данных",
+    text: "При регистрации необходимо указывать реальные данные. Использование чужих данных или ложной информации является основанием для немедленной блокировки.",
+  },
+  {
+    num: "03",
+    title: "Дисциплина и уважение",
+    text: "В обсуждениях и чате соблюдать воинскую этику. Запрещены оскорбления, провокации, распространение дезинформации и флуд.",
+  },
+  {
+    num: "04",
+    title: "Защита данных",
+    text: "Запрещено передавать свои учётные данные другим лицам. При подозрении на компрометацию аккаунта — немедленно сообщить администратору.",
+  },
+  {
+    num: "05",
+    title: "Использование материалов",
+    text: "Материалы платформы предназначены исключительно для учебных и оперативных целей. Использование в личных, коммерческих или иных целях запрещено.",
+  },
+  {
+    num: "06",
+    title: "Ответственность",
+    text: "Каждый участник несёт личную ответственность за свои действия на платформе. Нарушение правил влечёт блокировку без предупреждения.",
+  },
+];
+
+function RulesModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(5,8,16,0.97)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full sm:max-w-lg flex flex-col animate-fade-in"
+        style={{ border: "1px solid rgba(0,245,255,0.3)", background: "#070d18", boxShadow: "0 0 40px rgba(0,245,255,0.15)", maxHeight: "85vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
+          <div>
+            <div className="font-mono text-[10px] text-[#00f5ff] tracking-[0.3em] mb-0.5">// ДОКУМЕНТ</div>
+            <div className="font-orbitron text-sm font-bold text-white tracking-wider">ПРАВИЛА ПЛАТФОРМЫ</div>
+          </div>
+          <button onClick={onClose} className="text-[#3a5570] hover:text-white transition-colors">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+          <p className="font-plex text-xs text-[#5a7a95] leading-relaxed pb-2" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)" }}>
+            Платформа «Беспилотные Пилотируемые Системы» является закрытым учебным ресурсом. Доступ предоставляется только уполномоченным лицам. Регистрируясь, вы принимаете следующие обязательства:
+          </p>
+
+          {RULES.map((rule) => (
+            <div key={rule.num} className="flex gap-3">
+              <div
+                className="font-orbitron text-xs font-black flex-shrink-0 mt-0.5"
+                style={{ color: "#00f5ff", opacity: 0.4 }}
+              >
+                {rule.num}
+              </div>
+              <div>
+                <div className="font-orbitron text-xs font-bold text-white mb-1 tracking-wider">{rule.title}</div>
+                <p className="font-plex text-xs text-[#5a7a95] leading-relaxed">{rule.text}</p>
+              </div>
+            </div>
+          ))}
+
+          <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(0,245,255,0.06)" }}>
+            <p className="font-mono text-[10px] text-[#3a5570] leading-relaxed">
+              Администрация платформы оставляет за собой право изменять правила без предварительного уведомления. Актуальная версия всегда доступна при регистрации.
+            </p>
+          </div>
+        </div>
+
+        <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: "1px solid rgba(0,245,255,0.1)" }}>
+          <button onClick={onClose} className="w-full font-orbitron text-xs font-bold tracking-wider py-2.5 transition-all"
+            style={{ background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff" }}>
+            ПОНЯТНО
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RegisterPage({ onBack }: Props) {
   const [callsign, setCallsign] = useState("");
   const [name, setName] = useState("");
@@ -15,9 +108,12 @@ export default function RegisterPage({ onBack }: Props) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreed) return;
     setLoading(true);
     setError("");
     const res = await api.register({ callsign, name, email, password });
@@ -31,6 +127,8 @@ export default function RegisterPage({ onBack }: Props) {
 
   return (
     <div className="min-h-screen flex items-center justify-center grid-bg px-4" style={{ background: "#050810" }}>
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-6">
@@ -132,11 +230,41 @@ export default function RegisterPage({ onBack }: Props) {
                   </p>
                 </div>
 
+                {/* Согласие с правилами */}
+                <div
+                  className="flex items-start gap-3 p-3 cursor-pointer transition-all"
+                  style={{ border: `1px solid ${agreed ? "rgba(0,255,136,0.3)" : "rgba(0,245,255,0.1)"}`, background: agreed ? "rgba(0,255,136,0.04)" : "transparent" }}
+                  onClick={() => setAgreed(!agreed)}
+                >
+                  <div
+                    className="w-4 h-4 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all"
+                    style={{ border: `1px solid ${agreed ? "#00ff88" : "rgba(0,245,255,0.3)"}`, background: agreed ? "rgba(0,255,136,0.15)" : "transparent" }}
+                  >
+                    {agreed && <Icon name="Check" size={10} className="text-[#00ff88]" />}
+                  </div>
+                  <p className="font-plex text-xs text-[#5a7a95] leading-relaxed select-none">
+                    Я ознакомился и согласен с{" "}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowRules(true); }}
+                      className="text-[#00f5ff] hover:text-white transition-colors underline underline-offset-2"
+                    >
+                      правилами платформы
+                    </button>
+                  </p>
+                </div>
+
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !agreed}
                   className="w-full flex items-center justify-center gap-2 py-2.5 font-orbitron text-sm font-bold tracking-wider transition-all"
-                  style={{ background: "rgba(0,255,136,0.1)", border: "1px solid #00ff88", color: "#00ff88", boxShadow: loading ? "none" : "0 0 15px rgba(0,255,136,0.15)" }}
+                  style={{
+                    background: agreed ? "rgba(0,255,136,0.1)" : "rgba(0,255,136,0.03)",
+                    border: `1px solid ${agreed ? "#00ff88" : "rgba(0,255,136,0.2)"}`,
+                    color: agreed ? "#00ff88" : "#2a4a3a",
+                    boxShadow: agreed && !loading ? "0 0 15px rgba(0,255,136,0.15)" : "none",
+                    cursor: agreed ? "pointer" : "not-allowed",
+                  }}
                 >
                   {loading ? <><Icon name="Loader" size={14} className="animate-spin" />ОТПРАВКА...</> : <><Icon name="Send" size={14} />ПОДАТЬ ЗАЯВКУ НА ДОСТУП</>}
                 </button>
