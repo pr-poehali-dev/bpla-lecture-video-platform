@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { api } from "@/api";
 import { User } from "@/App";
-import { Chat, Contact, Message, FoundUser, Tab } from "./messages/MsgTypes";
+import { Chat, Contact, Message, FoundUser } from "./messages/MsgTypes";
 import MsgSidebar from "./messages/MsgSidebar";
 import MsgChatArea from "./messages/MsgChatArea";
 import MsgCreateGroupModal from "./messages/MsgCreateGroupModal";
@@ -10,7 +10,6 @@ import MsgCreateGroupModal from "./messages/MsgCreateGroupModal";
 interface MessagesPageProps { user: User; }
 
 export default function MessagesPage({ user }: MessagesPageProps) {
-  const [tab, setTab] = useState<Tab>("chats");
   const [chats, setChats] = useState<Chat[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
@@ -244,8 +243,6 @@ export default function MessagesPage({ user }: MessagesPageProps) {
         }}
       >
         <MsgSidebar
-          tab={tab}
-          setTab={setTab}
           chats={chats}
           contacts={contacts}
           activeChat={activeChat}
