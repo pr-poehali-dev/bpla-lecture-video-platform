@@ -142,10 +142,24 @@ export const api = {
       fetch(`${MSG_URL}/?action=chat-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ name, member_ids }) }).then(r => r.json()),
     chatMessages: (chat_id: number) =>
       fetch(`${MSG_URL}/?action=chat-messages&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()),
-    messageSend: (chat_id: number, content: string) =>
-      fetch(`${MSG_URL}/?action=message-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, content }) }).then(r => r.json()),
-    imageSend: (chat_id: number, image_data: string, image_ext: string, caption?: string) =>
-      fetch(`${MSG_URL}/?action=image-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, image_data, image_ext, caption }) }).then(r => r.json()),
+    messageSend: (chat_id: number, content: string, reply_to_id?: number) =>
+      fetch(`${MSG_URL}/?action=message-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, content, reply_to_id }) }).then(r => r.json()),
+    imageSend: (chat_id: number, image_data: string, image_ext: string, caption?: string, reply_to_id?: number) =>
+      fetch(`${MSG_URL}/?action=image-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, image_data, image_ext, caption, reply_to_id }) }).then(r => r.json()),
+    messageRemove: (message_id: number) =>
+      fetch(`${MSG_URL}/?action=message-remove`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ message_id }) }).then(r => r.json()),
+    messageReact: (message_id: number, emoji: string) =>
+      fetch(`${MSG_URL}/?action=message-react`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ message_id, emoji }) }).then(r => r.json()),
+    chatLeave: (chat_id: number) =>
+      fetch(`${MSG_URL}/?action=chat-leave`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id }) }).then(r => r.json()),
+    chatClear: (chat_id: number) =>
+      fetch(`${MSG_URL}/?action=chat-clear`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id }) }).then(r => r.json()),
+    chatRename: (chat_id: number, name: string) =>
+      fetch(`${MSG_URL}/?action=chat-rename`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id, name }) }).then(r => r.json()),
+    typingSet: (chat_id: number) =>
+      fetch(`${MSG_URL}/?action=typing-set`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id }) }).then(r => r.json()).catch(() => ({})),
+    typingGet: (chat_id: number) =>
+      fetch(`${MSG_URL}/?action=typing-get&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({ typing: [] })),
   },
 
   files: {

@@ -17,7 +17,9 @@ export interface Message {
   id: number; sender_id: number; sender_name: string;
   sender_callsign: string; content: string; created_at: string;
   image_url?: string | null; message_type?: string;
-  sender_avatar_url?: string | null;
+  sender_avatar_url?: string | null; hidden?: boolean;
+  reply_to_id?: number | null; reply_content?: string | null; reply_callsign?: string | null;
+  reactions?: Record<string, string[]>;
 }
 
 interface Contact {
@@ -42,7 +44,11 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const [sending, setSending] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevUnreadRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -84,8 +90,17 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   useEffect(() => {
     if (activeChat) {
       if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(() => loadMessages(activeChat.id), 10000);
-      return () => { if (pollRef.current) clearInterval(pollRef.current); };
+      pollRef.current = setInterval(() => loadMessages(activeChat.id), 8000);
+
+      if (typingPollRef.current) clearInterval(typingPollRef.current);
+      typingPollRef.current = setInterval(() => {
+        api.msg.typingGet(activeChat.id).then(r => setTypingUsers(r.typing || []));
+      }, 3000);
+
+      return () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+        if (typingPollRef.current) clearInterval(typingPollRef.current);
+      };
     }
   }, [activeChat]);
 
@@ -160,11 +175,26 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
     if (!input.trim() || !activeChat || sending) return;
     setSending(true);
     const text = input.trim();
-    const res = await api.msg.messageSend(activeChat.id, text);
+    const res = await api.msg.messageSend(activeChat.id, text, replyTo?.id);
     setSending(false);
     if (res.message) {
       setMessages(prev => [...prev, res.message]);
       setInput("");
+      setReplyTo(null);
+    }
+  };
+
+  const handleRemoveMessage = async (msgId: number) => {
+    const res = await api.msg.messageRemove(msgId);
+    if (res.ok) {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, hidden: true, content: "Сообщение удалено" } : m));
+    }
+  };
+
+  const handleReact = async (msgId: number, emoji: string) => {
+    const res = await api.msg.messageReact(msgId, emoji);
+    if (res.reactions) {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions: res.reactions } : m));
     }
   };
 
@@ -190,6 +220,14 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    if (e.key === "Escape" && replyTo) { setReplyTo(null); }
+  };
+
+  const handleInputChange = (val: string) => {
+    setInput(val);
+    if (!activeChat) return;
+    api.msg.typingSet(activeChat.id);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -302,12 +340,18 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
               userId={user.id}
               input={input}
               sending={sending}
-              onInputChange={setInput}
+              typingUsers={typingUsers}
+              replyTo={replyTo}
+              onInputChange={handleInputChange}
               onSend={sendMessage}
               onKey={handleKey}
               onPaste={handlePaste}
               onFileChange={handleFileChange}
               onLightbox={setLightbox}
+              onRemove={handleRemoveMessage}
+              onReact={handleReact}
+              onReply={setReplyTo}
+              onCancelReply={() => setReplyTo(null)}
               messagesEndRef={messagesEndRef}
             />
           )}
