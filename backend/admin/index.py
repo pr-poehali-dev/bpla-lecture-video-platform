@@ -402,6 +402,7 @@ def handler(event: dict, context) -> dict:
             "features": [{"icon": "Star", "title": "Раздел", "desc": "Описание", "page": "home"}],
             "text": {"title": "Заголовок блока", "content": "Текст блока"},
             "cta": {"label": "// ПОДЗАГОЛОВОК", "title": "ЗАГОЛОВОК", "subtitle": "Описание", "btnLabel": "Кнопка", "btnPage": "home"},
+            "intro-video": {"url": "", "caption": ""},
         }
         cur.execute(f"SELECT COALESCE(MAX(sort_order),0)+1 FROM {q('page_blocks')} WHERE page_id = %s", (page_id,))
         order = cur.fetchone()[0]

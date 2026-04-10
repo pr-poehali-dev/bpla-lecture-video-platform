@@ -11,12 +11,13 @@ const BLOCK_TYPES = [
   { type: "features", label: "Карточки разделов" },
   { type: "cta", label: "Призыв к действию" },
   { type: "text", label: "Текстовый блок" },
+  { type: "intro-video", label: "Интро-видео" },
 ];
 
 const BLOCK_LABELS: Record<string, string> = {
   hero: "Главный баннер", stats: "Статистика", features: "Карточки разделов", cta: "Призыв к действию",
   text: "Текст", header: "Заголовок страницы", "drone-list": "Список дронов", rules: "Правила платформы",
-  "rules-header": "Вводный и завершающий текст правил",
+  "rules-header": "Вводный и завершающий текст правил", "intro-video": "Интро-видео",
 };
 
 function HeroEditor({ data, onChange }: { data: Record<string, string>; onChange: (d: Record<string, string>) => void }) {
@@ -109,6 +110,26 @@ function CtaEditor({ data, onChange }: { data: Record<string, string>; onChange:
             value={data[key] ?? ""} onChange={e => onChange({ ...data, [key]: e.target.value })} />
         </div>
       ))}
+    </div>
+  );
+}
+
+function IntroVideoEditor({ data, onChange }: { data: Record<string, string>; onChange: (d: Record<string, string>) => void }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="font-mono text-[10px] text-[#3a5570] uppercase tracking-widest block mb-1">Ссылка на видео (YouTube / прямая ссылка)</label>
+        <input className="w-full bg-transparent border border-[#1a2a3a] px-3 py-2 font-plex text-sm text-white outline-none focus:border-[#00f5ff]"
+          value={data.url ?? ""} onChange={e => onChange({ ...data, url: e.target.value })}
+          placeholder="https://www.youtube.com/embed/... или https://..." />
+        <p className="font-mono text-[10px] text-[#3a5570] mt-1">Для YouTube используй ссылку вида: youtube.com/embed/VIDEO_ID</p>
+      </div>
+      <div>
+        <label className="font-mono text-[10px] text-[#3a5570] uppercase tracking-widest block mb-1">Подпись (необязательно)</label>
+        <input className="w-full bg-transparent border border-[#1a2a3a] px-3 py-2 font-plex text-sm text-white outline-none focus:border-[#00f5ff]"
+          value={data.caption ?? ""} onChange={e => onChange({ ...data, caption: e.target.value })}
+          placeholder="Краткое описание видео" />
+      </div>
     </div>
   );
 }
@@ -265,6 +286,7 @@ function BlockEditor({ block, onSave, onDelete }: { block: Block; onSave: (id: n
       case "features": return <FeaturesEditor data={localData as { icon: string; title: string; desc: string; page: string }[]} onChange={setLocalData} />;
       case "cta": return <CtaEditor data={localData as Record<string, string>} onChange={setLocalData} />;
       case "text": return <TextEditor data={localData as Record<string, string>} onChange={setLocalData} />;
+      case "intro-video": return <IntroVideoEditor data={localData as Record<string, string>} onChange={setLocalData} />;
       case "header": return <HeaderEditor data={localData as Record<string, unknown>} onChange={setLocalData} />;
       case "drone-list": return <DroneListEditor data={localData as DroneItem[]} onChange={setLocalData} />;
       case "rules": return <RulesEditor data={localData as RuleItem[]} onChange={setLocalData} />;

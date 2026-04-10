@@ -45,6 +45,7 @@ export default function HomePage({ onNavigate }: Props) {
   const stats = (getBlock("stats")?.data ?? null) as StatItem[] | null;
   const features = (getBlock("features")?.data ?? null) as FeatureItem[] | null;
   const cta = (getBlock("cta")?.data ?? null) as CtaData | null;
+  const introVideo = (getBlock("intro-video")?.data ?? null) as { url?: string; caption?: string } | null;
   const textBlocks = blocks.filter(b => b.type === "text");
 
   const h = hero ?? { sysLabel: "SYS.INIT — БПС v2.6", title1: "БЕСПИЛОТНЫЕ", title2: "ПИЛОТИРУЕМЫЕ", title3: "СИСТЕМЫ", subtitle: "Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных пилотируемых систем.", btn1Label: "Начать обучение", btn1Page: "lectures", btn2Label: "Смотреть видео", btn2Page: "videos" };
@@ -116,26 +117,39 @@ export default function HomePage({ onNavigate }: Props) {
           className="relative w-full rounded-sm overflow-hidden"
           style={{ border: "1px solid rgba(0,245,255,0.2)", background: "#070d18", aspectRatio: "16/9" }}
         >
-          {/* Placeholder content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div
-              className="w-20 h-20 flex items-center justify-center rounded-full"
-              style={{ border: "2px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.06)", boxShadow: "0 0 40px rgba(0,245,255,0.15)" }}
-            >
-              <Icon name="Play" size={32} className="text-[#00f5ff] ml-1" />
-            </div>
-            <div className="text-center">
-              <div className="font-orbitron text-sm font-bold text-white tracking-wider mb-2">ИНТРО-ВИДЕО</div>
-              <div className="font-mono text-xs text-[#3a5570] tracking-widest">// СКОРО</div>
-            </div>
-          </div>
-          {/* Corner decorations */}
-          <div className="absolute top-3 left-3 w-5 h-5 border-t border-l" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
-          <div className="absolute top-3 right-3 w-5 h-5 border-t border-r" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
-          <div className="absolute bottom-3 left-3 w-5 h-5 border-b border-l" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
-          <div className="absolute bottom-3 right-3 w-5 h-5 border-b border-r" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 font-mono text-[10px] text-[#1a3a50] tracking-widest">REC ◉</div>
+          {introVideo?.url ? (
+            <iframe
+              src={introVideo.url}
+              className="absolute inset-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ border: "none" }}
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                <div
+                  className="w-20 h-20 flex items-center justify-center rounded-full"
+                  style={{ border: "2px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.06)", boxShadow: "0 0 40px rgba(0,245,255,0.15)" }}
+                >
+                  <Icon name="Play" size={32} className="text-[#00f5ff] ml-1" />
+                </div>
+                <div className="text-center">
+                  <div className="font-orbitron text-sm font-bold text-white tracking-wider mb-2">ИНТРО-ВИДЕО</div>
+                  <div className="font-mono text-xs text-[#3a5570] tracking-widest">// СКОРО</div>
+                </div>
+              </div>
+              <div className="absolute top-3 left-3 w-5 h-5 border-t border-l" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+              <div className="absolute top-3 right-3 w-5 h-5 border-t border-r" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+              <div className="absolute bottom-3 left-3 w-5 h-5 border-b border-l" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+              <div className="absolute bottom-3 right-3 w-5 h-5 border-b border-r" style={{ borderColor: "rgba(0,245,255,0.4)" }} />
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 font-mono text-[10px] text-[#1a3a50] tracking-widest">REC ◉</div>
+            </>
+          )}
         </div>
+        {introVideo?.caption && (
+          <p className="font-plex text-xs text-[#5a7a95] mt-3 text-center">{introVideo.caption}</p>
+        )}
       </section>
 
       {/* Features */}
