@@ -25,6 +25,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   const [name, setName] = useState(user.name || "");
   const [rank, setRank] = useState(user.rank || "");
   const [contacts, setContacts] = useState(user.contacts || "");
+  const [gender, setGender] = useState(user.gender || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +34,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
       setName(user.name || "");
       setRank(user.rank || "");
       setContacts(user.contacts || "");
+      setGender(user.gender || "");
     }
   }, [user]);
   const [success, setSuccess] = useState(false);
@@ -44,7 +46,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
     if (!name.trim()) { setError("Имя не может быть пустым"); return; }
     setSaving(true);
     setError("");
-    const res = await api.updateProfile({ name: name.trim(), rank, contacts });
+    const res = await api.updateProfile({ name: name.trim(), rank, contacts, gender });
     setSaving(false);
     if (res.error) { setError(res.error); return; }
     onUpdate(res.user as User);
@@ -57,6 +59,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
     setName(user.name || "");
     setRank(user.rank || "");
     setContacts(user.contacts || "");
+    setGender(user.gender || "");
     setError("");
     setEditing(false);
   };
@@ -170,6 +173,19 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Введите имя"
                 />
+              </div>
+              <div>
+                <label className="font-mono text-xs text-[#5a7a95] tracking-wider block mb-1.5">ПОЛ</label>
+                <select
+                  className="w-full bg-[#080d1a] border font-plex text-sm text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors"
+                  style={{ borderColor: "rgba(0,245,255,0.25)" }}
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                >
+                  <option value="">— не указано —</option>
+                  <option value="male">Мужской</option>
+                  <option value="female">Женский</option>
+                </select>
               </div>
               <div>
                 <label className="font-mono text-xs text-[#5a7a95] tracking-wider block mb-1.5">ЗВАНИЕ</label>

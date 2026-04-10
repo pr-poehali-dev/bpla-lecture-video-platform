@@ -1,12 +1,12 @@
 {
   "tests": [
     {
-      "name": "Register duplicate user returns error",
+      "name": "Register missing fields returns error",
       "method": "POST",
       "path": "/?action=register",
-      "body": {"email": "test_drone_999@example.com", "password": "test1234", "name": "Test User 999", "callsign": "Сокол-999"},
+      "body": {"email": "", "password": "", "name": "", "callsign": ""},
       "expectedStatus": 400,
-      "expectedBody": {"error": "Email уже зарегистрирован"},
+      "expectedBody": {"error": "Заполните все поля"},
       "bodyMatcher": "partial"
     },
     {

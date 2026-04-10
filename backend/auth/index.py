@@ -58,7 +58,7 @@ def err(msg: str, status: int = 400) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"error": msg}, ensure_ascii=False)}
 
 def user_fields():
-    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role, permissions_cache"
+    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role, permissions_cache, gender"
 
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
@@ -210,13 +210,16 @@ def handler(event: dict, context) -> dict:
         name = (body.get("name") or "").strip()
         rank = (body.get("rank") or "").strip()
         contacts = (body.get("contacts") or "").strip()
+        gender = (body.get("gender") or "").strip()
 
         if not name:
             return err("Имя не может быть пустым")
+        if gender and gender not in ("male", "female"):
+            return err("Недопустимое значение пола")
 
         cur.execute(
-            f"UPDATE {q('users')} SET name = %s, rank = %s, contacts = %s WHERE id = %s",
-            (name, rank or None, contacts or None, user["id"])
+            f"UPDATE {q('users')} SET name = %s, rank = %s, contacts = %s, gender = %s WHERE id = %s",
+            (name, rank or None, contacts or None, gender or None, user["id"])
         )
         conn.commit()
 

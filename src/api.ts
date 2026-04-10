@@ -53,7 +53,7 @@ export const api = {
   logout: () =>
     fetch(`${AUTH_URL}/?action=logout`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
 
-  updateProfile: (data: { name: string; rank: string; contacts: string }) =>
+  updateProfile: (data: { name: string; rank: string; contacts: string; gender: string }) =>
     fetch(`${AUTH_URL}/?action=update-profile`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()),
 
   uploadAvatar: (image_data: string, image_ext: string) =>

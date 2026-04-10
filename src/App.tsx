@@ -35,6 +35,7 @@ export interface User {
   status: string;
   role?: string;
   permissions?: Record<string, boolean>;
+  gender?: string;
 }
 
 export default function App() {
