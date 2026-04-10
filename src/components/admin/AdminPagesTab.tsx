@@ -16,6 +16,7 @@ const BLOCK_TYPES = [
 const BLOCK_LABELS: Record<string, string> = {
   hero: "Главный баннер", stats: "Статистика", features: "Карточки разделов", cta: "Призыв к действию",
   text: "Текст", header: "Заголовок страницы", "drone-list": "Список дронов", rules: "Правила платформы",
+  "rules-header": "Вводный и завершающий текст правил",
 };
 
 function HeroEditor({ data, onChange }: { data: Record<string, string>; onChange: (d: Record<string, string>) => void }) {
@@ -267,6 +268,20 @@ function BlockEditor({ block, onSave, onDelete }: { block: Block; onSave: (id: n
       case "header": return <HeaderEditor data={localData as Record<string, unknown>} onChange={setLocalData} />;
       case "drone-list": return <DroneListEditor data={localData as DroneItem[]} onChange={setLocalData} />;
       case "rules": return <RulesEditor data={localData as RuleItem[]} onChange={setLocalData} />;
+      case "rules-header": return (
+        <div className="space-y-3">
+          {["intro", "footer"].map(key => (
+            <div key={key}>
+              <label className="font-mono text-[10px] text-[#3a5570] uppercase tracking-widest block mb-1">
+                {key === "intro" ? "Вводный текст (вверху)" : "Нижний текст (внизу)"}
+              </label>
+              <textarea rows={4} className="w-full bg-transparent border border-[#1a2a3a] px-3 py-2 font-plex text-sm text-white outline-none focus:border-[#00f5ff] resize-none"
+                value={(localData as Record<string, string>)[key] ?? ""}
+                onChange={e => setLocalData({ ...(localData as Record<string, string>), [key]: e.target.value })} />
+            </div>
+          ))}
+        </div>
+      );
       default: return <pre className="font-mono text-xs text-[#5a7a95] overflow-auto">{JSON.stringify(localData, null, 2)}</pre>;
     }
   };

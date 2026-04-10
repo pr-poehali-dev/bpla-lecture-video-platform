@@ -18,13 +18,21 @@ interface Props {
   onBack: () => void;
 }
 
+const DEFAULT_INTRO = "Платформа «Беспилотные Пилотируемые Системы» является закрытым учебным ресурсом. Доступ предоставляется только уполномоченным лицам. Регистрируясь, вы принимаете следующие обязательства:";
+const DEFAULT_FOOTER = "Администрация платформы оставляет за собой право изменять правила без предварительного уведомления. Актуальная версия всегда доступна при регистрации.";
+
 function RulesModal({ onClose }: { onClose: () => void }) {
   const [rules, setRules] = useState<RuleItem[]>(DEFAULT_RULES);
+  const [intro, setIntro] = useState(DEFAULT_INTRO);
+  const [footer, setFooter] = useState(DEFAULT_FOOTER);
 
   useEffect(() => {
     api.admin.getPage("rules").then(res => {
-      const block = res.blocks?.find((b: { type: string }) => b.type === "rules");
-      if (block?.data?.length) setRules(block.data);
+      const rulesBlock = res.blocks?.find((b: { type: string }) => b.type === "rules");
+      if (rulesBlock?.data?.length) setRules(rulesBlock.data);
+      const headerBlock = res.blocks?.find((b: { type: string }) => b.type === "rules-header");
+      if (headerBlock?.data?.intro) setIntro(headerBlock.data.intro);
+      if (headerBlock?.data?.footer) setFooter(headerBlock.data.footer);
     }).catch(() => {});
   }, []);
 
@@ -51,7 +59,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
 
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           <p className="font-plex text-xs text-[#5a7a95] leading-relaxed pb-2" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)" }}>
-            Платформа «Беспилотные Пилотируемые Системы» является закрытым учебным ресурсом. Доступ предоставляется только уполномоченным лицам. Регистрируясь, вы принимаете следующие обязательства:
+            {intro}
           </p>
 
           {rules.map((rule) => (
@@ -71,7 +79,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
 
           <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(0,245,255,0.06)" }}>
             <p className="font-mono text-[10px] text-[#3a5570] leading-relaxed">
-              Администрация платформы оставляет за собой право изменять правила без предварительного уведомления. Актуальная версия всегда доступна при регистрации.
+              {footer}
             </p>
           </div>
         </div>
