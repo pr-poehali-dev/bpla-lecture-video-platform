@@ -5,9 +5,10 @@ import { api } from "@/api";
 interface Props {
   onLogin: (user: object, token: string) => void;
   onRegister: () => void;
+  onBack?: () => void;
 }
 
-export default function LoginPage({ onLogin, onRegister }: Props) {
+export default function LoginPage({ onLogin, onRegister, onBack }: Props) {
   const [callsign, setCallsign] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -154,6 +155,14 @@ export default function LoginPage({ onLogin, onRegister }: Props) {
               Подать заявку на доступ
             </button>
           </div>
+          {onBack && (
+            <div className="mt-3 text-center">
+              <button onClick={onBack} className="font-mono text-[10px] text-[#3a5570] hover:text-[#ff6b00] transition-colors flex items-center gap-1 mx-auto">
+                <Icon name="ArrowLeft" size={10} />
+                Назад
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

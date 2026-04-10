@@ -135,7 +135,7 @@ export default function App() {
         <Sonner />
         {authPage === "register"
           ? <RegisterPage onBack={() => setAuthPage("login")} />
-          : <LoginPage onLogin={handleLogin} onRegister={() => setAuthPage("register")} />
+          : <LoginPage onLogin={handleLogin} onRegister={() => setAuthPage("register")} onBack={showMaintenanceLogin ? () => setShowMaintenanceLogin(false) : undefined} />
         }
       </TooltipProvider>
     );
