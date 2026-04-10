@@ -15,7 +15,7 @@ const BLOCK_TYPES = [
 
 const BLOCK_LABELS: Record<string, string> = {
   hero: "Главный баннер", stats: "Статистика", features: "Карточки разделов", cta: "Призыв к действию",
-  text: "Текст", header: "Заголовок страницы", "drone-list": "Список дронов",
+  text: "Текст", header: "Заголовок страницы", "drone-list": "Список дронов", rules: "Правила платформы",
 };
 
 function HeroEditor({ data, onChange }: { data: Record<string, string>; onChange: (d: Record<string, string>) => void }) {
@@ -129,6 +129,50 @@ function TextEditor({ data, onChange }: { data: Record<string, string>; onChange
   );
 }
 
+interface RuleItem { num: string; title: string; text: string; }
+
+function RulesEditor({ data, onChange }: { data: RuleItem[]; onChange: (d: unknown) => void }) {
+  const update = (i: number, key: string, val: string) => {
+    onChange(data.map((item, idx) => idx === i ? { ...item, [key]: val } : item));
+  };
+  const add = () => {
+    const num = String(data.length + 1).padStart(2, "0");
+    onChange([...data, { num, title: "Новый пункт", text: "Описание правила" }]);
+  };
+  const remove = (i: number) => onChange(data.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-3">
+      {data.map((rule, i) => (
+        <div key={i} className="p-3 space-y-2" style={{ border: "1px solid #1a2a3a" }}>
+          <div className="flex items-center justify-between">
+            <span className="font-orbitron text-xs font-bold" style={{ color: "#00f5ff", opacity: 0.5 }}>{rule.num}</span>
+            <button onClick={() => remove(i)} className="text-[#3a5570] hover:text-[#ff2244]"><Icon name="X" size={12} /></button>
+          </div>
+          <div>
+            <label className="font-mono text-[10px] text-[#3a5570] block mb-0.5">Номер (01, 02...)</label>
+            <input className="w-full bg-transparent border border-[#1a2a3a] px-2 py-1 font-mono text-xs text-white outline-none focus:border-[#00f5ff]"
+              value={rule.num} onChange={e => update(i, "num", e.target.value)} />
+          </div>
+          <div>
+            <label className="font-mono text-[10px] text-[#3a5570] block mb-0.5">Заголовок</label>
+            <input className="w-full bg-transparent border border-[#1a2a3a] px-2 py-1 font-plex text-sm text-white outline-none focus:border-[#00f5ff]"
+              value={rule.title} onChange={e => update(i, "title", e.target.value)} />
+          </div>
+          <div>
+            <label className="font-mono text-[10px] text-[#3a5570] block mb-0.5">Текст</label>
+            <textarea rows={3} className="w-full bg-transparent border border-[#1a2a3a] px-2 py-1 font-plex text-xs text-white outline-none focus:border-[#00f5ff] resize-none"
+              value={rule.text} onChange={e => update(i, "text", e.target.value)} />
+          </div>
+        </div>
+      ))}
+      <button onClick={add} className="font-mono text-xs text-[#00ff88] border border-[rgba(0,255,136,0.3)] px-3 py-1.5 hover:bg-[rgba(0,255,136,0.05)]">
+        + Добавить пункт
+      </button>
+    </div>
+  );
+}
+
 function HeaderEditor({ data, onChange }: { data: Record<string, unknown>; onChange: (d: unknown) => void }) {
   const cats = Array.isArray(data.categories) ? (data.categories as string[]) : [];
   const setCats = (arr: string[]) => onChange({ ...data, categories: arr });
@@ -222,6 +266,7 @@ function BlockEditor({ block, onSave, onDelete }: { block: Block; onSave: (id: n
       case "text": return <TextEditor data={localData as Record<string, string>} onChange={setLocalData} />;
       case "header": return <HeaderEditor data={localData as Record<string, unknown>} onChange={setLocalData} />;
       case "drone-list": return <DroneListEditor data={localData as DroneItem[]} onChange={setLocalData} />;
+      case "rules": return <RulesEditor data={localData as RuleItem[]} onChange={setLocalData} />;
       default: return <pre className="font-mono text-xs text-[#5a7a95] overflow-auto">{JSON.stringify(localData, null, 2)}</pre>;
     }
   };
