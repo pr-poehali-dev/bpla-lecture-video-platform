@@ -41,7 +41,7 @@ export interface RemovalRequest {
 }
 
 export const api = {
-  register: (data: { callsign: string; name: string; email: string; password: string }) =>
+  register: (data: { callsign: string; name: string; email: string; password: string; rank: string; gender: string }) =>
     fetch(`${AUTH_URL}/?action=register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
 
   login: (data: { callsign: string; password: string }) =>

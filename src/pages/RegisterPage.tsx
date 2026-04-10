@@ -95,11 +95,21 @@ function RulesModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+const RANKS = [
+  "Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант",
+  "Старшина", "Прапорщик", "Старший прапорщик",
+  "Младший лейтенант", "Лейтенант", "Старший лейтенант", "Капитан",
+  "Майор", "Подполковник", "Полковник",
+  "Генерал-майор", "Генерал-лейтенант", "Генерал-полковник", "Генерал армии",
+];
+
 export default function RegisterPage({ onBack }: Props) {
   const [callsign, setCallsign] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rank, setRank] = useState("");
+  const [gender, setGender] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -109,9 +119,11 @@ export default function RegisterPage({ onBack }: Props) {
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) return;
+    if (!rank) { setError("Укажите звание"); return; }
+    if (!gender) { setError("Укажите пол"); return; }
     setLoading(true);
     setError("");
-    const res = await api.register({ callsign, name, email, password });
+    const res = await api.register({ callsign, name, email, password, rank, gender });
     setLoading(false);
     if (res.message) {
       setDone(true);
@@ -217,6 +229,29 @@ export default function RegisterPage({ onBack }: Props) {
                     className="w-full bg-[#050810] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-plex text-sm px-3 py-2.5 rounded-sm outline-none focus:border-[rgba(0,245,255,0.5)] placeholder:text-[#2a4060]"
                     placeholder="Минимум 6 символов"
                   />
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] text-[#3a5570] tracking-widest block mb-1.5">ПОЛ *</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full bg-[#050810] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-plex text-sm px-3 py-2.5 rounded-sm outline-none focus:border-[rgba(0,245,255,0.5)]"
+                  >
+                    <option value="">— выберите —</option>
+                    <option value="male">Мужской</option>
+                    <option value="female">Женский</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] text-[#3a5570] tracking-widest block mb-1.5">ЗВАНИЕ *</label>
+                  <select
+                    value={rank}
+                    onChange={(e) => setRank(e.target.value)}
+                    className="w-full bg-[#050810] border border-[rgba(0,245,255,0.15)] text-[#e0f4ff] font-plex text-sm px-3 py-2.5 rounded-sm outline-none focus:border-[rgba(0,245,255,0.5)]"
+                  >
+                    <option value="">— выберите —</option>
+                    {RANKS.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
                 </div>
 
                 <div className="p-3 mt-2" style={{ background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.1)" }}>

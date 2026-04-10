@@ -84,9 +84,15 @@ def handler(event: dict, context) -> dict:
         password = body.get("password") or ""
         name = (body.get("name") or "").strip()
         callsign = (body.get("callsign") or "").strip()
+        rank = (body.get("rank") or "").strip()
+        gender = (body.get("gender") or "").strip()
 
         if not email or not password or not name or not callsign:
             return err("Заполните все поля")
+        if not rank:
+            return err("Укажите звание")
+        if not gender or gender not in ("male", "female"):
+            return err("Укажите пол")
         if len(password) < 6:
             return err("Пароль минимум 6 символов")
 
@@ -98,8 +104,8 @@ def handler(event: dict, context) -> dict:
 
         pw_hash = hash_password(password)
         cur.execute(
-            f"INSERT INTO {q('users')} (email, password_hash, name, callsign, status) VALUES (%s, %s, %s, %s, 'pending') RETURNING id",
-            (email, pw_hash, name, callsign)
+            f"INSERT INTO {q('users')} (email, password_hash, name, callsign, rank, gender, status) VALUES (%s, %s, %s, %s, %s, %s, 'pending') RETURNING id",
+            (email, pw_hash, name, callsign, rank, gender)
         )
         conn.commit()
         return ok({"message": "Заявка отправлена. Ожидайте одобрения администратора."}, 201)
