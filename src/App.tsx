@@ -47,6 +47,7 @@ export default function App() {
   const [maintenanceMessage, setMaintenanceMessage] = useState("Сайт временно недоступен. Ведутся технические работы.");
 
   const [introDone, setIntroDone] = useState(() => !!sessionStorage.getItem("intro_done"));
+  const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
 
   useEffect(() => {
     api.admin.getSettings().then((res) => {
@@ -106,7 +107,7 @@ export default function App() {
   }
 
   if (!user) {
-    if (!siteEnabled) {
+    if (!siteEnabled && !showMaintenanceLogin) {
       return (
         <TooltipProvider>
           <div className="min-h-screen flex items-center justify-center grid-bg" style={{ background: "#050810" }}>
@@ -118,7 +119,7 @@ export default function App() {
               <div className="font-orbitron text-2xl font-black text-white mb-4 tracking-wider">САЙТ НЕДОСТУПЕН</div>
               <p className="font-plex text-sm text-[#5a7a95] leading-relaxed mb-8">{maintenanceMessage}</p>
               <button
-                onClick={() => setAuthPage("login")}
+                onClick={() => setShowMaintenanceLogin(true)}
                 className="font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] transition-colors underline"
               >
                 Войти как администратор
