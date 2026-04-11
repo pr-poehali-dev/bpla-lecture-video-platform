@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import Avatar from "@/components/Avatar";
 import { Message } from "@/components/ChatWidget";
@@ -30,6 +30,19 @@ function formatTime(dt: string) {
   return d.toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
 }
 
+// Читал ли собеседник — упрощённая эвристика: если сообщение не последнее, считаем прочитанным
+function useReadStatus(messages: Message[], userId: number) {
+  const myMessages = messages.filter(m => m.sender_id === userId);
+  const lastMyIndex = messages.map(m => m.sender_id === userId).lastIndexOf(true);
+  return (msgId: number) => {
+    const idx = messages.findIndex(m => m.id === msgId);
+    // Последнее своё сообщение — "отправлено", предыдущие — "прочитано"
+    if (idx === lastMyIndex) return "sent";
+    if (idx < lastMyIndex && myMessages.length > 0) return "read";
+    return null;
+  };
+}
+
 export default function ChatMessages({
   messages, userId, input, sending, typingUsers = [], replyTo,
   onInputChange, onSend, onKey, onPaste, onFileChange, onLightbox,
@@ -37,8 +50,18 @@ export default function ChatMessages({
   messagesEndRef,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [hoveredMsg, setHoveredMsg] = useState<number | null>(null);
   const [showReactPicker, setShowReactPicker] = useState<number | null>(null);
+  const getReadStatus = useReadStatus(messages, userId);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 96) + "px";
+  }, [input]);
 
   return (
     <>
@@ -49,6 +72,8 @@ export default function ChatMessages({
         {messages.map((msg) => {
           const isMine = msg.sender_id === userId;
           const isHidden = msg.hidden;
+          const readStatus = isMine ? getReadStatus(msg.id) : null;
+
           return (
             <div
               key={msg.id}
@@ -141,7 +166,19 @@ export default function ChatMessages({
                   </div>
                 )}
 
-                <span className="font-mono text-[9px] text-[#3a5570] px-1">{formatTime(msg.created_at)}</span>
+                {/* Time + read status */}
+                <div className="flex items-center gap-1 px-1">
+                  <span className="font-mono text-[9px] text-[#3a5570]">{formatTime(msg.created_at)}</span>
+                  {readStatus === "sent" && (
+                    <Icon name="Check" size={9} className="text-[#3a5570]" />
+                  )}
+                  {readStatus === "read" && (
+                    <span className="flex">
+                      <Icon name="Check" size={9} className="text-[#00f5ff] -mr-1" />
+                      <Icon name="Check" size={9} className="text-[#00f5ff]" />
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -182,28 +219,27 @@ export default function ChatMessages({
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={sending}
-          className="text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0 disabled:opacity-40"
-          title="Отправить изображение"
-        >
-          <Icon name="Image" size={16} />
+          className="p-1.5 text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0"
+          title="Загрузить изображение">
+          <Icon name="Paperclip" size={12} />
         </button>
-        <input
-          className="flex-1 bg-transparent border-b font-plex text-[12px] text-white placeholder-[#3a5570] outline-none py-1"
-          style={{ borderColor: "rgba(0,245,255,0.2)" }}
-          placeholder="Сообщение..."
+        <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={onKey}
           onPaste={onPaste}
-          disabled={sending}
+          placeholder="Сообщение..."
+          rows={1}
+          className="flex-1 resize-none font-plex text-sm p-2 outline-none bg-[#0a1520] text-white overflow-hidden"
+          style={{ border: "1px solid rgba(0,245,255,0.12)", borderRadius: "2px", minHeight: "34px", maxHeight: "96px" }}
         />
         <button
           onClick={onSend}
-          disabled={!input.trim() || sending}
-          className="text-[#00f5ff] hover:text-white disabled:text-[#2a4060] transition-colors flex-shrink-0"
-        >
-          <Icon name={sending ? "Loader" : "Send"} size={15} className={sending ? "animate-spin" : ""} />
+          disabled={sending || !input.trim()}
+          className="p-1.5 text-[#00f5ff] hover:text-white transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Отправить">
+          <Icon name={sending ? "Loader" : "Send"} size={12} className={sending ? "animate-spin" : ""} />
         </button>
       </div>
     </>

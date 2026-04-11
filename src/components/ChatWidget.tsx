@@ -36,6 +36,8 @@ interface Contact {
 
 export default function ChatWidget({ user }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [muted, setMuted] = useState(() => localStorage.getItem("chat_muted") === "1");
   const [tab, setTab] = useState<"chats" | "contacts">("chats");
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
@@ -52,6 +54,12 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevUnreadRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    localStorage.setItem("chat_muted", next ? "1" : "0");
+  };
   // Contacts
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactsLoaded, setContactsLoaded] = useState(false);
@@ -152,7 +160,7 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
     if (res.chats) {
       setChats(res.chats);
       const newTotal = res.chats.reduce((s: number, c: Chat) => s + (c.unread_count || 0), 0);
-      if (newTotal > prevUnreadRef.current) playNotify();
+      if (newTotal > prevUnreadRef.current && !muted) playNotify();
       prevUnreadRef.current = newTotal;
       setTotalUnread(newTotal);
     }
@@ -251,9 +259,10 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
       {/* Chat panel */}
       {open && (
         <div
-          className="flex flex-col overflow-hidden animate-fade-in"
+          className="flex flex-col overflow-hidden animate-fade-in transition-all duration-200"
           style={{
-            width: 340, height: 480,
+            width: expanded ? 420 : 340,
+            height: expanded ? 640 : 480,
             background: "rgba(5,8,16,0.97)",
             border: "1px solid rgba(0,245,255,0.25)",
             boxShadow: "0 0 40px rgba(0,245,255,0.1), 0 20px 60px rgba(0,0,0,0.6)",
@@ -278,6 +287,22 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
                   <span className="font-orbitron text-xs text-[#00f5ff] tracking-wider flex-1">СВЯЗЬ</span>
                 </>
               )}
+              {/* Mute */}
+              <button
+                onClick={toggleMute}
+                title={muted ? "Включить звук" : "Выключить звук"}
+                className="text-[#3a5570] hover:text-[#ffbe32] transition-colors"
+              >
+                <Icon name={muted ? "VolumeX" : "Volume2"} size={13} />
+              </button>
+              {/* Expand */}
+              <button
+                onClick={() => setExpanded(e => !e)}
+                title={expanded ? "Уменьшить" : "Развернуть"}
+                className="text-[#3a5570] hover:text-[#00f5ff] transition-colors"
+              >
+                <Icon name={expanded ? "Minimize2" : "Maximize2"} size={13} />
+              </button>
               <button onClick={() => setOpen(false)} className="text-[#3a5570] hover:text-white transition-colors">
                 <Icon name="X" size={14} />
               </button>

@@ -32,17 +32,30 @@ interface Props {
 
 function isOnline(lastSeen?: string | null): boolean {
   if (!lastSeen) return false;
-  return Date.now() - new Date(lastSeen).getTime() < 1 * 60 * 1000;
+  return Date.now() - new Date(lastSeen).getTime() < 60 * 1000;
+}
+
+function lastSeenText(lastSeen?: string | null): string {
+  if (!lastSeen) return "не в сети";
+  const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
+  if (diff < 60) return "онлайн";
+  if (diff < 3600) return `был ${Math.floor(diff / 60)} мин назад`;
+  if (diff < 86400) return `был ${Math.floor(diff / 3600)} ч назад`;
+  if (diff < 86400 * 7) return `был ${Math.floor(diff / 86400)} д назад`;
+  return "давно";
 }
 
 export default function ChatContactsTab({
   contacts, contactsLoaded, searchQuery, searchResults, searching,
   onSearch, onAddContact, onOpenContactChat,
 }: Props) {
+  const online = contacts.filter(c => isOnline(c.last_seen));
+  const offline = contacts.filter(c => !isOnline(c.last_seen));
+
   return (
     <div className="flex-1 overflow-y-auto flex flex-col">
       {/* Search */}
-      <div className="p-3 border-b" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
+      <div className="p-3 border-b flex-shrink-0" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
         <div className="relative">
           <Icon name="Search" size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#3a5570]" />
           <input
@@ -57,7 +70,7 @@ export default function ChatContactsTab({
 
       {/* Search results */}
       {searchQuery && (
-        <div className="border-b" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
+        <div className="border-b flex-shrink-0" style={{ borderColor: "rgba(0,245,255,0.08)" }}>
           {searching ? (
             <div className="px-4 py-3 font-mono text-[10px] text-[#3a5570] animate-pulse">Поиск...</div>
           ) : searchResults.length === 0 ? (
@@ -94,33 +107,63 @@ export default function ChatContactsTab({
             <div className="font-mono text-xs text-[#3a5570]">Контактов нет</div>
             <div className="font-mono text-[10px] text-[#2a4060]">Найдите бойцов через поиск</div>
           </div>
-        ) : contacts.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => onOpenContactChat(c)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(0,245,255,0.04)] transition-colors border-b"
-            style={{ borderColor: "rgba(0,245,255,0.06)" }}
-          >
-            <div className="relative w-8 h-8 flex-shrink-0">
-              <div className="w-8 h-8 flex items-center justify-center font-orbitron text-xs text-[#00f5ff]"
-                style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
-                {(c.callsign || c.name || "?")[0].toUpperCase()}
-              </div>
-              {isOnline(c.last_seen) && (
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#050810]"
-                  style={{ background: "#00ff88", boxShadow: "0 0 6px #00ff88" }} />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-mono text-xs text-white truncate">{c.callsign || c.name}</div>
-              <div className="font-mono text-[10px]" style={{ color: isOnline(c.last_seen) ? "#00ff88" : "#3a5570" }}>
-                {isOnline(c.last_seen) ? "онлайн" : "не в сети"}
-              </div>
-            </div>
-            <Icon name="MessageSquare" size={12} className="text-[#3a5570] flex-shrink-0" />
-          </button>
-        ))}
+        ) : (
+          <>
+            {/* Online section */}
+            {online.length > 0 && (
+              <>
+                <div className="px-4 py-1.5 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)" }}>
+                  <span className="font-mono text-[9px] text-[#00ff88] tracking-wider">
+                    ОНЛАЙН · {online.length}
+                  </span>
+                </div>
+                {online.map(c => <ContactRow key={c.id} contact={c} onOpen={onOpenContactChat} />)}
+              </>
+            )}
+
+            {/* Offline section */}
+            {offline.length > 0 && (
+              <>
+                <div className="px-4 py-1.5 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)" }}>
+                  <span className="font-mono text-[9px] text-[#3a5570] tracking-wider">
+                    НЕ В СЕТИ · {offline.length}
+                  </span>
+                </div>
+                {offline.map(c => <ContactRow key={c.id} contact={c} onOpen={onOpenContactChat} />)}
+              </>
+            )}
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function ContactRow({ contact: c, onOpen }: { contact: Contact; onOpen: (c: Contact) => void }) {
+  const online = isOnline(c.last_seen);
+  return (
+    <button
+      onClick={() => onOpen(c)}
+      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[rgba(0,245,255,0.04)] transition-colors border-b"
+      style={{ borderColor: "rgba(0,245,255,0.06)" }}
+    >
+      <div className="relative w-8 h-8 flex-shrink-0">
+        <div className="w-8 h-8 flex items-center justify-center font-orbitron text-xs text-[#00f5ff]"
+          style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
+          {(c.callsign || c.name || "?")[0].toUpperCase()}
+        </div>
+        {online && (
+          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-[#050810]"
+            style={{ background: "#00ff88", boxShadow: "0 0 6px #00ff88" }} />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-mono text-xs text-white truncate">{c.callsign || c.name}</div>
+        <div className="font-mono text-[10px] truncate" style={{ color: online ? "#00ff88" : "#3a5570" }}>
+          {lastSeenText(c.last_seen)}
+        </div>
+      </div>
+      <Icon name="MessageSquare" size={12} className="text-[#3a5570] flex-shrink-0" />
+    </button>
   );
 }
