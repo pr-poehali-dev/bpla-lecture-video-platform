@@ -4,6 +4,7 @@ import Icon from "@/components/ui/icon";
 import ChatWidget from "@/components/ChatWidget";
 import Watermark from "@/components/Watermark";
 import NotificationBell from "@/components/NotificationBell";
+import ChatToast from "@/components/ChatToast";
 import { api } from "@/api";
 
 function useServerStatus() {
@@ -106,6 +107,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
   return (
     <div className="min-h-screen grid-bg" style={{ background: "#050810" }}>
       <Watermark user={user} />
+      {user && <ChatToast user={user} currentPage={currentPage} onNavigate={onNavigate} />}
       {/* Scan line effect */}
       <div
         className="fixed top-0 left-0 right-0 h-px z-50 pointer-events-none opacity-20"
