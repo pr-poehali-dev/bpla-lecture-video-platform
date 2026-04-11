@@ -8,9 +8,12 @@ interface Props {
   activeChat: Chat | null;
   loading: boolean;
   userId: number;
+  showSupport: boolean;
+  unreadSupport: number;
   onOpenChat: (chat: Chat) => void;
   onOpenDirect: (contactUserId: number) => void;
   onShowCreateGroup: () => void;
+  onToggleSupport: () => void;
   searchQ: string;
   searchResults: FoundUser[];
   searching: boolean;
@@ -21,7 +24,8 @@ interface Props {
 
 export default function MsgSidebar({
   chats, contacts, activeChat, loading, userId,
-  onOpenChat, onOpenDirect, onShowCreateGroup,
+  showSupport, unreadSupport,
+  onOpenChat, onOpenDirect, onShowCreateGroup, onToggleSupport,
   searchQ, searchResults, searching, onSearch, onSendContactRequest, onRespondContact,
 }: Props) {
   const [showSearch, setShowSearch] = useState(false);
@@ -74,6 +78,27 @@ export default function MsgSidebar({
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
           <Icon name="Users" size={14} />
+        </button>
+
+        {/* Support button */}
+        <button
+          onClick={onToggleSupport}
+          title="Поддержка"
+          className="relative flex items-center justify-center w-10 h-10 mb-1 transition-all flex-shrink-0"
+          style={{
+            border: showSupport ? "1px solid rgba(0,255,136,0.5)" : "1px solid rgba(0,255,136,0.18)",
+            color: showSupport ? "#00ff88" : "#2a5a40",
+            background: showSupport ? "rgba(0,255,136,0.1)" : "transparent",
+            boxShadow: showSupport ? "0 0 8px rgba(0,255,136,0.2)" : "none",
+          }}
+        >
+          <Icon name="Headphones" size={15} />
+          {unreadSupport > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full flex items-center justify-center font-mono text-[7px] font-bold text-black"
+              style={{ background: "#00ff88", border: "1.5px solid rgba(3,5,11,1)" }}>
+              {unreadSupport > 9 ? "9+" : unreadSupport}
+            </span>
+          )}
         </button>
 
         <div className="w-8 h-px mb-1 flex-shrink-0" style={{ background: "rgba(0,245,255,0.08)" }} />

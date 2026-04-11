@@ -6,6 +6,7 @@ import { Chat, Contact, Message, FoundUser } from "./messages/MsgTypes";
 import MsgSidebar from "./messages/MsgSidebar";
 import MsgChatArea from "./messages/MsgChatArea";
 import MsgCreateGroupModal from "./messages/MsgCreateGroupModal";
+import SupportPage from "./SupportPage";
 
 interface MessagesPageProps { user: User; }
 
@@ -41,11 +42,20 @@ export default function MessagesPage({ user }: MessagesPageProps) {
   const [groupSearch, setGroupSearch] = useState("");
   const [groupSearchResults, setGroupSearchResults] = useState<FoundUser[]>([]);
 
+  const [showSupport, setShowSupport] = useState(false);
+  const [unreadSupport, setUnreadSupport] = useState(0);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const typingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    loadAll();
+    api.support.ticketList().then(res => {
+      const count = (res.tickets || []).filter((t: { status: string }) => t.status === "answered").length;
+      setUnreadSupport(count);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -258,9 +268,12 @@ export default function MessagesPage({ user }: MessagesPageProps) {
           activeChat={activeChat}
           loading={loading}
           userId={user.id}
-          onOpenChat={openChat}
-          onOpenDirect={openDirectChat}
+          showSupport={showSupport}
+          unreadSupport={unreadSupport}
+          onOpenChat={chat => { setShowSupport(false); openChat(chat); }}
+          onOpenDirect={id => { setShowSupport(false); openDirectChat(id); }}
           onShowCreateGroup={() => setShowCreateGroup(true)}
+          onToggleSupport={() => { setShowSupport(s => !s); setActiveChat(null); setUnreadSupport(0); }}
           searchQ={searchQ}
           searchResults={searchResults}
           searching={searching}
@@ -270,8 +283,12 @@ export default function MessagesPage({ user }: MessagesPageProps) {
         />
 
         {/* Chat area */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {!activeChat ? (
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {showSupport ? (
+            <div className="flex-1 overflow-y-auto">
+              <SupportPage user={user} embedded />
+            </div>
+          ) : !activeChat ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4"

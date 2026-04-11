@@ -38,7 +38,7 @@ interface Broadcast {
   admin_name: string;
 }
 
-interface Props { user: User; }
+interface Props { user: User; embedded?: boolean; }
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   open:     { label: "Открыт",  color: "#00f5ff" },
@@ -71,7 +71,7 @@ function FileAttachment({ url, name, type }: { url: string; name: string | null;
   );
 }
 
-export default function SupportPage({ user }: Props) {
+export default function SupportPage({ user, embedded }: Props) {
   const [view, setView] = useState<"list" | "ticket" | "new">("list");
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -136,11 +136,13 @@ export default function SupportPage({ user }: Props) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-8 h-px bg-[#00f5ff]" />
-        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ПОДДЕРЖКА</span>
-      </div>
+    <div className={embedded ? "px-4 py-4" : "max-w-4xl mx-auto px-4 py-6"}>
+      {!embedded && (
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-8 h-px bg-[#00f5ff]" />
+          <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">// ПОДДЕРЖКА</span>
+        </div>
+      )}
 
       {/* ── НОВОЕ ОБРАЩЕНИЕ ── */}
       {view === "new" && (
@@ -287,7 +289,7 @@ export default function SupportPage({ user }: Props) {
             )}
           </div>
 
-          <div className="flex flex-col gap-3 p-5 overflow-y-auto" style={{ maxHeight: "calc(100vh - 380px)", minHeight: 200 }}>
+          <div className="flex flex-col gap-3 p-5 overflow-y-auto" style={{ maxHeight: embedded ? "35vh" : "calc(100vh - 380px)", minHeight: 160 }}>
             {messages.map(m => {
               const isMe = !m.is_admin;
               return (
