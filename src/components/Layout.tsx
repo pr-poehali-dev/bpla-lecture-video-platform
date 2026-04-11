@@ -3,6 +3,7 @@ import { type Page, type User } from "@/App";
 import Icon from "@/components/ui/icon";
 import ChatWidget from "@/components/ChatWidget";
 import Watermark from "@/components/Watermark";
+import NotificationBell from "@/components/NotificationBell";
 import { api } from "@/api";
 
 function useServerStatus() {
@@ -32,6 +33,7 @@ const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "materials", label: "Материалы", icon: "FileText" },
   { id: "firmware", label: "Загрузки и прошивки", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
+  { id: "leaderboard", label: "Рейтинг", icon: "Trophy" },
 ];
 
 interface LayoutProps {
@@ -163,6 +165,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     ЗАГРУЗИТЬ
                   </button>
                 )}
+                {user && <NotificationBell user={user} onNavigate={onNavigate} />}
                 <button
                   onClick={() => onNavigate("messages")}
                   className={`relative flex items-center justify-center w-7 h-7 transition-all ${currentPage === "messages" ? "text-[#00f5ff]" : "text-[#5a7a95] hover:text-[#00f5ff]"}`}

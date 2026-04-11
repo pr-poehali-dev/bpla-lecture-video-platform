@@ -4,6 +4,9 @@ const FILES_URL = "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f
 const MSG_URL = "https://functions.poehali.dev/64d88e88-79a2-48b8-8ac8-d37bfa8eb51e";
 const REMOVAL_URL = "https://functions.poehali.dev/c72247bf-756d-4755-9c5d-88a1c31e0f01";
 const SUPPORT_URL = "https://functions.poehali.dev/dbc4c90c-5989-44b4-8fa6-10b0e6c3d25f";
+const PROGRESS_URL = "https://functions.poehali.dev/08210ec3-5fef-40a5-9e4a-a8f79a74fdea";
+const QUIZZES_URL = "https://functions.poehali.dev/3d39e7fc-7ee7-4c55-b02f-bd9c8773d64b";
+const NOTIF_URL = "https://functions.poehali.dev/7f825da7-333e-4e99-aa0a-f6e271e6f43b";
 
 function getToken(): string {
   return localStorage.getItem("drone_token") || "";
@@ -264,5 +267,52 @@ export const api = {
         headers: authHeaders(),
         body: JSON.stringify({ id, action }),
       }).then((r) => r.json()),
+  },
+
+  progress: {
+    markDone: (item_type: "lecture" | "video", item_id: number) =>
+      fetch(`${PROGRESS_URL}/?action=mark-done`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ item_type, item_id }) }).then(r => r.json()),
+    markUndone: (item_type: "lecture" | "video", item_id: number) =>
+      fetch(`${PROGRESS_URL}/?action=mark-undone`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ item_type, item_id }) }).then(r => r.json()),
+    myProgress: () =>
+      fetch(`${PROGRESS_URL}/?action=my-progress`, { headers: authHeaders() }).then(r => r.json()),
+    noteSave: (item_type: "lecture" | "video", item_id: number, content: string) =>
+      fetch(`${PROGRESS_URL}/?action=note-save`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ item_type, item_id, content }) }).then(r => r.json()),
+    myNotes: (item_type?: string, item_id?: number) => {
+      const p = new URLSearchParams({ action: "my-notes" });
+      if (item_type) p.set("item_type", item_type);
+      if (item_id) p.set("item_id", String(item_id));
+      return fetch(`${PROGRESS_URL}/?${p}`, { headers: authHeaders() }).then(r => r.json());
+    },
+    noteDelete: (note_id: number) =>
+      fetch(`${PROGRESS_URL}/?action=note-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ note_id }) }).then(r => r.json()),
+    leaderboard: () =>
+      fetch(`${PROGRESS_URL}/?action=leaderboard`, { headers: authHeaders() }).then(r => r.json()),
+  },
+
+  quizzes: {
+    get: (lecture_id: number) =>
+      fetch(`${QUIZZES_URL}/?action=quiz-get&lecture_id=${lecture_id}`, { headers: authHeaders() }).then(r => r.json()),
+    submit: (quiz_id: number, answers: Record<string, number>) =>
+      fetch(`${QUIZZES_URL}/?action=quiz-submit`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ quiz_id, answers }) }).then(r => r.json()),
+    myResults: () =>
+      fetch(`${QUIZZES_URL}/?action=my-results`, { headers: authHeaders() }).then(r => r.json()),
+    adminCreate: (data: { lecture_id: number; title: string; questions: { question: string; options: string[]; correct_index: number }[] }) =>
+      fetch(`${QUIZZES_URL}/?action=admin-quiz-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    adminDelete: (quiz_id: number) =>
+      fetch(`${QUIZZES_URL}/?action=admin-quiz-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ quiz_id }) }).then(r => r.json()),
+    adminList: () =>
+      fetch(`${QUIZZES_URL}/?action=admin-list`, { headers: authHeaders() }).then(r => r.json()),
+  },
+
+  notif: {
+    list: () =>
+      fetch(`${NOTIF_URL}/?action=list`, { headers: authHeaders() }).then(r => r.json()),
+    readAll: () =>
+      fetch(`${NOTIF_URL}/?action=read-all`, { method: "POST", headers: authHeaders() }).then(r => r.json()),
+    readOne: (id: number) =>
+      fetch(`${NOTIF_URL}/?action=read-one`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+    adminSend: (data: { title: string; body?: string; link_page?: string; type?: string; user_id?: number }) =>
+      fetch(`${NOTIF_URL}/?action=admin-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
   },
 };

@@ -1,0 +1,6 @@
+{
+  "tests": [
+    {"name": "No token", "method": "GET", "path": "/?action=my-progress", "expectedStatus": 401, "bodyMatcher": "partial", "expectedBody": {"error": "Не авторизован"}},
+    {"name": "OPTIONS", "method": "OPTIONS", "path": "/", "expectedStatus": 200, "bodyMatcher": "partial"}
+  ]
+}

@@ -16,12 +16,13 @@ import ProfilePage from "@/pages/ProfilePage";
 import MessagesPage from "@/pages/MessagesPage";
 import ContentUploadPage from "@/pages/ContentUploadPage";
 import SupportPage from "@/pages/SupportPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import AdminPage from "@/pages/AdminPage";
 import { api } from "@/api";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "profile" | "messages" | "content-upload" | "support";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "profile" | "messages" | "content-upload" | "support" | "leaderboard";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -191,6 +192,7 @@ export default function App() {
       case "profile": return <ProfilePage user={user} onUpdate={(u) => setUser(u)} onNavigate={navigate} onGoToAdmin={user.is_admin ? () => setShowAdmin(true) : undefined} />;
       case "messages": return <MessagesPage user={user} />;
       case "support": return <SupportPage user={user} />;
+      case "leaderboard": return <LeaderboardPage user={user} />;
       default: return <HomePage onNavigate={navigate} />;
     }
   };

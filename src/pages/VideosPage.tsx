@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
 import { usePageData } from "@/hooks/usePageData";
+import { useProgress } from "@/hooks/useProgress";
 
 const VIDEO_CATEGORIES = ["Все", "Боевые", "Учебные", "Технические", "Разбор миссий"];
 
@@ -80,6 +81,7 @@ export default function VideosPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("newest");
   const [playing, setPlaying] = useState<FileItem | null>(null);
+  const { done: watched, toggle: toggleWatched } = useProgress("video");
 
   useEffect(() => {
     api.files.list("video", undefined, "general").then((res) => {
@@ -161,7 +163,17 @@ export default function VideosPage() {
           </button>
         ))}
       </div>
-      <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
+      <div className="flex items-center justify-between">
+        <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
+        {files.length > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,245,255,0.08)" }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${Math.round((watched.size / files.length) * 100)}%`, background: "linear-gradient(90deg, #00f5ff, #00ff88)" }} />
+            </div>
+            <span className="font-mono text-[10px] text-[#3a5570]">{watched.size}/{files.length}</span>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="text-center py-20">
@@ -224,7 +236,17 @@ export default function VideosPage() {
                 )}
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs text-[#1a2a3a]">{formatSize(file.file_size)}</span>
-                  <span className="font-mono text-xs text-[#3a5570] truncate ml-2">{file.uploader}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-xs text-[#3a5570] truncate">{file.uploader}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleWatched(file.id); }}
+                      title={watched.has(file.id) ? "Снять отметку" : "Отметить просмотренным"}
+                      className="w-7 h-7 flex items-center justify-center transition-colors hover:bg-[rgba(0,255,136,0.1)] ml-1"
+                      style={{ color: watched.has(file.id) ? "#00ff88" : "#2a4060" }}
+                    >
+                      <Icon name="CheckCircle" size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

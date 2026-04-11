@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { api, FileItem } from "@/api";
 import { usePageData } from "@/hooks/usePageData";
+import { useProgress } from "@/hooks/useProgress";
 
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
@@ -78,8 +79,11 @@ export default function LecturesPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const [viewing, setViewing] = useState<FileItem | null>(null);
   const { set: bookmarks, toggle: toggleBookmark } = useLocalSet("lecture_bookmarks");
-  const { set: read, toggle: toggleRead } = useLocalSet("lecture_read");
+  const { done: read, toggle: toggleRead } = useProgress("lecture");
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [noteFile, setNoteFile] = useState<FileItem | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -180,6 +184,48 @@ export default function LecturesPage() {
         </button>
       </div>
 
+      {/* Progress bar */}
+      {files.length > 0 && (
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,245,255,0.08)" }}>
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((read.size / files.length) * 100)}%`, background: "linear-gradient(90deg, #00f5ff, #00ff88)" }} />
+          </div>
+          <span className="font-mono text-[10px] text-[#3a5570] flex-shrink-0">{read.size}/{files.length} изучено</span>
+        </div>
+      )}
+
+      {/* Note modal */}
+      {noteFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }} onClick={() => setNoteFile(null)}>
+          <div className="w-full max-w-md" style={{ border: "1px solid rgba(0,245,255,0.3)", background: "rgba(4,7,14,0.98)" }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
+              <span className="font-mono text-xs text-[#00f5ff] tracking-wider">ЗАМЕТКА</span>
+              <button onClick={() => setNoteFile(null)} className="text-[#3a5570] hover:text-white transition-colors"><Icon name="X" size={16} /></button>
+            </div>
+            <div className="p-4">
+              <div className="font-mono text-[10px] text-[#3a5570] mb-2 truncate">{noteFile.title}</div>
+              <textarea
+                autoFocus
+                className="w-full bg-transparent border font-mono text-sm text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors resize-none"
+                style={{ borderColor: "rgba(0,245,255,0.2)" }}
+                placeholder="Ваша заметка к этому материалу..."
+                rows={5}
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+              />
+              <button
+                onClick={async () => { if (!noteText.trim()) return; setNoteSaving(true); await api.progress.noteSave("lecture", noteFile.id, noteText.trim()); setNoteSaving(false); setNoteFile(null); }}
+                disabled={noteSaving || !noteText.trim()}
+                className="mt-3 flex items-center gap-2 px-4 py-2 font-mono text-xs transition-colors disabled:opacity-40"
+                style={{ border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff", background: "rgba(0,245,255,0.06)" }}>
+                <Icon name="Save" size={13} />
+                {noteSaving ? "СОХРАНЕНИЕ..." : "СОХРАНИТЬ"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* List */}
       {loading ? (
         <div className="text-center py-20 font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>
@@ -230,8 +276,16 @@ export default function LecturesPage() {
                   <Icon name="Bookmark" size={14} />
                 </button>
                 <button
+                  onClick={(e) => { e.stopPropagation(); setNoteFile(file); setNoteText(""); }}
+                  title="Добавить заметку"
+                  className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[rgba(0,245,255,0.1)]"
+                  style={{ color: "#2a4060" }}
+                >
+                  <Icon name="PenLine" size={14} />
+                </button>
+                <button
                   onClick={(e) => { e.stopPropagation(); toggleRead(file.id); }}
-                  title={read.has(file.id) ? "Снять отметку" : "Отметить прочитанным"}
+                  title={read.has(file.id) ? "Снять отметку" : "Отметить изученным"}
                   className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[rgba(0,255,136,0.1)]"
                   style={{ color: read.has(file.id) ? "#00ff88" : "#2a4060" }}
                 >
