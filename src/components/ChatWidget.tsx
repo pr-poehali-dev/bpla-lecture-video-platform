@@ -349,51 +349,39 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
         </div>
       )}
 
-      {/* Toggle button */}
+      {/* Toggle button — круглая иконка */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative flex items-center gap-2.5 px-4 h-11 transition-all hover:scale-[1.03] active:scale-[0.98]"
+        className="relative w-12 h-12 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
         style={{
-          background: open ? "rgba(0,245,255,0.12)" : "rgba(5,8,16,0.97)",
-          border: `1px solid ${open ? "rgba(0,245,255,0.55)" : "rgba(0,245,255,0.28)"}`,
+          borderRadius: "50%",
+          background: open ? "rgba(0,245,255,0.15)" : "rgba(5,8,16,0.95)",
+          border: `1px solid ${open ? "rgba(0,245,255,0.6)" : "rgba(0,245,255,0.3)"}`,
           boxShadow: open
-            ? "0 0 24px rgba(0,245,255,0.25), 0 4px 16px rgba(0,0,0,0.5)"
+            ? "0 0 20px rgba(0,245,255,0.35)"
             : totalUnread > 0
-              ? "0 0 16px rgba(0,245,255,0.2), 0 4px 16px rgba(0,0,0,0.5)"
-              : "0 0 8px rgba(0,245,255,0.08), 0 4px 12px rgba(0,0,0,0.4)",
+              ? "0 0 14px rgba(0,245,255,0.25)"
+              : "0 0 8px rgba(0,245,255,0.1)",
         }}
       >
-        {/* Icon with optional pulse ring */}
-        <div className="relative flex-shrink-0">
-          {!open && totalUnread > 0 && (
-            <span className="absolute inset-0 rounded-full animate-ping opacity-40"
-              style={{ background: "rgba(0,245,255,0.5)" }} />
-          )}
-          <Icon
-            name={open ? "X" : "MessageSquare"}
-            size={16}
-            className={open ? "text-[#00f5ff]" : totalUnread > 0 ? "text-[#00f5ff]" : "text-[#5a9ab5]"}
-          />
-        </div>
-
-        {/* Label */}
-        {!open && (
-          <span className="font-mono text-[11px] tracking-wider"
-            style={{ color: totalUnread > 0 ? "#00f5ff" : "#5a9ab5" }}>
-            {totalUnread > 0 ? "СООБЩЕНИЯ" : "ЧАТ"}
-          </span>
+        {/* Pulse ring при непрочитанных */}
+        {!open && totalUnread > 0 && (
+          <span className="absolute inset-0 rounded-full animate-ping opacity-30"
+            style={{ background: "rgba(0,245,255,0.4)" }} />
         )}
 
-        {/* Unread badge */}
+        <Icon
+          name={open ? "X" : "MessageSquare"}
+          size={20}
+          className={open ? "text-[#00f5ff]" : totalUnread > 0 ? "text-[#00f5ff]" : "text-[#5a9ab5]"}
+        />
+
+        {/* Бейдж непрочитанных */}
         {!open && totalUnread > 0 && (
-          <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full font-mono text-[9px] font-bold text-black"
-            style={{ background: "#00f5ff", boxShadow: "0 0 6px rgba(0,245,255,0.7)" }}>
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-mono text-[8px] font-bold text-black"
+            style={{ background: "#00f5ff", boxShadow: "0 0 6px rgba(0,245,255,0.8)" }}>
             {totalUnread > 9 ? "9+" : totalUnread}
           </span>
-        )}
-
-        {open && (
-          <span className="font-mono text-[11px] text-[#3a5570] tracking-wider">ЗАКРЫТЬ</span>
         )}
       </button>
     </div>
