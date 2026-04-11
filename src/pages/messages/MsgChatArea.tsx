@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { Chat, Message, QUICK_REACTIONS, formatTime, getChatIcon, getChatTitle } from "./MsgTypes";
 
@@ -41,6 +41,52 @@ interface Props {
   onCancelRename: () => void;
 }
 
+// Аватар-буква отправителя
+function MsgAvatar({ callsign, avatarUrl }: { callsign: string; avatarUrl?: string | null }) {
+  const letter = (callsign || "?")[0].toUpperCase();
+  // Цвет по первой букве
+  const colors = ["#00f5ff", "#00ff88", "#ffbe32", "#ff6b00", "#a855f7", "#ff2244"];
+  const colorIdx = callsign.charCodeAt(0) % colors.length;
+  const color = colors[colorIdx];
+  return (
+    <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 overflow-hidden font-orbitron text-[11px] font-bold"
+      style={{ border: `1px solid ${color}40`, background: `${color}12`, color }}>
+      {avatarUrl
+        ? <img src={avatarUrl} className="w-full h-full object-cover" alt="" />
+        : letter}
+    </div>
+  );
+}
+
+// Дата-разделитель
+function DateDivider({ date }: { date: string }) {
+  return (
+    <div className="flex items-center gap-3 my-3 px-2">
+      <div className="flex-1 h-px" style={{ background: "rgba(0,245,255,0.07)" }} />
+      <span className="font-mono text-[10px] text-[#2a4060] tracking-wider px-2 py-0.5"
+        style={{ border: "1px solid rgba(0,245,255,0.07)", background: "rgba(4,7,14,0.8)" }}>
+        {date}
+      </span>
+      <div className="flex-1 h-px" style={{ background: "rgba(0,245,255,0.07)" }} />
+    </div>
+  );
+}
+
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (msgDay.getTime() === today.getTime()) return "Сегодня";
+  if (msgDay.getTime() === yesterday.getTime()) return "Вчера";
+  return d.toLocaleDateString("ru", { day: "numeric", month: "long", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+}
+
+function isSameDay(a: string, b: string) {
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
 export default function MsgChatArea({
   activeChat, messages, visibleMessages, userId, input, sending,
   typingUsers, replyTo, msgSearch, showSearch, showChatMenu,
@@ -52,33 +98,74 @@ export default function MsgChatArea({
   onNewChatNameChange, onRenameKeyDown, onRenameConfirm, onCancelRename,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [hoveredMsg, setHoveredMsg] = useState<number | null>(null);
   const [showReactPicker, setShowReactPicker] = useState<number | null>(null);
+  const [reactingId, setReactingId] = useState<number | null>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
+  }, [input]);
 
   const handleReact = (msgId: number, emoji: string) => {
     setShowReactPicker(null);
+    setReactingId(msgId);
     onReact(msgId, emoji);
+    setTimeout(() => setReactingId(null), 400);
   };
 
+  // Группировка: одинаковый отправитель, в течение 2 минут
+  const isGrouped = (idx: number): boolean => {
+    if (idx === 0) return false;
+    const cur = visibleMessages[idx];
+    const prev = visibleMessages[idx - 1];
+    if (cur.sender_id !== prev.sender_id) return false;
+    const diff = new Date(cur.created_at).getTime() - new Date(prev.created_at).getTime();
+    return diff < 2 * 60 * 1000;
+  };
+
+  // Последнее в группе (следующее от другого или нет следующего)
+  const isLastInGroup = (idx: number): boolean => {
+    const cur = visibleMessages[idx];
+    const next = visibleMessages[idx + 1];
+    if (!next) return true;
+    if (next.sender_id !== cur.sender_id) return true;
+    const diff = new Date(next.created_at).getTime() - new Date(cur.created_at).getTime();
+    return diff >= 2 * 60 * 1000;
+  };
+
+  const isSearchMode = msgSearch.trim().length > 0;
+
   return (
-    <div className="flex-1 flex flex-col" style={{ border: "1px solid rgba(0,245,255,0.15)", background: "rgba(5,8,16,0.6)" }}>
-      {/* Chat header */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b relative" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
-        <div className="w-8 h-8 flex items-center justify-center overflow-hidden" style={{ border: "1px solid rgba(0,245,255,0.3)" }}>
+    <div className="flex-1 flex flex-col min-w-0"
+      style={{ background: "rgba(4,7,14,0.97)" }}>
+
+      {/* ── Шапка ── */}
+      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 border-b relative"
+        style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(3,5,11,0.95)" }}>
+        <div className="w-8 h-8 flex items-center justify-center overflow-hidden flex-shrink-0"
+          style={{ border: "1px solid rgba(0,245,255,0.25)", background: "rgba(0,245,255,0.05)" }}>
           {activeChat.type === "direct" && activeChat.partner?.avatar_url
             ? <img src={activeChat.partner.avatar_url} className="w-full h-full object-cover" />
             : <Icon name={getChatIcon(activeChat)} size={14} className="text-[#00f5ff]" />}
         </div>
-        <div className="flex-1">
-          <div className="font-orbitron text-xs text-white tracking-wider">{getChatTitle(activeChat)}</div>
+        <div className="flex-1 min-w-0">
+          <div className="font-orbitron text-xs text-white tracking-wider truncate">{getChatTitle(activeChat)}</div>
           {activeChat.type === "group" && (
             <div className="font-mono text-[10px] text-[#3a5570]">{activeChat.members_count} участников</div>
+          )}
+          {activeChat.type === "direct" && typingUsers.length > 0 && (
+            <div className="font-mono text-[10px] text-[#00ff88] animate-pulse">печатает...</div>
           )}
         </div>
 
         <button onClick={onToggleSearch}
           className={`p-1.5 transition-colors ${showSearch ? "text-[#00f5ff]" : "text-[#3a5570] hover:text-white"}`}
-          title="Поиск по сообщениям">
+          title="Поиск">
           <Icon name="Search" size={15} />
         </button>
 
@@ -87,7 +174,8 @@ export default function MsgChatArea({
             <Icon name="MoreVertical" size={15} />
           </button>
           {showChatMenu && (
-            <div className="absolute right-0 top-8 z-50 w-48 py-1" style={{ background: "#080d1a", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+            <div className="absolute right-0 top-8 z-50 w-48 py-1"
+              style={{ background: "#070d18", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}>
               {activeChat.type === "group" && (
                 <button onClick={onStartRename}
                   className="w-full flex items-center gap-2 px-4 py-2.5 font-mono text-xs text-[#5a7a95] hover:text-white hover:bg-[rgba(0,245,255,0.05)] transition-colors">
@@ -113,172 +201,233 @@ export default function MsgChatArea({
         </button>
       </div>
 
-      {/* Rename input */}
+      {/* Переименование */}
       {renaming && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
-          <input
-            value={newChatName}
-            onChange={e => onNewChatNameChange(e.target.value)}
-            onKeyDown={onRenameKeyDown}
+        <div className="flex items-center gap-2 px-4 py-2 flex-shrink-0 border-b"
+          style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
+          <input value={newChatName} onChange={e => onNewChatNameChange(e.target.value)}
+            onKeyDown={onRenameKeyDown} autoFocus placeholder="Новое название"
             className="flex-1 bg-transparent border font-plex text-sm text-white px-2 py-1 outline-none focus:border-[#00f5ff]"
-            style={{ borderColor: "rgba(0,245,255,0.3)" }}
-            autoFocus
-            placeholder="Новое название"
-          />
+            style={{ borderColor: "rgba(0,245,255,0.3)" }} />
           <button onClick={onRenameConfirm} className="font-mono text-xs text-[#00f5ff] px-2 py-1" style={{ border: "1px solid rgba(0,245,255,0.3)" }}>ОК</button>
           <button onClick={onCancelRename} className="font-mono text-xs text-[#3a5570] px-2 py-1" style={{ border: "1px solid #1a2a3a" }}>✕</button>
         </div>
       )}
 
-      {/* Search bar */}
+      {/* Поиск */}
       {showSearch && (
-        <div className="px-4 py-2 border-b" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
+        <div className="px-4 py-2 flex-shrink-0 border-b" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
           <div className="relative">
             <Icon name="Search" size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#3a5570]" />
-            <input
-              value={msgSearch}
-              onChange={e => onMsgSearchChange(e.target.value)}
-              className="w-full bg-transparent border font-mono text-xs text-white pl-8 pr-3 py-1.5 outline-none focus:border-[#00f5ff]"
-              style={{ borderColor: "rgba(0,245,255,0.2)" }}
+            <input value={msgSearch} onChange={e => onMsgSearchChange(e.target.value)} autoFocus
               placeholder="Поиск в переписке..."
-              autoFocus
-            />
+              className="w-full bg-transparent border font-mono text-xs text-white pl-8 pr-3 py-1.5 outline-none focus:border-[#00f5ff]"
+              style={{ borderColor: "rgba(0,245,255,0.2)" }} />
           </div>
           {msgSearch && <div className="font-mono text-[10px] text-[#3a5570] mt-1">Найдено: {visibleMessages.length}</div>}
         </div>
       )}
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2" onClick={onCloseChatMenu}>
-        {visibleMessages.length === 0 && (
-          <div className="text-center py-8 font-mono text-xs text-[#2a4060]">
-            {msgSearch ? "Ничего не найдено" : "нет сообщений — начните переписку"}
+      {/* ── Сообщения ── */}
+      <div className="flex-1 overflow-y-auto px-4 py-3" onClick={onCloseChatMenu}>
+        {visibleMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 py-12">
+            <div className="w-14 h-14 flex items-center justify-center"
+              style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
+              <Icon name={getChatIcon(activeChat)} size={24} className="text-[#1a2a3a]" />
+            </div>
+            <div className="font-orbitron text-sm text-[#2a4060] tracking-wider">
+              {msgSearch ? "Ничего не найдено" : getChatTitle(activeChat)}
+            </div>
+            {!msgSearch && (
+              <div className="font-mono text-[10px] text-[#1a2a3a]">Напишите первым</div>
+            )}
           </div>
-        )}
-        {visibleMessages.map(msg => {
-          const isMine = msg.sender_id === userId;
-          const isHidden = msg.hidden;
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}
-              onMouseEnter={() => setHoveredMsg(msg.id)}
-              onMouseLeave={() => { setHoveredMsg(null); if (showReactPicker === msg.id) setShowReactPicker(null); }}
-            >
-              {hoveredMsg === msg.id && !isHidden && (
-                <div className={`absolute top-0 flex items-center gap-1 z-10 ${isMine ? "right-full mr-2" : "left-full ml-2"}`}>
-                  <button onClick={() => onSetReplyTo(msg)} className="p-1 text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Ответить">
-                    <Icon name="Reply" size={13} />
-                  </button>
-                  <div className="relative">
-                    <button onClick={() => setShowReactPicker(showReactPicker === msg.id ? null : msg.id)} className="p-1 text-[#3a5570] hover:text-[#ffbe32] transition-colors" title="Реакция">
-                      <Icon name="Smile" size={13} />
-                    </button>
-                    {showReactPicker === msg.id && (
-                      <div className="absolute bottom-8 left-0 flex gap-1 p-1.5 z-20" style={{ background: "#0a1520", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
-                        {QUICK_REACTIONS.map(e => (
-                          <button key={e} onClick={() => handleReact(msg.id, e)} className="text-lg hover:scale-125 transition-transform">{e}</button>
-                        ))}
+        ) : (
+          <div className="space-y-0.5">
+            {visibleMessages.map((msg, idx) => {
+              const isMine = msg.sender_id === userId;
+              const isHidden = msg.hidden;
+              const grouped = !isSearchMode && isGrouped(idx);
+              const lastInGroup = !isSearchMode && isLastInGroup(idx);
+              const showDate = idx === 0 || !isSameDay(visibleMessages[idx - 1].created_at, msg.created_at);
+
+              return (
+                <div key={msg.id}>
+                  {/* Дата-разделитель */}
+                  {showDate && <DateDivider date={formatDateLabel(msg.created_at)} />}
+
+                  <div
+                    className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"} group relative ${grouped ? "mt-0.5" : "mt-3"}`}
+                    style={{ animation: "fadeSlideUp 0.18s ease-out" }}
+                    onMouseEnter={() => setHoveredMsg(msg.id)}
+                    onMouseLeave={() => { setHoveredMsg(null); if (showReactPicker === msg.id) setShowReactPicker(null); }}
+                  >
+                    {/* Аватар слева (только первое в группе или одиночное) */}
+                    {!isMine && (
+                      <div className="flex-shrink-0 self-end w-7">
+                        {lastInGroup && (
+                          <MsgAvatar
+                            callsign={msg.sender_callsign || msg.sender_name}
+                            avatarUrl={activeChat.type === "direct" ? activeChat.partner?.avatar_url : undefined}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    <div className={`max-w-[68%] flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
+                      {/* Имя — только первое в группе */}
+                      {!isMine && !grouped && (
+                        <span className="font-mono text-[10px] text-[#00f5ff] px-1 mb-0.5">
+                          {msg.sender_callsign || msg.sender_name}
+                        </span>
+                      )}
+
+                      {/* Цитата */}
+                      {msg.reply_to_id && msg.reply_content && (
+                        <div className="px-2 py-1 mb-0.5 border-l-2 border-[#00f5ff] max-w-full"
+                          style={{ background: "rgba(0,245,255,0.05)" }}>
+                          <div className="font-mono text-[10px] text-[#00f5ff]">@{msg.reply_callsign}</div>
+                          <div className="font-plex text-xs text-[#5a7a95] truncate">{msg.reply_content}</div>
+                        </div>
+                      )}
+
+                      {/* Пузырь */}
+                      <div
+                        className={`px-3 py-2 font-plex text-sm leading-relaxed ${isHidden ? "italic" : ""}`}
+                        style={{
+                          background: isHidden
+                            ? "transparent"
+                            : isMine
+                              ? "rgba(0,245,255,0.1)"
+                              : "rgba(255,255,255,0.05)",
+                          border: isHidden
+                            ? "1px dashed rgba(255,255,255,0.08)"
+                            : isMine
+                              ? "1px solid rgba(0,245,255,0.25)"
+                              : "1px solid rgba(255,255,255,0.08)",
+                          color: isHidden ? "#3a5570" : isMine ? "#d0f4ff" : "#c8dcea",
+                          // Хвостик: скруглённые углы с "хвостиком" у последнего в группе
+                          borderRadius: isMine
+                            ? lastInGroup ? "8px 8px 2px 8px" : "8px"
+                            : lastInGroup ? "8px 8px 8px 2px" : "8px",
+                        }}>
+                        {msg.image_url && !isHidden ? (
+                          <img src={msg.image_url}
+                            className="max-w-full max-h-52 object-cover cursor-pointer mb-1"
+                            style={{ borderRadius: 4 }}
+                            onClick={() => onSetLightbox(msg.image_url!)} />
+                        ) : null}
+                        {(msg.content && (!msg.image_url || msg.content !== "📷 Изображение")) && (
+                          <span>{msg.content}</span>
+                        )}
+                      </div>
+
+                      {/* Реакции */}
+                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                        <div className="flex flex-wrap gap-1 px-1">
+                          {Object.entries(msg.reactions).map(([emoji, uids]) => (
+                            <button key={emoji} onClick={() => onReact(msg.id, emoji)}
+                              className="flex items-center gap-1 px-2 py-0.5 text-sm transition-all"
+                              style={{
+                                borderRadius: 20,
+                                border: `1px solid ${uids.includes(String(userId)) ? "rgba(0,245,255,0.4)" : "rgba(255,255,255,0.1)"}`,
+                                background: uids.includes(String(userId)) ? "rgba(0,245,255,0.1)" : "rgba(255,255,255,0.04)",
+                                transform: reactingId === msg.id ? "scale(1.15)" : "scale(1)",
+                                transition: "transform 0.2s ease, background 0.15s",
+                              }}>
+                              <span>{emoji}</span>
+                              <span className="font-mono text-[10px] text-[#5a7a95]">{uids.length}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Время — только последнее в группе */}
+                      {lastInGroup && (
+                        <span className="font-mono text-[10px] text-[#2a4060] px-1">{formatTime(msg.created_at)}</span>
+                      )}
+                    </div>
+
+                    {/* Кнопки действий при hover */}
+                    {hoveredMsg === msg.id && !isHidden && (
+                      <div className={`absolute top-0 flex items-center gap-0.5 z-10 ${isMine ? "right-full mr-2" : "left-full ml-2"}`}>
+                        <button onClick={() => onSetReplyTo(msg)}
+                          className="p-1 text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Ответить">
+                          <Icon name="Reply" size={13} />
+                        </button>
+                        <div className="relative">
+                          <button onClick={() => setShowReactPicker(showReactPicker === msg.id ? null : msg.id)}
+                            className="p-1 text-[#3a5570] hover:text-[#ffbe32] transition-colors" title="Реакция">
+                            <Icon name="Smile" size={13} />
+                          </button>
+                          {showReactPicker === msg.id && (
+                            <div className={`absolute bottom-8 flex gap-1 p-2 z-20 ${isMine ? "right-0" : "left-0"}`}
+                              style={{ background: "#080d18", border: "1px solid rgba(0,245,255,0.2)", boxShadow: "0 4px 20px rgba(0,0,0,0.6)", borderRadius: 8 }}>
+                              {QUICK_REACTIONS.map(e => (
+                                <button key={e} onClick={() => handleReact(msg.id, e)}
+                                  className="text-xl hover:scale-125 transition-transform px-0.5">
+                                  {e}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {isMine && (
+                          <button onClick={() => onRemoveMessage(msg.id)}
+                            className="p-1 text-[#3a5570] hover:text-[#ff2244] transition-colors" title="Удалить">
+                            <Icon name="Trash2" size={13} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
-                  {isMine && (
-                    <button onClick={() => onRemoveMessage(msg.id)} className="p-1 text-[#3a5570] hover:text-[#ff2244] transition-colors" title="Удалить">
-                      <Icon name="Trash2" size={13} />
-                    </button>
-                  )}
                 </div>
-              )}
-
-              <div className={`max-w-[70%] ${isMine ? "items-end" : "items-start"} flex flex-col gap-1`}>
-                {!isMine && (
-                  <span className="font-mono text-[10px] text-[#00f5ff] px-1">{msg.sender_callsign || msg.sender_name}</span>
-                )}
-
-                {msg.reply_to_id && msg.reply_content && (
-                  <div className="px-2 py-1 mb-0.5 border-l-2 border-[#00f5ff]" style={{ background: "rgba(0,245,255,0.05)", maxWidth: "100%" }}>
-                    <div className="font-mono text-[10px] text-[#00f5ff]">@{msg.reply_callsign}</div>
-                    <div className="font-plex text-xs text-[#5a7a95] truncate">{msg.reply_content}</div>
-                  </div>
-                )}
-
-                <div className={`px-3 py-2 font-plex text-sm ${isHidden ? "italic text-[#3a5570]" : "text-white"}`} style={{
-                  background: isMine ? "rgba(0,245,255,0.12)" : "rgba(255,255,255,0.04)",
-                  border: `1px solid ${isMine ? "rgba(0,245,255,0.3)" : "rgba(255,255,255,0.08)"}`,
-                }}>
-                  {msg.image_url && !isHidden ? (
-                    <img
-                      src={msg.image_url}
-                      className="max-w-full max-h-48 object-cover cursor-pointer rounded-sm mb-1"
-                      onClick={() => onSetLightbox(msg.image_url!)}
-                    />
-                  ) : null}
-                  {(msg.content && (!msg.image_url || msg.content !== "📷 Изображение")) && (
-                    <span>{msg.content}</span>
-                  )}
-                </div>
-
-                {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                  <div className="flex flex-wrap gap-1 px-1">
-                    {Object.entries(msg.reactions).map(([emoji, uids]) => (
-                      <button
-                        key={emoji}
-                        onClick={() => onReact(msg.id, emoji)}
-                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-xs transition-all"
-                        style={{
-                          border: `1px solid ${uids.includes(String(userId)) ? "rgba(0,245,255,0.4)" : "rgba(255,255,255,0.1)"}`,
-                          background: uids.includes(String(userId)) ? "rgba(0,245,255,0.08)" : "transparent",
-                        }}
-                      >
-                        <span>{emoji}</span>
-                        <span className="font-mono text-[10px] text-[#5a7a95]">{uids.length}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <span className="font-mono text-[10px] text-[#2a4060] px-1">{formatTime(msg.created_at)}</span>
-              </div>
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
-      {/* Typing indicator */}
-      {typingUsers.length > 0 && (
-        <div className="px-5 py-1 font-mono text-[10px] text-[#3a5570] animate-pulse">
+      {/* Индикатор набора (для групповых — в области сообщений) */}
+      {typingUsers.length > 0 && activeChat.type === "group" && (
+        <div className="px-5 py-1 flex-shrink-0 font-mono text-[10px] text-[#00ff88] animate-pulse"
+          style={{ borderTop: "1px solid rgba(0,245,255,0.06)" }}>
           {typingUsers.join(", ")} печатает...
         </div>
       )}
 
-      {/* Reply preview */}
+      {/* Цитата */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-4 py-2 border-t" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
-          <Icon name="Reply" size={13} className="text-[#00f5ff] flex-shrink-0" />
+        <div className="flex items-center gap-2 px-4 py-2 flex-shrink-0 border-t"
+          style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
+          <div className="w-0.5 h-8 rounded-full flex-shrink-0" style={{ background: "#00f5ff" }} />
           <div className="flex-1 min-w-0">
             <div className="font-mono text-[10px] text-[#00f5ff]">@{replyTo.sender_callsign}</div>
             <div className="font-plex text-xs text-[#5a7a95] truncate">{replyTo.content}</div>
           </div>
-          <button onClick={onCancelReply} className="text-[#3a5570] hover:text-white">
+          <button onClick={onCancelReply} className="text-[#3a5570] hover:text-white flex-shrink-0">
             <Icon name="X" size={13} />
           </button>
         </div>
       )}
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t flex gap-2 items-end" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onSendImage(f); e.target.value = ""; }} />
+      {/* ── Поле ввода ── */}
+      <div className="px-4 py-3 flex-shrink-0 flex gap-2 items-end border-t"
+        style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(3,5,11,0.95)" }}>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) onSendImage(f); e.target.value = ""; }} />
         <button onClick={() => fileInputRef.current?.click()} disabled={sending}
-          className="flex items-center justify-center w-8 h-8 flex-shrink-0 transition-all disabled:opacity-30 mb-1"
-          style={{ border: "1px solid rgba(0,245,255,0.2)", color: "#5a7a95" }}
+          className="flex items-center justify-center w-8 h-8 flex-shrink-0 transition-all disabled:opacity-30 mb-0.5"
+          style={{ border: "1px solid rgba(0,245,255,0.15)", color: "#5a7a95", borderRadius: 6 }}
           title="Прикрепить изображение">
           <Icon name="Image" size={14} />
         </button>
         <textarea
-          className="flex-1 bg-transparent border font-plex text-sm text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors resize-none"
-          style={{ borderColor: "rgba(0,245,255,0.2)" }}
-          rows={1}
+          ref={textareaRef}
+          className="flex-1 bg-transparent border font-plex text-sm text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors resize-none overflow-hidden"
+          style={{ borderColor: "rgba(0,245,255,0.18)", borderRadius: 6, minHeight: 36, maxHeight: 120, lineHeight: "1.5" }}
           placeholder="Сообщение... (Enter — отправить)"
           value={input}
           onChange={onInputChange}
@@ -286,8 +435,8 @@ export default function MsgChatArea({
           onPaste={onPaste}
         />
         <button onClick={onSend} disabled={!input.trim() || sending}
-          className="flex items-center justify-center w-10 h-10 flex-shrink-0 transition-all disabled:opacity-30"
-          style={{ border: "1px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.08)", color: "#00f5ff" }}>
+          className="flex items-center justify-center w-9 h-9 flex-shrink-0 transition-all disabled:opacity-30"
+          style={{ border: "1px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.08)", color: "#00f5ff", borderRadius: 6 }}>
           <Icon name={sending ? "Loader" : "Send"} size={15} className={sending ? "animate-spin" : ""} />
         </button>
       </div>
