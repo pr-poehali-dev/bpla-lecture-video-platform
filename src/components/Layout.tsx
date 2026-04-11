@@ -65,11 +65,35 @@ function useUnreadCount(user?: User, currentPage?: Page) {
   return unread;
 }
 
+function useUnreadSupport(user?: User, currentPage?: Page) {
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const check = () => {
+      api.support.ticketList().then((res) => {
+        const count = (res.tickets || []).filter((t: { status: string }) => t.status === "answered").length;
+        setUnread(count);
+      }).catch(() => {});
+    };
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  useEffect(() => {
+    if (currentPage === "support") setUnread(0);
+  }, [currentPage]);
+
+  return unread;
+}
+
 export default function Layout({ currentPage, onNavigate, children, user, onLogout, onGoToAdmin }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const serverOnline = useServerStatus();
   const unreadMessages = useUnreadCount(user, currentPage);
+  const unreadSupport = useUnreadSupport(user, currentPage);
 
   const visibleNavItems = navItems.filter(item => {
     if (!user?.permissions) return true;
@@ -160,6 +184,14 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                   title="Поддержка"
                 >
                   <Icon name="Headphones" size={13} />
+                  {unreadSupport > 0 && (
+                    <span
+                      className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center font-mono text-[8px] font-bold rounded-full px-0.5"
+                      style={{ background: "#00ff88", color: "#000", boxShadow: "0 0 5px rgba(0,255,136,0.7)" }}
+                    >
+                      {unreadSupport > 9 ? "9+" : unreadSupport}
+                    </span>
+                  )}
                 </button>
                 <a
                   href="/?mobile=1"
