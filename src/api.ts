@@ -160,6 +160,8 @@ export const api = {
       fetch(`${MSG_URL}/?action=typing-set`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ chat_id }) }).then(r => r.json()).catch(() => ({})),
     typingGet: (chat_id: number) =>
       fetch(`${MSG_URL}/?action=typing-get&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({ typing: [] })),
+    directOpen: (target_id: number) =>
+      fetch(`${MSG_URL}/?action=direct-open`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ target_id }) }).then(r => r.json()),
   },
 
   files: {

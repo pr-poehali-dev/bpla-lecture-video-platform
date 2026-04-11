@@ -9,6 +9,7 @@ interface Props {
   loading: boolean;
   userId: number;
   onOpenChat: (chat: Chat) => void;
+  onOpenDirect: (contactUserId: number) => void;
   onShowCreateGroup: () => void;
   searchQ: string;
   searchResults: FoundUser[];
@@ -20,7 +21,7 @@ interface Props {
 
 export default function MsgSidebar({
   chats, contacts, activeChat, loading, userId,
-  onOpenChat, onShowCreateGroup,
+  onOpenChat, onOpenDirect, onShowCreateGroup,
   searchQ, searchResults, searching, onSearch, onSendContactRequest, onRespondContact,
 }: Props) {
   const [showSearch, setShowSearch] = useState(false);
@@ -114,10 +115,10 @@ export default function MsgSidebar({
           return (
             <button
               key={c.id}
-              onClick={() => chat && onOpenChat(chat)}
+              onClick={() => onOpenDirect(c.contact_user_id)}
               title={c.callsign + (c.rank ? ` · ${c.rank}` : "")}
               className="flex flex-col items-center gap-0.5 w-full px-1.5 transition-all flex-shrink-0"
-              style={{ cursor: chat ? "pointer" : "default", opacity: chat ? 1 : 0.5 }}
+              style={{ cursor: "pointer", opacity: 1 }}
             >
               <div className="relative w-10 h-10 flex items-center justify-center"
                 style={{

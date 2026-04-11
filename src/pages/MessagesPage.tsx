@@ -81,6 +81,16 @@ export default function MessagesPage({ user }: MessagesPageProps) {
     if (res.messages) setMessages(res.messages);
   };
 
+  const openDirectChat = async (contactUserId: number) => {
+    const res = await api.msg.directOpen(contactUserId);
+    if (res.error) { alert(res.error); return; }
+    await loadAll();
+    const chatsRes = await api.msg.chatsList();
+    const allChats: Chat[] = chatsRes.chats || [];
+    const chat = allChats.find((c: Chat) => c.id === res.chat_id);
+    if (chat) openChat(chat);
+  };
+
   const openChat = async (chat: Chat) => {
     setActiveChat(chat);
     setMessages([]);
@@ -249,6 +259,7 @@ export default function MessagesPage({ user }: MessagesPageProps) {
           loading={loading}
           userId={user.id}
           onOpenChat={openChat}
+          onOpenDirect={openDirectChat}
           onShowCreateGroup={() => setShowCreateGroup(true)}
           searchQ={searchQ}
           searchResults={searchResults}

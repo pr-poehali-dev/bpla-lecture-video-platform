@@ -156,6 +156,30 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         return ok({"message": "Готово"})
 
+    # Открыть / создать direct-чат с контактом
+    if action == "direct-open" and method == "POST":
+        target_id = body.get("target_id")
+        if not target_id:
+            return err("Укажите target_id")
+        cur.execute(f"SELECT id FROM {t('contacts')} WHERE status = 'accepted' AND ((requester_id = %s AND target_id = %s) OR (requester_id = %s AND target_id = %s))", (user["id"], target_id, target_id, user["id"]))
+        if not cur.fetchone():
+            return err("Пользователь не в контактах")
+        cur.execute(f"""
+            SELECT cm1.chat_id FROM {t('chat_members')} cm1
+            JOIN {t('chat_members')} cm2 ON cm1.chat_id = cm2.chat_id
+            JOIN {t('chats')} ch ON ch.id = cm1.chat_id
+            WHERE cm1.user_id = %s AND cm2.user_id = %s AND ch.type = 'direct'
+        """, (user["id"], target_id))
+        row = cur.fetchone()
+        if row:
+            chat_id = row["chat_id"]
+        else:
+            cur.execute(f"INSERT INTO {t('chats')} (type, created_by) VALUES ('direct', %s) RETURNING id", (user["id"],))
+            chat_id = cur.fetchone()["id"]
+            cur.execute(f"INSERT INTO {t('chat_members')} (chat_id, user_id) VALUES (%s, %s), (%s, %s)", (chat_id, user["id"], chat_id, target_id))
+            conn.commit()
+        return ok({"chat_id": chat_id})
+
     # Список чатов
     if action == "chats-list" and method == "GET":
         cur.execute(f"""
