@@ -222,7 +222,7 @@ export default function MessagesPage({ user }: MessagesPageProps) {
     : messages;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 py-4">
       {/* Lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90" onClick={() => setLightbox(null)}>
@@ -235,7 +235,7 @@ export default function MessagesPage({ user }: MessagesPageProps) {
       <div
         className="flex overflow-hidden"
         style={{
-          height: "calc(100vh - 160px)",
+          height: "calc(100vh - 120px)",
           minHeight: 520,
           border: "1px solid rgba(0,245,255,0.2)",
           background: "rgba(4,7,14,0.97)",
