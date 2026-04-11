@@ -5,7 +5,7 @@ interface Props {
 }
 
 const BOOT_LINES = [
-  "ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ БС...",
+  "ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ БпС...",
   "ПРОВЕРКА ПРОТОКОЛОВ БЕЗОПАСНОСТИ...",
   "ЗАГРУЗКА УЧЕБНЫХ МОДУЛЕЙ...",
   "УСТАНОВКА ЗАЩИЩЁННОГО СОЕДИНЕНИЯ...",
@@ -242,7 +242,7 @@ export default function Intro({ onDone }: Props) {
               WebkitTextStroke: glitch ? "1px #00f5ff" : "0px transparent",
             }}
           >
-            БС
+            БпС
           </div>
           <div
             className="font-orbitron font-bold tracking-[0.12em] text-white"

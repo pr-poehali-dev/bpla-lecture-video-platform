@@ -91,7 +91,7 @@ export default function LoginPage({ onLogin, onRegister, onBack }: Props) {
               <Icon name="Crosshair" size={20} className="text-[#00f5ff]" />
             </div>
             <div className="text-left">
-              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">БС</div>
+              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">БпС</div>
               <div className="font-orbitron font-bold text-xs tracking-[0.1em] text-white leading-none">БЕСПИЛОТНЫЕ СИСТЕМЫ</div>
             </div>
           </div>

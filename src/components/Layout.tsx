@@ -131,7 +131,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               )}
             </div>
             <div className="flex items-center gap-2">
-              <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БС</div>
+              <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БпС</div>
               {currentPage !== "home" && PAGE_LABELS[currentPage] && (
                 <div className="hidden sm:flex items-center gap-1.5">
                   <span className="text-[#1a2a3a] font-mono text-xs">/</span>
