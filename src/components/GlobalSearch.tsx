@@ -13,6 +13,7 @@ interface Result {
 
 interface Props {
   onNavigate: (page: Page) => void;
+  iconOnly?: boolean;
 }
 
 function useDebounce<T>(value: T, ms: number): T {
@@ -40,7 +41,7 @@ const TYPE_COLOR: Record<string, string> = {
   discussion: "#ffbe32",
 };
 
-export default function GlobalSearch({ onNavigate }: Props) {
+export default function GlobalSearch({ onNavigate, iconOnly }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -113,15 +114,19 @@ export default function GlobalSearch({ onNavigate }: Props) {
       {/* Search button in header */}
       <button
         onClick={() => setOpen(true)}
-        className="hidden lg:flex items-center gap-2 px-3 py-1.5 transition-all"
+        className={`hidden lg:flex items-center transition-all ${iconOnly ? "justify-center w-7 h-7" : "gap-2 px-3 py-1.5"}`}
         style={{ border: "1px solid rgba(0,245,255,0.12)", color: "#3a5570" }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.3)"; (e.currentTarget as HTMLElement).style.color = "#00f5ff"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.12)"; (e.currentTarget as HTMLElement).style.color = "#3a5570"; }}
         title="Поиск (Ctrl+K)"
       >
         <Icon name="Search" size={13} />
-        <span className="font-mono text-[11px]">ПОИСК</span>
-        <span className="font-mono text-[9px] px-1 py-0.5 ml-1" style={{ border: "1px solid rgba(0,245,255,0.1)", color: "#2a4060" }}>Ctrl+K</span>
+        {!iconOnly && (
+          <>
+            <span className="font-mono text-[11px]">ПОИСК</span>
+            <span className="font-mono text-[9px] px-1 py-0.5 ml-1" style={{ border: "1px solid rgba(0,245,255,0.1)", color: "#2a4060" }}>Ctrl+K</span>
+          </>
+        )}
       </button>
 
       {/* Modal */}

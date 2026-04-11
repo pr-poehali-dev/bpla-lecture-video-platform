@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { type Page, type User } from "@/App";
 import Icon from "@/components/ui/icon";
 import ChatWidget from "@/components/ChatWidget";
@@ -72,10 +72,30 @@ function useUnreadSupport(user?: User, currentPage?: Page) {
   return unread;
 }
 
+const PAGE_LABELS: Partial<Record<Page, string>> = {
+  home: "ГЛАВНАЯ", lectures: "ЛЕКЦИИ", videos: "ВИДЕО",
+  "drone-types": "ТИПЫ БПЛА", materials: "МАТЕРИАЛЫ",
+  firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ",
+  leaderboard: "РЕЙТИНГ", profile: "ПРОФИЛЬ",
+  messages: "СООБЩЕНИЯ", support: "ПОДДЕРЖКА",
+  "content-upload": "ЗАГРУЗКА",
+};
+
 export default function Layout({ currentPage, onNavigate, children, user, onLogout, onGoToAdmin }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const serverOnline = useServerStatus();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   const { totalUnread: unreadMessages, resetUnread } = useChatContext();
   useEffect(() => { if (currentPage === "messages") resetUnread(); }, [currentPage]);
   const unreadSupport = useUnreadSupport(user, currentPage);
@@ -103,29 +123,39 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("home")}>
-            <div className="w-8 h-8 flex items-center justify-center" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
+            <div className="relative w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
               <Icon name="Crosshair" size={18} className="text-[#00f5ff]" />
+              {serverOnline !== null && (
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#050810]"
+                  style={{ background: serverOnline ? "#00ff88" : "#ff2244", boxShadow: `0 0 5px ${serverOnline ? "#00ff88" : "#ff2244"}` }} />
+              )}
             </div>
-            <div>
+            <div className="flex items-center gap-2">
               <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БПС</div>
+              {currentPage !== "home" && PAGE_LABELS[currentPage] && (
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <span className="text-[#1a2a3a] font-mono text-xs">/</span>
+                  <span className="font-mono text-[10px] text-[#3a5570] tracking-[0.2em]">{PAGE_LABELS[currentPage]}</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center">
             {visibleNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-sm font-plex text-xs tracking-wider uppercase transition-all duration-200 ${
-                  currentPage === item.id
-                    ? "text-[#00f5ff] bg-[rgba(0,245,255,0.08)]"
-                    : "text-[#7a9bb5] hover:text-[#00f5ff] hover:bg-[rgba(0,245,255,0.05)]"
-                }`}
-                style={currentPage === item.id ? { borderBottom: "1px solid #00f5ff" } : {}}
+                className="relative px-3 py-2 font-plex text-xs tracking-wider uppercase transition-all duration-200"
+                style={{ color: currentPage === item.id ? "#00f5ff" : "#7a9bb5" }}
+                onMouseEnter={e => { if (currentPage !== item.id) (e.currentTarget as HTMLElement).style.color = "#00f5ff"; }}
+                onMouseLeave={e => { if (currentPage !== item.id) (e.currentTarget as HTMLElement).style.color = "#7a9bb5"; }}
               >
-                <Icon name={item.icon} size={13} />
                 {item.label}
+                {currentPage === item.id && (
+                  <span className="absolute bottom-0 left-3 right-3 h-px" style={{ background: "#00f5ff", boxShadow: "0 0 6px #00f5ff" }} />
+                )}
               </button>
             ))}
           </nav>
@@ -148,7 +178,8 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     ЗАГРУЗИТЬ
                   </button>
                 )}
-                <GlobalSearch onNavigate={onNavigate} />
+                {/* Поиск — только иконка */}
+                <GlobalSearch onNavigate={onNavigate} iconOnly />
                 {user && <NotificationBell user={user} onNavigate={onNavigate} />}
                 <button
                   onClick={() => onNavigate("messages")}
@@ -167,15 +198,20 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                   )}
                 </button>
 
-                <div
-                  className="relative"
-                  onMouseEnter={() => setProfileOpen(true)}
-                  onMouseLeave={() => setProfileOpen(false)}
-                >
-                  <button className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                    <div className="w-2 h-2 rounded-full bg-[#00ff88] animate-pulse" />
-                    <span className="font-mono text-xs text-[#5a7a95]">{user.callsign || user.name}</span>
-                    <Icon name="ChevronDown" size={11} className="text-[#3a5570]" />
+                {/* Профиль — аватар + дропдаун */}
+                <div ref={profileRef} className="relative">
+                  <button
+                    onClick={() => setProfileOpen(o => !o)}
+                    className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden font-orbitron text-[11px] font-bold text-[#00f5ff] flex-shrink-0"
+                      style={{ border: "1px solid rgba(0,245,255,0.3)", background: "rgba(0,245,255,0.06)" }}>
+                      {user.avatar_url
+                        ? <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : (user.callsign || user.name || "?")[0].toUpperCase()}
+                    </div>
+                    <Icon name="ChevronDown" size={11} className="text-[#3a5570]"
+                      style={{ transform: profileOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                   </button>
 
                   {profileOpen && (
