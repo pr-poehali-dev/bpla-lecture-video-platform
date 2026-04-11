@@ -182,30 +182,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     </span>
                   )}
                 </button>
-                <button
-                  onClick={() => onNavigate("support")}
-                  className={`relative flex items-center justify-center w-7 h-7 transition-all ${currentPage === "support" ? "text-[#00ff88]" : "text-[#5a7a95] hover:text-[#00ff88]"}`}
-                  style={{ border: `1px solid ${currentPage === "support" ? "rgba(0,255,136,0.4)" : "rgba(0,255,136,0.12)"}` }}
-                  title="Поддержка"
-                >
-                  <Icon name="Headphones" size={13} />
-                  {unreadSupport > 0 && (
-                    <span
-                      className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center font-mono text-[8px] font-bold rounded-full px-0.5"
-                      style={{ background: "#00ff88", color: "#000", boxShadow: "0 0 5px rgba(0,255,136,0.7)" }}
-                    >
-                      {unreadSupport > 9 ? "9+" : unreadSupport}
-                    </span>
-                  )}
-                </button>
-                <a
-                  href="/?mobile=1"
-                  title="Мобильное приложение"
-                  className="flex items-center justify-center w-7 h-7 transition-all text-[#5a7a95] hover:text-[#00ff88]"
-                  style={{ border: "1px solid rgba(0,255,136,0.15)" }}
-                >
-                  <Icon name="Smartphone" size={13} />
-                </a>
+
                 <div
                   className="relative"
                   onMouseEnter={() => setProfileOpen(true)}
