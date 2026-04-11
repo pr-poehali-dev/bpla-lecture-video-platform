@@ -361,19 +361,48 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative w-12 h-12 flex items-center justify-center transition-all hover:scale-105"
+        className="relative flex items-center gap-2.5 px-4 h-11 transition-all hover:scale-[1.03] active:scale-[0.98]"
         style={{
-          background: open ? "rgba(0,245,255,0.15)" : "rgba(5,8,16,0.95)",
-          border: `1px solid ${open ? "rgba(0,245,255,0.6)" : "rgba(0,245,255,0.3)"}`,
-          boxShadow: open ? "0 0 20px rgba(0,245,255,0.3)" : "0 0 10px rgba(0,245,255,0.1)",
+          background: open ? "rgba(0,245,255,0.12)" : "rgba(5,8,16,0.97)",
+          border: `1px solid ${open ? "rgba(0,245,255,0.55)" : "rgba(0,245,255,0.28)"}`,
+          boxShadow: open
+            ? "0 0 24px rgba(0,245,255,0.25), 0 4px 16px rgba(0,0,0,0.5)"
+            : totalUnread > 0
+              ? "0 0 16px rgba(0,245,255,0.2), 0 4px 16px rgba(0,0,0,0.5)"
+              : "0 0 8px rgba(0,245,255,0.08), 0 4px 12px rgba(0,0,0,0.4)",
         }}
       >
-        <Icon name={open ? "X" : "MessageSquare"} size={20} className="text-[#00f5ff]" />
+        {/* Icon with optional pulse ring */}
+        <div className="relative flex-shrink-0">
+          {!open && totalUnread > 0 && (
+            <span className="absolute inset-0 rounded-full animate-ping opacity-40"
+              style={{ background: "rgba(0,245,255,0.5)" }} />
+          )}
+          <Icon
+            name={open ? "X" : "MessageSquare"}
+            size={16}
+            className={open ? "text-[#00f5ff]" : totalUnread > 0 ? "text-[#00f5ff]" : "text-[#5a9ab5]"}
+          />
+        </div>
+
+        {/* Label */}
+        {!open && (
+          <span className="font-mono text-[11px] tracking-wider"
+            style={{ color: totalUnread > 0 ? "#00f5ff" : "#5a9ab5" }}>
+            {totalUnread > 0 ? "СООБЩЕНИЯ" : "ЧАТ"}
+          </span>
+        )}
+
+        {/* Unread badge */}
         {!open && totalUnread > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center font-mono text-[9px] text-black"
-            style={{ background: "#00f5ff", boxShadow: "0 0 8px rgba(0,245,255,0.6)" }}>
+          <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full font-mono text-[9px] font-bold text-black"
+            style={{ background: "#00f5ff", boxShadow: "0 0 6px rgba(0,245,255,0.7)" }}>
             {totalUnread > 9 ? "9+" : totalUnread}
           </span>
+        )}
+
+        {open && (
+          <span className="font-mono text-[11px] text-[#3a5570] tracking-wider">ЗАКРЫТЬ</span>
         )}
       </button>
     </div>
