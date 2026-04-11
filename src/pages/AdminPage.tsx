@@ -11,6 +11,7 @@ import AdminVideosTab from "@/components/admin/AdminVideosTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import AdminPagesTab from "@/components/admin/AdminPagesTab";
 import AdminSupportTab from "@/components/admin/AdminSupportTab";
+import AdminQuizzesTab from "@/components/admin/AdminQuizzesTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -23,7 +24,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings" | "pages" | "support";
+type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings" | "pages" | "support" | "quizzes";
 
 interface Stats {
   total: number;
@@ -51,6 +52,7 @@ const tabLabels: Record<Tab, string> = {
   settings: "Настройки",
   pages: "Страницы",
   support: "Поддержка",
+  quizzes: "Тесты",
 };
 
 const sidebarGroups = [
@@ -73,6 +75,7 @@ const sidebarGroups = [
       { key: "videos" as Tab, label: "Видео", icon: "Play" },
       { key: "files" as Tab, label: "Загрузчик", icon: "Upload" },
       { key: "discussions" as Tab, label: "Обсуждения", icon: "MessageSquare" },
+      { key: "quizzes" as Tab, label: "Тесты", icon: "ClipboardCheck" },
     ],
   },
   {
@@ -414,6 +417,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "settings" && <AdminSettingsTab />}
           {activeTab === "pages" && <AdminPagesTab />}
           {activeTab === "support" && <AdminSupportTab />}
+          {activeTab === "quizzes" && <AdminQuizzesTab />}
         </main>
       </div>
     </div>
