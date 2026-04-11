@@ -1,36 +1,46 @@
 import Icon from "@/components/ui/icon";
-import { Page } from "@/App";
+import { Page, User } from "@/App";
 import { Note, QuizResult, timeAgo, formatDate } from "./ProfileTypes";
+import AdminFilesTab from "@/components/admin/AdminFilesTab";
 
 interface Props {
+  user: User;
   notes: Note[];
   quizResults: QuizResult[];
-  rightTab: "notes" | "tests";
+  rightTab: "notes" | "tests" | "upload";
   deletingNote: number | null;
-  onSetRightTab: (tab: "notes" | "tests") => void;
+  onSetRightTab: (tab: "notes" | "tests" | "upload") => void;
   onDeleteNote: (id: number) => void;
   onNavigate: (page: Page) => void;
 }
 
+const canUpload = (user: User) =>
+  user.is_admin || ["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user.role || "");
+
 export default function ProfileActivity({
-  notes, quizResults, rightTab, deletingNote,
+  user, notes, quizResults, rightTab, deletingNote,
   onSetRightTab, onDeleteNote, onNavigate,
 }: Props) {
+  const showUpload = canUpload(user);
+
+  const tabs = [
+    { key: "notes" as const, label: "МОИ ЗАМЕТКИ", icon: "PenLine", count: notes.length },
+    { key: "tests" as const, label: "МОИ ТЕСТЫ", icon: "ClipboardCheck", count: quizResults.length },
+    ...(showUpload ? [{ key: "upload" as const, label: "ЗАГРУЗКА", icon: "Upload", count: 0 }] : []),
+  ];
+
   return (
     <>
-      {/* Заметки и тесты — вкладки */}
+      {/* Вкладки */}
       <div style={{ border: "1px solid rgba(0,245,255,0.12)", background: "rgba(4,7,14,0.8)" }}>
         <div className="flex border-b" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
-          {([
-            { key: "notes" as const, label: "МОИ ЗАМЕТКИ", icon: "PenLine", count: notes.length },
-            { key: "tests" as const, label: "МОИ ТЕСТЫ", icon: "ClipboardCheck", count: quizResults.length },
-          ]).map(t => (
+          {tabs.map(t => (
             <button key={t.key} onClick={() => onSetRightTab(t.key)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 font-mono text-[10px] tracking-wider transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 font-mono text-[10px] tracking-wider transition-colors"
               style={{
-                color: rightTab === t.key ? "#00f5ff" : "#3a5570",
-                borderBottom: rightTab === t.key ? "1px solid #00f5ff" : "1px solid transparent",
-                background: rightTab === t.key ? "rgba(0,245,255,0.04)" : "transparent",
+                color: rightTab === t.key ? (t.key === "upload" ? "#00ff88" : "#00f5ff") : "#3a5570",
+                borderBottom: rightTab === t.key ? `1px solid ${t.key === "upload" ? "#00ff88" : "#00f5ff"}` : "1px solid transparent",
+                background: rightTab === t.key ? (t.key === "upload" ? "rgba(0,255,136,0.04)" : "rgba(0,245,255,0.04)") : "transparent",
               }}>
               <Icon name={t.icon as "PenLine"} size={12} />
               {t.label}
@@ -116,6 +126,13 @@ export default function ProfileActivity({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Загрузка материалов */}
+        {rightTab === "upload" && showUpload && (
+          <div className="overflow-y-auto" style={{ maxHeight: 520 }}>
+            <AdminFilesTab isAdmin={user.is_admin} />
           </div>
         )}
       </div>

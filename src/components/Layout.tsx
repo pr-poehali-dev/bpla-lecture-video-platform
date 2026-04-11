@@ -163,20 +163,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           <div className="hidden lg:flex items-center gap-3">
             {user && (
               <>
-                {(["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user.role || "") || user.is_admin) && (
-                  <button
-                    onClick={() => onNavigate("content-upload")}
-                    className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all"
-                    style={{
-                      border: `1px solid ${currentPage === "content-upload" ? "rgba(0,255,136,0.6)" : "rgba(0,255,136,0.25)"}`,
-                      color: "#00ff88",
-                      background: currentPage === "content-upload" ? "rgba(0,255,136,0.12)" : "rgba(0,255,136,0.04)",
-                    }}
-                  >
-                    <Icon name="Upload" size={12} />
-                    ЗАГРУЗИТЬ
-                  </button>
-                )}
+
                 {/* Поиск — только иконка */}
                 <GlobalSearch onNavigate={onNavigate} iconOnly />
                 {user && <NotificationBell user={user} onNavigate={onNavigate} />}
@@ -342,17 +329,6 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               >
                 <Icon name="User" size={15} />
                 Личное Дело
-              </button>
-            )}
-            {user && (user.role?.startsWith("инструктор") || user.is_admin) && (
-              <button
-                onClick={() => { onNavigate("content-upload"); setMobileOpen(false); }}
-                className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
-                  currentPage === "content-upload" ? "text-[#00ff88] bg-[rgba(0,255,136,0.06)]" : "text-[#7a9bb5]"
-                }`}
-              >
-                <Icon name="Upload" size={15} />
-                Загрузить материал
               </button>
             )}
             {user?.is_admin && onGoToAdmin && (

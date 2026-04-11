@@ -21,7 +21,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
   const [totalLectures, setTotalLectures] = useState(0);
   const [totalVideos, setTotalVideos] = useState(0);
-  const [rightTab, setRightTab] = useState<"notes" | "tests">("notes");
+  const [rightTab, setRightTab] = useState<"notes" | "tests" | "upload">("notes");
   const [deletingNote, setDeletingNote] = useState<number | null>(null);
 
   // Profile edit state
@@ -182,6 +182,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
             totalVideos={totalVideos}
           />
           <ProfileActivity
+            user={user}
             notes={notes}
             quizResults={quizResults}
             rightTab={rightTab}

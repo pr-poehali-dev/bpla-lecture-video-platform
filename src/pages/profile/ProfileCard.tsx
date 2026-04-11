@@ -200,18 +200,6 @@ export default function ProfileCard({
 
       {/* Быстрые действия */}
       <div className="space-y-2">
-        {(user.is_admin || user.role?.startsWith("инструктор")) && (
-          <button onClick={() => onNavigate("content-upload")}
-            className="w-full flex items-center gap-3 px-4 py-3 transition-all group"
-            style={{ border: "1px solid rgba(0,255,136,0.2)", background: "rgba(0,255,136,0.03)" }}>
-            <Icon name="Upload" size={15} className="text-[#00ff88] flex-shrink-0" />
-            <div className="text-left flex-1 min-w-0">
-              <div className="font-mono text-xs text-[#00ff88] group-hover:text-white transition-colors">ЗАГРУЗИТЬ МАТЕРИАЛЫ</div>
-              <div className="font-mono text-[10px] text-[#3a5570]">Видео, документы, прошивки</div>
-            </div>
-            <Icon name="ChevronRight" size={13} className="text-[#3a5570] flex-shrink-0" />
-          </button>
-        )}
         {user.is_admin && onGoToAdmin && (
           <button onClick={onGoToAdmin}
             className="w-full flex items-center gap-3 px-4 py-3 transition-all group"
