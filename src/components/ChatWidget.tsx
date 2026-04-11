@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { api } from "@/api";
 import { User } from "@/App";
-import ChatContactsTab from "@/components/chat/ChatContactsTab";
-import ChatChatsTab from "@/components/chat/ChatChatsTab";
+import ChatCombinedList from "@/components/chat/ChatCombinedList";
 import ChatMessages from "@/components/chat/ChatMessages";
 
 interface ChatWidgetProps { user: User; }
@@ -38,7 +37,6 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [muted, setMuted] = useState(() => localStorage.getItem("chat_muted") === "1");
-  const [tab, setTab] = useState<"chats" | "contacts">("chats");
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -121,8 +119,8 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   };
 
   useEffect(() => {
-    if (tab === "contacts" && !contactsLoaded) loadContacts();
-  }, [tab]);
+    if (open && !contactsLoaded) loadContacts();
+  }, [open]);
 
   const handleSearch = async (q: string) => {
     setSearchQuery(q);
@@ -143,12 +141,11 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
   const openContactChat = async (contact: Contact) => {
     if (contact.chat_id) {
       const chat = chats.find(c => c.id === contact.chat_id);
-      if (chat) { setTab("chats"); openChat(chat); return; }
+      if (chat) { openChat(chat); return; }
     }
-    const res = await api.msg.chatCreate("", [contact.contact_id]);
+    const res = await api.msg.directOpen(contact.contact_user_id);
     if (res.chat_id) {
       await loadChats();
-      setTab("chats");
       const res2 = await api.msg.chatsList();
       const newChat = (res2.chats || []).find((c: Chat) => c.id === res.chat_id);
       if (newChat) openChat(newChat);
@@ -307,54 +304,23 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
                 <Icon name="X" size={14} />
               </button>
             </div>
-            {/* Tabs — только когда нет открытого чата */}
-            {!activeChat && (
-              <div className="flex border-t" style={{ borderColor: "rgba(0,245,255,0.1)" }}>
-                {([
-                  { key: "chats", label: "ЧАТЫ", icon: "MessageSquare" },
-                  { key: "contacts", label: "КОНТАКТЫ", icon: "Users" },
-                ] as const).map((t) => (
-                  <button
-                    key={t.key}
-                    onClick={() => setTab(t.key)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 font-mono text-[10px] transition-all"
-                    style={{
-                      color: tab === t.key ? "#00f5ff" : "#3a5570",
-                      borderBottom: tab === t.key ? "1px solid #00f5ff" : "1px solid transparent",
-                      background: tab === t.key ? "rgba(0,245,255,0.04)" : "transparent",
-                    }}
-                  >
-                    <Icon name={t.icon as "MessageSquare"} size={11} />
-                    {t.label}
-                    {t.key === "chats" && totalUnread > 0 && (
-                      <span className="px-1 rounded-full text-[9px] font-bold" style={{ background: "#ff2244", color: "#fff" }}>{totalUnread}</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Contacts tab */}
-          {!activeChat && tab === "contacts" && (
-            <ChatContactsTab
+          {/* Combined list */}
+          {!activeChat && (
+            <ChatCombinedList
+              chats={chats}
               contacts={contacts}
               contactsLoaded={contactsLoaded}
               searchQuery={searchQuery}
               searchResults={searchResults}
               searching={searching}
+              totalUnread={totalUnread}
+              onOpenChat={openChat}
+              getChatTitle={getChatTitle}
               onSearch={handleSearch}
               onAddContact={handleAddContact}
               onOpenContactChat={openContactChat}
-            />
-          )}
-
-          {/* Chats tab */}
-          {!activeChat && tab === "chats" && (
-            <ChatChatsTab
-              chats={chats}
-              onOpenChat={openChat}
-              getChatTitle={getChatTitle}
             />
           )}
 
