@@ -48,7 +48,7 @@ export default function HomePage({ onNavigate }: Props) {
   const introVideo = (getBlock("intro-video")?.data ?? null) as { url?: string; caption?: string } | null;
   const textBlocks = blocks.filter(b => b.type === "text");
 
-  const h = hero ?? { sysLabel: "SYS.INIT — БПС v2.6", title1: "БЕСПИЛОТНЫЕ", title2: "ПИЛОТИРУЕМЫЕ", title3: "СИСТЕМЫ", subtitle: "Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных пилотируемых систем.", btn1Label: "Начать обучение", btn1Page: "lectures", btn2Label: "Смотреть видео", btn2Page: "videos" };
+  const h = hero ?? { sysLabel: "SYS.INIT — БС v2.6", title1: "БЕСПИЛОТНЫЕ", title2: "СИСТЕМЫ", title3: "", subtitle: "Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных систем.", btn1Label: "Начать обучение", btn1Page: "lectures", btn2Label: "Смотреть видео", btn2Page: "videos" };
   const s = stats ?? DEFAULT_STATS;
   const f = features ?? DEFAULT_FEATURES;
   const c = cta ?? { label: "// ПРИСОЕДИНЯЙСЯ К ПЛАТФОРМЕ", title: "ГОТОВ К ОБУЧЕНИЮ?", subtitle: "Изучай материалы, смотри видео, задавай вопросы в обсуждениях", btnLabel: "Войти в сообщество", btnPage: "discussions" };

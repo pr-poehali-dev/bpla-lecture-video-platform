@@ -131,7 +131,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               )}
             </div>
             <div className="flex items-center gap-2">
-              <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БПС</div>
+              <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БС</div>
               {currentPage !== "home" && PAGE_LABELS[currentPage] && (
                 <div className="hidden sm:flex items-center gap-1.5">
                   <span className="text-[#1a2a3a] font-mono text-xs">/</span>
@@ -424,7 +424,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
       {/* Footer */}
       <footer className="mt-12 sm:mt-20 border-t py-6 sm:py-8" style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(5,8,16,0.8)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <div className="font-orbitron text-[10px] sm:text-xs tracking-[0.3em] text-[#3a5570]">DRONE ACADEMY © 2026</div>
+          <div className="font-orbitron text-[10px] sm:text-xs tracking-[0.3em] text-[#3a5570]">БЕСПИЛОТНЫЕ СИСТЕМЫ © 2026</div>
           <div className="font-mono text-[10px] sm:text-xs text-[#3a5570]">БЕСПЛАТНЫЙ ДОСТУП К ЗНАНИЯМ</div>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[#00f5ff]" style={{ boxShadow: "0 0 6px #00f5ff" }} />

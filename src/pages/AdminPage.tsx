@@ -188,7 +188,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                 <Icon name="Crosshair" size={13} className="text-[#00f5ff]" />
               </div>
               <div>
-                <div className="font-orbitron text-[10px] font-bold leading-none tracking-[0.15em] text-[#00f5ff]">БПС</div>
+                <div className="font-orbitron text-[10px] font-bold leading-none tracking-[0.15em] text-[#00f5ff]">БС</div>
               </div>
             </div>
           )}

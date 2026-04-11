@@ -14,7 +14,7 @@ const DEFAULT_RULES: RuleItem[] = [
   { num: "06", title: "Ответственность", text: "Каждый участник несёт личную ответственность за свои действия на платформе. Нарушение правил влечёт блокировку без предупреждения." },
 ];
 
-const DEFAULT_INTRO = "Платформа «Беспилотные Пилотируемые Системы» является закрытым учебным ресурсом. Доступ предоставляется только уполномоченным лицам. Регистрируясь, вы принимаете следующие обязательства:";
+const DEFAULT_INTRO = "Платформа «Беспилотные Системы» является закрытым учебным ресурсом. Доступ предоставляется только уполномоченным лицам. Регистрируясь, вы принимаете следующие обязательства:";
 const DEFAULT_FOOTER = "Администрация платформы оставляет за собой право изменять правила без предварительного уведомления. Актуальная версия всегда доступна при регистрации.";
 
 const RANKS = [
@@ -202,8 +202,8 @@ export default function RegisterPage({ onBack }: Props) {
               <Icon name="Crosshair" size={20} className="text-[#00f5ff]" />
             </div>
             <div className="text-left">
-              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">БПС</div>
-              <div className="font-orbitron font-bold text-xs tracking-[0.1em] text-white leading-none">БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ</div>
+              <div className="font-orbitron font-bold text-base tracking-[0.2em] text-[#00f5ff] leading-none">БС</div>
+              <div className="font-orbitron font-bold text-xs tracking-[0.1em] text-white leading-none">БЕСПИЛОТНЫЕ СИСТЕМЫ</div>
             </div>
           </div>
           <div className="font-mono text-xs text-[#3a5570] tracking-[0.3em]">// ЗАПРОС ДОСТУПА</div>

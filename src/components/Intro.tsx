@@ -5,7 +5,7 @@ interface Props {
 }
 
 const BOOT_LINES = [
-  "ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ БПС...",
+  "ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ БС...",
   "ПРОВЕРКА ПРОТОКОЛОВ БЕЗОПАСНОСТИ...",
   "ЗАГРУЗКА УЧЕБНЫХ МОДУЛЕЙ...",
   "УСТАНОВКА ЗАЩИЩЁННОГО СОЕДИНЕНИЯ...",
@@ -216,7 +216,7 @@ export default function Intro({ onDone }: Props) {
         >
           <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
           <span className="font-mono text-[10px] tracking-[0.5em] text-[#1e4060]">
-            SECURE BOOT // BPLA LEARNING SYSTEM // v3.0
+            SECURE BOOT // БЕСПИЛОТНЫЕ СИСТЕМЫ // v3.0
           </span>
         </div>
 
@@ -242,7 +242,7 @@ export default function Intro({ onDone }: Props) {
               WebkitTextStroke: glitch ? "1px #00f5ff" : "0px transparent",
             }}
           >
-            БПС
+            БС
           </div>
           <div
             className="font-orbitron font-bold tracking-[0.12em] text-white"
@@ -252,7 +252,7 @@ export default function Intro({ onDone }: Props) {
               textShadow: "0 0 20px rgba(255,255,255,0.2)",
             }}
           >
-            БЕСПИЛОТНЫЕ ПИЛОТИРУЕМЫЕ СИСТЕМЫ
+            БЕСПИЛОТНЫЕ СИСТЕМЫ
           </div>
         </div>
 

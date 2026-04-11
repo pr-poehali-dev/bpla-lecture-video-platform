@@ -1,7 +1,7 @@
 {
-  "name": "DRONE ACADEMY — Связь",
-  "short_name": "БПЛА Связь",
-  "description": "Защищённый мессенджер для операторов БПЛА",
+  "name": "Беспилотные Системы — Связь",
+  "short_name": "БС Связь",
+  "description": "Защищённый мессенджер платформы Беспилотные Системы",
   "start_url": "/?mobile=1",
   "display": "standalone",
   "background_color": "#050810",
