@@ -34,6 +34,7 @@ const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "videos", label: "Видео", icon: "Play" },
   { id: "drone-types", label: "Типы БпЛА", icon: "Plane" },
   { id: "materials", label: "Материалы", icon: "FileText" },
+  { id: "tacmed", label: "Так Мед", icon: "HeartPulse" },
   { id: "firmware", label: "Загрузки и прошивки", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
 ];
@@ -74,7 +75,7 @@ function useUnreadSupport(user?: User, currentPage?: Page) {
 const PAGE_LABELS: Partial<Record<Page, string>> = {
   home: "ГЛАВНАЯ", lectures: "ЛЕКЦИИ", videos: "ВИДЕО",
   "drone-types": "ТИПЫ БПЛА", materials: "МАТЕРИАЛЫ",
-  firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ",
+  firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ", tacmed: "ТАК МЕД",
   leaderboard: "РЕЙТИНГ", profile: "ПРОФИЛЬ",
   messages: "СООБЩЕНИЯ", support: "ПОДДЕРЖКА",
   "content-upload": "ЗАГРУЗКА",
