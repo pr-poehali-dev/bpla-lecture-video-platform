@@ -34,7 +34,7 @@ export default function LeaderboardPage({ user }: Props) {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-8">
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#ffbe32]" />
         <span className="font-mono text-xs text-[#ffbe32] tracking-[0.3em]">// РЕЙТИНГ</span>

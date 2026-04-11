@@ -196,7 +196,7 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
         <div className="w-8 h-px bg-[#00f5ff]" />
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// ЗАГРУЗКИ И ОБНОВЛЕНИЯ"}</span>
       </div>
-      <h1 className="font-orbitron text-3xl font-black text-white tracking-wider">{header?.title ?? "ЗАГРУЗКИ И ПРОШИВКИ"}</h1>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white tracking-wider">{header?.title ?? "ЗАГРУЗКИ И ПРОШИВКИ"}</h1>
 
       {/* Вкладки */}
       <div className="flex gap-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
@@ -207,7 +207,7 @@ export default function FirmwarePage({ user }: { user?: User | null }) {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className="flex items-center gap-2 px-5 py-3 font-mono text-xs tracking-wider transition-all"
+            className="flex items-center gap-1.5 px-3 sm:px-5 py-3 font-mono text-xs tracking-wider transition-all"
             style={{
               borderBottom: tab === t.id ? "2px solid #00f5ff" : "2px solid transparent",
               color: tab === t.id ? "#00f5ff" : "#3a5570",

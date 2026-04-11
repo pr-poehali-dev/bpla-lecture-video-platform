@@ -36,7 +36,6 @@ const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "materials", label: "Материалы", icon: "FileText" },
   { id: "firmware", label: "Загрузки и прошивки", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
-  { id: "leaderboard", label: "Рейтинг", icon: "Trophy" },
 ];
 
 interface LayoutProps {
@@ -323,6 +322,17 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 {item.label}
               </button>
             ))}
+            {user && (
+              <button
+                onClick={() => { onNavigate("leaderboard"); setMobileOpen(false); }}
+                className={`flex items-center gap-3 w-full px-6 py-4 font-plex text-sm tracking-wider uppercase transition-colors ${
+                  currentPage === "leaderboard" ? "text-[#ffbe32] bg-[rgba(255,190,50,0.06)]" : "text-[#7a9bb5]"
+                }`}
+              >
+                <Icon name="Trophy" size={16} />
+                Рейтинг
+              </button>
+            )}
             {user && (
               <button
                 onClick={() => { onNavigate("profile"); setMobileOpen(false); }}
