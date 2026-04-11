@@ -18,6 +18,7 @@ const DEFAULT_FEATURES = [
   { icon: "Plane", title: "Типы БпЛА", desc: "Каталог беспилотников: FPV, мультироторы, самолётного типа", page: "drone-types" },
   { icon: "Download", title: "Загрузки и прошивки", desc: "Руководства, схемы, прошивки FPV-КТ и обновления для скачивания", page: "firmware" },
   { icon: "FileText", title: "Материалы", desc: "Тактические карты, регламенты, технические спецификации", page: "materials" },
+  { icon: "HeartPulse", title: "Так Мед", desc: "Тактическая медицина: протоколы первой помощи, эвакуация, аптечка", page: "tacmed" },
   { icon: "MessageSquare", title: "Обсуждения", desc: "Форум для обмена опытом и разбора боевых ситуаций", page: "discussions" },
 ];
 
