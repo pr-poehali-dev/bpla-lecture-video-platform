@@ -3,6 +3,7 @@ const ADMIN_URL = "https://functions.poehali.dev/5407bcc9-7143-4278-8422-e2a603e
 const FILES_URL = "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559";
 const MSG_URL = "https://functions.poehali.dev/64d88e88-79a2-48b8-8ac8-d37bfa8eb51e";
 const REMOVAL_URL = "https://functions.poehali.dev/c72247bf-756d-4755-9c5d-88a1c31e0f01";
+const SUPPORT_URL = "https://functions.poehali.dev/dbc4c90c-5989-44b4-8fa6-10b0e6c3d25f";
 
 function getToken(): string {
   return localStorage.getItem("drone_token") || "";
@@ -162,6 +163,31 @@ export const api = {
       fetch(`${MSG_URL}/?action=typing-get&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({ typing: [] })),
     directOpen: (target_id: number) =>
       fetch(`${MSG_URL}/?action=direct-open`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ target_id }) }).then(r => r.json()),
+  },
+
+  support: {
+    ticketCreate: (subject: string, content: string) =>
+      fetch(`${SUPPORT_URL}/?action=ticket-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ subject, content }) }).then(r => r.json()),
+    ticketList: () =>
+      fetch(`${SUPPORT_URL}/?action=ticket-list`, { headers: authHeaders() }).then(r => r.json()),
+    ticketMessages: (ticket_id: number) =>
+      fetch(`${SUPPORT_URL}/?action=ticket-messages&ticket_id=${ticket_id}`, { headers: authHeaders() }).then(r => r.json()),
+    ticketReply: (ticket_id: number, content: string) =>
+      fetch(`${SUPPORT_URL}/?action=ticket-reply`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ ticket_id, content }) }).then(r => r.json()),
+    ticketClose: (ticket_id: number) =>
+      fetch(`${SUPPORT_URL}/?action=ticket-close`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ ticket_id }) }).then(r => r.json()),
+    broadcastList: () =>
+      fetch(`${SUPPORT_URL}/?action=broadcast-list`, { headers: authHeaders() }).then(r => r.json()),
+    adminTickets: (status?: string) =>
+      fetch(`${SUPPORT_URL}/?action=admin-tickets${status ? `&status=${status}` : ""}`, { headers: authHeaders() }).then(r => r.json()),
+    adminTicketMessages: (ticket_id: number) =>
+      fetch(`${SUPPORT_URL}/?action=admin-ticket-messages&ticket_id=${ticket_id}`, { headers: authHeaders() }).then(r => r.json()),
+    adminReply: (ticket_id: number, content: string, file_data?: string, file_name?: string, file_ext?: string) =>
+      fetch(`${SUPPORT_URL}/?action=admin-reply`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ ticket_id, content, file_data, file_name, file_ext }) }).then(r => r.json()),
+    adminClose: (ticket_id: number) =>
+      fetch(`${SUPPORT_URL}/?action=admin-close`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ ticket_id }) }).then(r => r.json()),
+    adminBroadcast: (content: string, file_data?: string, file_name?: string, file_ext?: string) =>
+      fetch(`${SUPPORT_URL}/?action=admin-broadcast`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ content, file_data, file_name, file_ext }) }).then(r => r.json()),
   },
 
   files: {

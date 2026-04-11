@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "No token - unauthorized",
+      "method": "GET",
+      "path": "/?action=ticket-list",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Не авторизован"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

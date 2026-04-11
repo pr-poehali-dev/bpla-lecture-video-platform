@@ -141,6 +141,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                   onClick={() => onNavigate("messages")}
                   className={`relative flex items-center justify-center w-7 h-7 transition-all ${currentPage === "messages" ? "text-[#00f5ff]" : "text-[#5a7a95] hover:text-[#00f5ff]"}`}
                   style={{ border: `1px solid ${currentPage === "messages" ? "rgba(0,245,255,0.4)" : "rgba(0,245,255,0.1)"}` }}
+                  title="Сообщения"
                 >
                   <Icon name="MessageSquare" size={13} />
                   {unreadMessages > 0 && (
@@ -151,6 +152,14 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                       {unreadMessages > 99 ? "99+" : unreadMessages}
                     </span>
                   )}
+                </button>
+                <button
+                  onClick={() => onNavigate("support")}
+                  className={`relative flex items-center justify-center w-7 h-7 transition-all ${currentPage === "support" ? "text-[#00ff88]" : "text-[#5a7a95] hover:text-[#00ff88]"}`}
+                  style={{ border: `1px solid ${currentPage === "support" ? "rgba(0,255,136,0.4)" : "rgba(0,255,136,0.12)"}` }}
+                  title="Поддержка"
+                >
+                  <Icon name="Headphones" size={13} />
                 </button>
                 <a
                   href="/?mobile=1"

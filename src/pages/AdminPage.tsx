@@ -10,6 +10,7 @@ import AdminLecturesTab from "@/components/admin/AdminLecturesTab";
 import AdminVideosTab from "@/components/admin/AdminVideosTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import AdminPagesTab from "@/components/admin/AdminPagesTab";
+import AdminSupportTab from "@/components/admin/AdminSupportTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -22,7 +23,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings" | "pages";
+type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings" | "pages" | "support";
 
 interface Stats {
   total: number;
@@ -49,6 +50,7 @@ const tabLabels: Record<Tab, string> = {
   videos: "Видео",
   settings: "Настройки",
   pages: "Страницы",
+  support: "Поддержка",
 };
 
 const sidebarGroups = [
@@ -78,6 +80,12 @@ const sidebarGroups = [
     items: [
       { key: "pages" as Tab, label: "Страницы", icon: "Layout" },
       { key: "settings" as Tab, label: "Настройки", icon: "Settings" },
+    ],
+  },
+  {
+    label: "СВЯЗЬ",
+    items: [
+      { key: "support" as Tab, label: "Поддержка", icon: "Headphones" },
     ],
   },
 ];
@@ -405,6 +413,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "discussions" && <AdminDiscussionsTab />}
           {activeTab === "settings" && <AdminSettingsTab />}
           {activeTab === "pages" && <AdminPagesTab />}
+          {activeTab === "support" && <AdminSupportTab />}
         </main>
       </div>
     </div>
