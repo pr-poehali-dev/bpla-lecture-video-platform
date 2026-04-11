@@ -4,6 +4,15 @@ import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 import { User, Page } from "@/App";
 
+interface UserStats {
+  completed_count: number;
+  lectures_done: number;
+  videos_done: number;
+  quizzes_passed: number;
+  score: number;
+  my_position: number | null;
+}
+
 interface ProfilePageProps {
   user: User;
   onUpdate: (user: User) => void;
@@ -21,6 +30,15 @@ const RANKS = [
 ];
 
 export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, onLogout }: ProfilePageProps) {
+  const [stats, setStats] = useState<UserStats | null>(null);
+
+  useEffect(() => {
+    api.progress.leaderboard().then(res => {
+      const me = (res.leaderboard || []).find((r: { id: number }) => r.id === user.id);
+      if (me) setStats({ ...me, my_position: res.my_position ?? null });
+    }).catch(() => {});
+  }, [user.id]);
+
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name || "");
   const [rank, setRank] = useState(user.rank || "");
@@ -120,6 +138,25 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
       <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-6 sm:mb-8 tracking-wider">ЛИЧНОЕ ДЕЛО</h1>
 
       <div className="max-w-2xl">
+        {/* Stats block */}
+        {stats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            {[
+              { label: "ЛЕКЦИЙ", value: stats.lectures_done, icon: "BookOpen", color: "#00f5ff" },
+              { label: "ВИДЕО", value: stats.videos_done, icon: "Play", color: "#00f5ff" },
+              { label: "ТЕСТОВ", value: stats.quizzes_passed, icon: "ClipboardCheck", color: "#00ff88" },
+              { label: stats.my_position ? `#${stats.my_position} РЕЙТИНГ` : "ОЧКОВ", value: stats.my_position ?? stats.score, icon: "Trophy", color: "#ffbe32" },
+            ].map(s => (
+              <div key={s.label} className="flex flex-col items-center justify-center py-4 gap-1"
+                style={{ border: `1px solid ${s.color}20`, background: `${s.color}06` }}>
+                <Icon name={s.icon as "Trophy"} size={16} style={{ color: s.color }} />
+                <div className="font-orbitron text-xl font-black" style={{ color: s.color }}>{s.value}</div>
+                <div className="font-mono text-[9px] text-[#3a5570] tracking-wider">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Avatar + callsign block */}
         <div className="card-drone p-4 sm:p-6 mb-6">
           <div className="flex items-center gap-4 sm:gap-5 mb-5 sm:mb-6">

@@ -3,6 +3,8 @@ import Icon from "@/components/ui/icon";
 import { api, FileItem } from "@/api";
 import { usePageData } from "@/hooks/usePageData";
 import { useProgress } from "@/hooks/useProgress";
+import QuizModal from "@/components/QuizModal";
+import { SkeletonList } from "@/components/Skeleton";
 
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
@@ -84,6 +86,9 @@ export default function LecturesPage() {
   const [noteFile, setNoteFile] = useState<FileItem | null>(null);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
+  const [quizFile, setQuizFile] = useState<FileItem | null>(null);
+  const [quizData, setQuizData] = useState<{ quiz: { id: number; title: string; questions: { id: number; question: string; options: string[] }[] }; my_result: { score: number; total: number; passed: boolean } | null } | null>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -95,6 +100,15 @@ export default function LecturesPage() {
 
   const { header } = usePageData("lectures");
   const categories = header?.categories ?? DOC_CATEGORIES;
+
+  const openQuiz = async (file: FileItem) => {
+    setQuizFile(file);
+    setQuizLoading(true);
+    const res = await api.quizzes.get(file.id);
+    setQuizLoading(false);
+    if (res.quiz) setQuizData(res);
+    else setQuizData(null);
+  };
 
   const filtered = files
     .filter((f) => {
@@ -113,6 +127,14 @@ export default function LecturesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {viewing && <DocModal file={viewing} onClose={() => setViewing(null)} />}
+      {quizFile && quizData && (
+        <QuizModal
+          quiz={quizData.quiz}
+          myResult={quizData.my_result}
+          onClose={() => { setQuizFile(null); setQuizData(null); }}
+          onDone={() => { setQuizFile(null); setQuizData(null); }}
+        />
+      )}
 
       <div className="flex items-center gap-4 mb-2">
         <div className="w-8 h-px bg-[#00f5ff]" />
@@ -228,7 +250,7 @@ export default function LecturesPage() {
 
       {/* List */}
       {loading ? (
-        <div className="text-center py-20 font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>
+        <SkeletonList count={6} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-20" style={{ border: "1px solid #1a2a3a" }}>
           <Icon name="FileText" size={32} className="text-[#3a5570] mx-auto mb-3" />
@@ -290,6 +312,14 @@ export default function LecturesPage() {
                   style={{ color: read.has(file.id) ? "#00ff88" : "#2a4060" }}
                 >
                   <Icon name="CheckCircle" size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); openQuiz(file); }}
+                  title="Пройти тест"
+                  className="w-8 h-8 flex items-center justify-center transition-colors hover:bg-[rgba(255,190,50,0.1)]"
+                  style={{ color: quizLoading && quizFile?.id === file.id ? "#ffbe32" : "#2a4060" }}
+                >
+                  <Icon name="ClipboardCheck" size={14} />
                 </button>
                 <div className="w-9 h-9 flex items-center justify-center text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] transition-colors rounded-sm">
                   <Icon name="Eye" size={18} />

@@ -21,6 +21,7 @@ import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import AdminPage from "@/pages/AdminPage";
 import { api } from "@/api";
+import { ChatProvider } from "@/context/ChatContext";
 
 export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "profile" | "messages" | "content-upload" | "support" | "leaderboard";
 type AuthPage = "login" | "register";
@@ -215,9 +216,11 @@ export default function App() {
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout} onGoToAdmin={user?.is_admin ? () => setShowAdmin(true) : undefined}>
-        {renderPage()}
-      </Layout>
+      <ChatProvider user={user}>
+        <Layout currentPage={currentPage} onNavigate={navigate} user={user} onLogout={handleLogout} onGoToAdmin={user?.is_admin ? () => setShowAdmin(true) : undefined}>
+          {renderPage()}
+        </Layout>
+      </ChatProvider>
     </TooltipProvider>
   );
 }

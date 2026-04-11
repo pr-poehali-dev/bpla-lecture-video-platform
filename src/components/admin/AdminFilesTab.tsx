@@ -116,9 +116,12 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
           if (res.id) {
             showMsg("Файл загружен успешно!");
             setSelectedFile(null);
+            const uploadedTitle = form.title.trim();
+            const uploadedMime = selectedFile?.type || "";
             setForm({ title: "", description: "", category: "", section: "general" });
             if (fileRef.current) fileRef.current.value = "";
             loadFiles();
+            api.notif.adminSend({ title: `Новый материал: ${uploadedTitle}`, type: "new_content", link_page: uploadedMime.startsWith("video/") ? "videos" : "lectures" }).catch(() => {});
           } else {
             showMsg(res.error || "Ошибка загрузки", false);
           }
@@ -143,9 +146,11 @@ export default function AdminFilesTab({ isAdmin = false }: Props) {
     setUploading(false);
     if (res.id) {
       showMsg("Видео добавлено!");
+      const ytTitle = form.title.trim();
       setYoutubeUrl("");
       setForm({ title: "", description: "", category: "", section: "general" });
       loadFiles();
+      api.notif.adminSend({ title: `Новое видео: ${ytTitle}`, type: "new_content", link_page: "videos" }).catch(() => {});
     } else {
       showMsg(res.error || "Ошибка", false);
     }

@@ -5,6 +5,8 @@ import ChatWidget from "@/components/ChatWidget";
 import Watermark from "@/components/Watermark";
 import NotificationBell from "@/components/NotificationBell";
 import ChatToast from "@/components/ChatToast";
+import GlobalSearch from "@/components/GlobalSearch";
+import { useChatContext } from "@/context/ChatContext";
 import { api } from "@/api";
 
 function useServerStatus() {
@@ -46,28 +48,6 @@ interface LayoutProps {
   onGoToAdmin?: () => void;
 }
 
-function useUnreadCount(user?: User, currentPage?: Page) {
-  const [unread, setUnread] = useState(0);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetch = () => {
-      api.msg.chatsList().then((res) => {
-        const total = (res.chats || []).reduce((acc: number, c: { unread_count?: number }) => acc + (c.unread_count || 0), 0);
-        setUnread(total);
-      }).catch(() => {});
-    };
-    fetch();
-    const id = setInterval(fetch, 30000);
-    return () => clearInterval(id);
-  }, [user]);
-
-  useEffect(() => {
-    if (currentPage === "messages") setUnread(0);
-  }, [currentPage]);
-
-  return unread;
-}
 
 function useUnreadSupport(user?: User, currentPage?: Page) {
   const [unread, setUnread] = useState(0);
@@ -96,7 +76,8 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const serverOnline = useServerStatus();
-  const unreadMessages = useUnreadCount(user, currentPage);
+  const { totalUnread: unreadMessages, resetUnread } = useChatContext();
+  useEffect(() => { if (currentPage === "messages") resetUnread(); }, [currentPage]);
   const unreadSupport = useUnreadSupport(user, currentPage);
 
   const visibleNavItems = navItems.filter(item => {
@@ -167,6 +148,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                     ЗАГРУЗИТЬ
                   </button>
                 )}
+                <GlobalSearch onNavigate={onNavigate} />
                 {user && <NotificationBell user={user} onNavigate={onNavigate} />}
                 <button
                   onClick={() => onNavigate("messages")}
