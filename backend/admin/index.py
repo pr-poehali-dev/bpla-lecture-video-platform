@@ -469,7 +469,7 @@ def handle_discussions(event, method, action, body, conn, cur):
         topics = [dict(t) for t in cur.fetchall()]
         return ok({"topics": topics, "categories": DISC_CATEGORIES})
 
-    # GET single topic + replies
+    # GET single topic + replies (с лайками и цитатами)
     if action == "disc-topic" and method == "GET":
         if not topic_id:
             return err("Укажите topic_id")
@@ -485,12 +485,26 @@ def handle_discussions(event, method, action, body, conn, cur):
         cur.execute(f"UPDATE {q('topics')} SET views = views + 1 WHERE id = %s", (topic_id,))
         conn.commit()
         cur.execute(f"""
-            SELECT r.id, r.text, r.created_at,
-                   u.name as author_name, u.callsign as author_callsign
-            FROM {q('topic_replies')} r JOIN {q('users')} u ON r.author_id = u.id
+            SELECT r.id, r.text, r.created_at, r.updated_at, r.likes_count,
+                   r.quote_reply_id, r.author_id,
+                   u.name as author_name, u.callsign as author_callsign,
+                   qr.text as quote_text, qu.callsign as quote_callsign
+            FROM {q('topic_replies')} r
+            JOIN {q('users')} u ON r.author_id = u.id
+            LEFT JOIN {q('topic_replies')} qr ON qr.id = r.quote_reply_id
+            LEFT JOIN {q('users')} qu ON qu.id = qr.author_id
             WHERE r.topic_id = %s ORDER BY r.created_at ASC
         """, (topic_id,))
         replies = [dict(r) for r in cur.fetchall()]
+        # Лайки текущего пользователя
+        my_likes = set()
+        if user:
+            reply_ids = [r["id"] for r in replies]
+            if reply_ids:
+                cur.execute(f"SELECT reply_id FROM {q('topic_reply_likes')} WHERE user_id = %s AND reply_id = ANY(%s::int[])", (user["id"], reply_ids))
+                my_likes = {row["reply_id"] for row in cur.fetchall()}
+        for r in replies:
+            r["i_liked"] = r["id"] in my_likes
         return ok({"topic": dict(topic), "replies": replies})
 
     # POST create topic
@@ -575,22 +589,46 @@ def handle_discussions(event, method, action, body, conn, cur):
         conn.commit()
         return ok({"is_pinned": not row["is_pinned"]})
 
-    # POST add reply
+    # POST add reply (с поддержкой цитирования)
     if action == "disc-reply" and method == "POST":
         if not user:
             return err("Требуется авторизация", 401)
         if not topic_id:
             return err("Укажите topic_id")
         text = body.get("text", "").strip()
+        quote_reply_id = body.get("quote_reply_id")
         if not text:
             return err("Текст не может быть пустым")
         cur.execute(f"SELECT id FROM {q('topics')} WHERE id = %s", (topic_id,))
         if not cur.fetchone():
             return err("Топик не найден", 404)
-        cur.execute(f"INSERT INTO {q('topic_replies')} (topic_id, author_id, text) VALUES (%s, %s, %s) RETURNING id", (topic_id, user["id"], text))
+        cur.execute(f"INSERT INTO {q('topic_replies')} (topic_id, author_id, text, quote_reply_id) VALUES (%s, %s, %s, %s) RETURNING id",
+            (topic_id, user["id"], text, quote_reply_id or None))
         reply_id = cur.fetchone()["id"]
         cur.execute(f"UPDATE {q('topics')} SET updated_at = NOW() WHERE id = %s", (topic_id,))
         conn.commit()
         return ok({"id": reply_id})
+
+    # POST лайк/снять лайк с ответа
+    if action == "disc-like" and method == "POST":
+        if not user:
+            return err("Требуется авторизация", 401)
+        reply_id = body.get("reply_id")
+        if not reply_id:
+            return err("Укажите reply_id")
+        cur.execute(f"SELECT id FROM {q('topic_reply_likes')} WHERE reply_id = %s AND user_id = %s", (reply_id, user["id"]))
+        existing = cur.fetchone()
+        if existing:
+            cur.execute(f"DELETE FROM {q('topic_reply_likes')} WHERE reply_id = %s AND user_id = %s", (reply_id, user["id"]))
+            cur.execute(f"UPDATE {q('topic_replies')} SET likes_count = GREATEST(0, likes_count - 1) WHERE id = %s", (reply_id,))
+            liked = False
+        else:
+            cur.execute(f"INSERT INTO {q('topic_reply_likes')} (reply_id, user_id) VALUES (%s, %s)", (reply_id, user["id"]))
+            cur.execute(f"UPDATE {q('topic_replies')} SET likes_count = likes_count + 1 WHERE id = %s", (reply_id,))
+            liked = True
+        cur.execute(f"SELECT likes_count FROM {q('topic_replies')} WHERE id = %s", (reply_id,))
+        count = cur.fetchone()["likes_count"]
+        conn.commit()
+        return ok({"liked": liked, "likes_count": count})
 
     return None

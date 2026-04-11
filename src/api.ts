@@ -238,8 +238,8 @@ export const api = {
       fetch(`${ADMIN_URL}/?action=disc-topic&topic_id=${id}`).then((r) => r.json()),
     create: (data: { title: string; category: string; text: string }) =>
       fetch(`${ADMIN_URL}/?action=disc-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()),
-    reply: (topic_id: number, text: string) =>
-      fetch(`${ADMIN_URL}/?action=disc-reply&topic_id=${topic_id}`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ text }) }).then((r) => r.json()),
+    reply: (topic_id: number, text: string, quote_reply_id?: number) =>
+      fetch(`${ADMIN_URL}/?action=disc-reply&topic_id=${topic_id}`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ text, quote_reply_id }) }).then((r) => r.json()),
     deleteTopic: (topic_id: number) =>
       fetch(`${ADMIN_URL}/?action=disc-delete-topic&topic_id=${topic_id}`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
     deleteReply: (reply_id: number) =>
@@ -248,6 +248,8 @@ export const api = {
       fetch(`${ADMIN_URL}/?action=disc-edit-reply`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ reply_id, text }) }).then((r) => r.json()),
     pinTopic: (topic_id: number) =>
       fetch(`${ADMIN_URL}/?action=disc-pin-topic&topic_id=${topic_id}`, { method: "POST", headers: authHeaders() }).then((r) => r.json()),
+    like: (reply_id: number) =>
+      fetch(`${ADMIN_URL}/?action=disc-like`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ reply_id }) }).then((r) => r.json()),
   },
 
   removal: {
