@@ -106,18 +106,14 @@ export default function VideosPage() {
     });
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {playing && <VideoPlayerModal file={playing} onClose={() => setPlaying(null)} />}
 
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 flex items-center justify-center" style={{ border: "1px solid #00f5ff" }}>
-          <Icon name="Play" size={16} className="text-[#00f5ff]" />
-        </div>
-        <div>
-          <h1 className="font-mono text-lg text-white tracking-wider">{header?.title ?? "ВИДЕОМАТЕРИАЛЫ"}</h1>
-          <p className="font-mono text-xs text-[#3a5570]">{header?.subtitle ?? "УЧЕБНЫЕ И БОЕВЫЕ ЗАПИСИ"}</p>
-        </div>
+      <div className="flex items-center gap-4 mb-2">
+        <div className="w-8 h-px bg-[#00f5ff]" />
+        <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// ВИДЕОТЕКА"}</span>
       </div>
+      <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">{header?.title ?? "ВИДЕОМАТЕРИАЛЫ"}</h1>
 
       {/* Search + Sort */}
       <div className="flex flex-col sm:flex-row gap-3 mb-1">
