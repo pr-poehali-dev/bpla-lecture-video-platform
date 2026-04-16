@@ -99,7 +99,12 @@ export default function Intro({ onDone }: Props) {
     let lastTickAt = 0;
     const progressInterval = setInterval(() => {
       setProgress((p) => {
-        if (p >= 100) { clearInterval(progressInterval); return 100; }
+        if (p >= 100) {
+          clearInterval(progressInterval);
+          setFinalVisible(true);
+          a.tick();
+          return 100;
+        }
         const next = p + 2;
         if (Math.floor(next / 25) > Math.floor(lastTickAt / 25)) {
           lastTickAt = next;
@@ -116,10 +121,8 @@ export default function Intro({ onDone }: Props) {
 
     const tTitle = setTimeout(() => setTitleVisible(true), 1200);
 
-    const tFinal = setTimeout(() => { setFinalVisible(true); a.tick(); }, 2800);
-
     return () => {
-      [t0, ...lineTimers, tGlitch1, tGlitch2, tGlitch3, tGlitch4, tTitle, tFinal].forEach(clearTimeout);
+      [t0, ...lineTimers, tGlitch1, tGlitch2, tGlitch3, tGlitch4, tTitle].forEach(clearTimeout);
       clearInterval(progressInterval);
     };
   }, []);
