@@ -72,7 +72,7 @@ export default function Intro({ onDone }: Props) {
   const [glitch, setGlitch] = useState(false);
   const [titleVisible, setTitleVisible] = useState(false);
   const [finalVisible, setFinalVisible] = useState(false);
-  const [fadeOut, setFadeOut] = useState(false);
+
   const linesRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const audio = useAudio();
@@ -117,18 +117,9 @@ export default function Intro({ onDone }: Props) {
     const tTitle = setTimeout(() => setTitleVisible(true), 1200);
 
     const tFinal = setTimeout(() => { setFinalVisible(true); a.tick(); }, 2800);
-    const tExit  = setTimeout(() => {
-      a.enter();
-      if (wrapRef.current) {
-        wrapRef.current.style.transition = "opacity 0.7s ease";
-        wrapRef.current.style.opacity = "0";
-      }
-      setFadeOut(true);
-    }, 4200);
-    const tDone  = setTimeout(() => onDoneRef.current(), 4900);
 
     return () => {
-      [t0, ...lineTimers, tGlitch1, tGlitch2, tGlitch3, tGlitch4, tTitle, tFinal, tExit, tDone].forEach(clearTimeout);
+      [t0, ...lineTimers, tGlitch1, tGlitch2, tGlitch3, tGlitch4, tTitle, tFinal].forEach(clearTimeout);
       clearInterval(progressInterval);
     };
   }, []);
