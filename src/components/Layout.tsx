@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { type Page, type User } from "@/App";
 import Icon from "@/components/ui/icon";
+import LogoIcon from "@/components/LogoIcon";
 import ChatWidget from "@/components/ChatWidget";
 import Watermark from "@/components/Watermark";
 import NotificationBell from "@/components/NotificationBell";
@@ -124,7 +125,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("home")}>
             <div className="relative w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
-              <Icon name="Crosshair" size={18} className="text-[#00f5ff]" />
+              <LogoIcon size={18} className="text-[#00f5ff]" />
               {serverOnline !== null && (
                 <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#050810]"
                   style={{ background: serverOnline ? "#00ff88" : "#ff2244", boxShadow: `0 0 5px ${serverOnline ? "#00ff88" : "#ff2244"}` }} />

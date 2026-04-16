@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
+import LogoIcon from "@/components/LogoIcon";
 import Avatar from "@/components/Avatar";
 import { api } from "@/api";
 
@@ -185,7 +186,7 @@ export default function MobileChatApp() {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: BG }}>
         <div className="flex flex-col items-center gap-3">
-          <Icon name="Crosshair" size={32} className="text-[#00f5ff] animate-pulse" />
+          <LogoIcon size={32} className="text-[#00f5ff] animate-pulse" />
           <div className="font-mono text-xs text-[#3a5570] tracking-widest">ИНИЦИАЛИЗАЦИЯ...</div>
         </div>
       </div>

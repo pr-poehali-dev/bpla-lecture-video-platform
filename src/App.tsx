@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
+import LogoIcon from "@/components/LogoIcon";
 import HomePage from "@/pages/HomePage";
 import LecturesPage from "@/pages/LecturesPage";
 import VideosPage from "@/pages/VideosPage";
@@ -103,7 +104,7 @@ export default function App() {
       <div className="min-h-screen flex items-center justify-center grid-bg" style={{ background: "#050810" }}>
         <div className="text-center">
           <div className="w-12 h-12 flex items-center justify-center mx-auto mb-4 animate-pulse" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 20px rgba(0,245,255,0.3)" }}>
-            <Icon name="Crosshair" size={24} className="text-[#00f5ff]" />
+            <LogoIcon size={24} className="text-[#00f5ff]" />
           </div>
           <div className="font-mono text-xs text-[#3a5570] tracking-[0.3em]">ИНИЦИАЛИЗАЦИЯ...</div>
         </div>
