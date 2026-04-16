@@ -44,13 +44,12 @@ interface Props {
 // Аватар-буква отправителя
 function MsgAvatar({ callsign, avatarUrl }: { callsign: string; avatarUrl?: string | null }) {
   const letter = (callsign || "?")[0].toUpperCase();
-  // Цвет по первой букве
   const colors = ["#00f5ff", "#00ff88", "#ffbe32", "#ff6b00", "#a855f7", "#ff2244"];
   const colorIdx = callsign.charCodeAt(0) % colors.length;
   const color = colors[colorIdx];
   return (
-    <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 overflow-hidden font-orbitron text-[11px] font-bold"
-      style={{ border: `1px solid ${color}40`, background: `${color}12`, color }}>
+    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden font-orbitron text-[11px] font-bold"
+      style={{ border: `1px solid ${color}50`, background: `${color}15`, color }}>
       {avatarUrl
         ? <img src={avatarUrl} className="w-full h-full object-cover" alt="" />
         : letter}
@@ -61,13 +60,13 @@ function MsgAvatar({ callsign, avatarUrl }: { callsign: string; avatarUrl?: stri
 // Дата-разделитель
 function DateDivider({ date }: { date: string }) {
   return (
-    <div className="flex items-center gap-3 my-3 px-2">
-      <div className="flex-1 h-px" style={{ background: "rgba(0,245,255,0.07)" }} />
-      <span className="font-mono text-[10px] text-[#2a4060] tracking-wider px-2 py-0.5"
-        style={{ border: "1px solid rgba(0,245,255,0.07)", background: "rgba(4,7,14,0.8)" }}>
+    <div className="flex items-center gap-3 my-4 px-2">
+      <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(0,245,255,0.25))" }} />
+      <span className="font-mono text-[10px] tracking-widest px-3 py-1"
+        style={{ border: "1px solid rgba(0,245,255,0.25)", background: "rgba(0,245,255,0.06)", color: "#00f5ff", boxShadow: "0 0 8px rgba(0,245,255,0.1)" }}>
         {date}
       </span>
-      <div className="flex-1 h-px" style={{ background: "rgba(0,245,255,0.07)" }} />
+      <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, rgba(0,245,255,0.25), transparent)" }} />
     </div>
   );
 }
@@ -229,7 +228,11 @@ export default function MsgChatArea({
       )}
 
       {/* ── Сообщения ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3" onClick={onCloseChatMenu}>
+      <div className="flex-1 overflow-y-auto px-4 py-3" onClick={onCloseChatMenu}
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}>
         {visibleMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-12">
             <div className="w-14 h-14 flex items-center justify-center"
@@ -299,18 +302,18 @@ export default function MsgChatArea({
                           background: isHidden
                             ? "transparent"
                             : isMine
-                              ? "rgba(0,245,255,0.1)"
-                              : "rgba(255,255,255,0.05)",
+                              ? "rgba(0,245,255,0.18)"
+                              : "rgba(30,45,65,0.7)",
                           border: isHidden
                             ? "1px dashed rgba(255,255,255,0.08)"
                             : isMine
-                              ? "1px solid rgba(0,245,255,0.25)"
+                              ? "1px solid rgba(0,245,255,0.4)"
                               : "1px solid rgba(255,255,255,0.08)",
-                          color: isHidden ? "#3a5570" : isMine ? "#d0f4ff" : "#c8dcea",
-                          // Хвостик: скруглённые углы с "хвостиком" у последнего в группе
+                          color: isHidden ? "#3a5570" : isMine ? "#e8faff" : "#b8cfe0",
+                          boxShadow: isMine && !isHidden ? "0 0 12px rgba(0,245,255,0.08)" : "none",
                           borderRadius: isMine
-                            ? lastInGroup ? "8px 8px 2px 8px" : "8px"
-                            : lastInGroup ? "8px 8px 8px 2px" : "8px",
+                            ? lastInGroup ? "12px 12px 3px 12px" : "12px"
+                            : lastInGroup ? "12px 12px 12px 3px" : "12px",
                         }}>
                         {msg.image_url && !isHidden ? (
                           <img src={msg.image_url}

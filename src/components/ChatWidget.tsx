@@ -256,8 +256,9 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
       {/* Chat panel */}
       {open && (
         <div
-          className="flex flex-col overflow-hidden animate-fade-in transition-all duration-200"
+          className="flex flex-col overflow-hidden"
           style={{
+            animation: "slideUpIn 0.22s cubic-bezier(0.34,1.56,0.64,1)",
             width: expanded ? 420 : 340,
             height: expanded ? 640 : 480,
             background: "rgba(5,8,16,0.97)",
@@ -349,12 +350,18 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
         </div>
       )}
 
-      {/* Toggle button — круглая иконка */}
+      {/* Toggle button */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative w-12 h-12 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+        className="relative flex items-center transition-all hover:scale-105 active:scale-95"
         style={{
-          borderRadius: "50%",
+          borderRadius: open ? "50%" : totalUnread > 0 ? "28px" : "50%",
+          width: open ? 48 : totalUnread > 0 ? "auto" : 48,
+          height: 48,
+          paddingLeft: open ? 0 : totalUnread > 0 ? 10 : 0,
+          paddingRight: open ? 0 : totalUnread > 0 ? 14 : 0,
+          gap: totalUnread > 0 && !open ? 8 : 0,
+          justifyContent: "center",
           background: open ? "rgba(0,245,255,0.15)" : "rgba(5,8,16,0.95)",
           border: `1px solid ${open ? "rgba(0,245,255,0.6)" : "rgba(0,245,255,0.3)"}`,
           boxShadow: open
@@ -366,22 +373,41 @@ export default function ChatWidget({ user }: ChatWidgetProps) {
       >
         {/* Pulse ring при непрочитанных */}
         {!open && totalUnread > 0 && (
-          <span className="absolute inset-0 rounded-full animate-ping opacity-30"
-            style={{ background: "rgba(0,245,255,0.4)" }} />
+          <span className="absolute inset-0 animate-ping opacity-20"
+            style={{ borderRadius: "inherit", background: "rgba(0,245,255,0.4)" }} />
         )}
 
-        <Icon
-          name={open ? "X" : "MessageSquare"}
-          size={20}
-          className={open ? "text-[#00f5ff]" : totalUnread > 0 ? "text-[#00f5ff]" : "text-[#5a9ab5]"}
-        />
+        {open ? (
+          <Icon name="X" size={20} className="text-[#00f5ff]" />
+        ) : (
+          <>
+            {/* Аватар последнего чата или иконка */}
+            {chats.length > 0 && chats[0].partner?.avatar_url ? (
+              <img src={chats[0].partner.avatar_url}
+                className="w-7 h-7 object-cover flex-shrink-0"
+                style={{ borderRadius: "50%", border: "1px solid rgba(0,245,255,0.4)" }} />
+            ) : (
+              <div className="w-7 h-7 flex items-center justify-center flex-shrink-0"
+                style={{ borderRadius: "50%", background: "rgba(0,245,255,0.1)", border: "1px solid rgba(0,245,255,0.3)" }}>
+                <Icon name="MessageSquare" size={14} className={totalUnread > 0 ? "text-[#00f5ff]" : "text-[#5a9ab5]"} />
+              </div>
+            )}
+            {/* Превью + счётчик */}
+            {totalUnread > 0 && (
+              <div className="flex flex-col items-start leading-tight">
+                <span className="font-mono text-[10px] text-[#00f5ff] font-bold">{totalUnread} новых</span>
+                {chats[0]?.last_message && (
+                  <span className="font-mono text-[9px] text-[#3a5570] max-w-[100px] truncate">{chats[0].last_message}</span>
+                )}
+              </div>
+            )}
+          </>
+        )}
 
-        {/* Бейдж непрочитанных */}
-        {!open && totalUnread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-mono text-[8px] font-bold text-black"
-            style={{ background: "#00f5ff", boxShadow: "0 0 6px rgba(0,245,255,0.8)" }}>
-            {totalUnread > 9 ? "9+" : totalUnread}
-          </span>
+        {/* Бейдж непрочитанных (когда свёрнут без текста) */}
+        {!open && totalUnread === 0 && chats.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#00ff88]"
+            style={{ border: "1.5px solid rgba(5,8,16,1)" }} />
         )}
       </button>
     </div>

@@ -34,7 +34,7 @@ export default function Avatar({ callsign, avatarUrl, size = 40, className = "" 
         width={size}
         height={size}
         className={className}
-        style={{ width: size, height: size, objectFit: "cover", flexShrink: 0 }}
+        style={{ width: size, height: size, objectFit: "cover", flexShrink: 0, borderRadius: "50%" }}
       />
     );
   }
@@ -45,8 +45,9 @@ export default function Avatar({ callsign, avatarUrl, size = 40, className = "" 
       style={{
         width: size,
         height: size,
+        borderRadius: "50%",
         background: `rgba(${hexToRgb(color)}, 0.12)`,
-        border: `1px solid ${color}`,
+        border: `1px solid ${color}50`,
         color,
         fontSize: size * 0.32,
         letterSpacing: "0.05em",

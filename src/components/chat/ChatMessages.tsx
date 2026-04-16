@@ -65,7 +65,11 @@ export default function ChatMessages({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,245,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.02) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}>
         {messages.length === 0 && (
           <div className="text-center py-6 font-mono text-[11px] text-[#2a4060]">начните переписку</div>
         )}
@@ -139,9 +143,11 @@ export default function ChatMessages({
                 ) : (
                   <div className={`px-3 py-2 font-plex text-[12px] leading-relaxed ${isHidden ? "italic" : ""}`}
                     style={{
-                      background: isMine ? "rgba(0,245,255,0.12)" : "rgba(255,255,255,0.04)",
-                      border: `1px solid ${isMine ? "rgba(0,245,255,0.25)" : "rgba(255,255,255,0.08)"}`,
-                      color: isHidden ? "#3a5570" : (isMine ? "#e0f8ff" : "#c0d4e0"),
+                      background: isHidden ? "transparent" : isMine ? "rgba(0,245,255,0.18)" : "rgba(30,45,65,0.7)",
+                      border: isHidden ? "1px dashed rgba(255,255,255,0.08)" : isMine ? "1px solid rgba(0,245,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                      color: isHidden ? "#3a5570" : (isMine ? "#e8faff" : "#b8cfe0"),
+                      borderRadius: isMine ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
+                      boxShadow: isMine && !isHidden ? "0 0 10px rgba(0,245,255,0.08)" : "none",
                     }}>
                     {msg.content}
                   </div>
