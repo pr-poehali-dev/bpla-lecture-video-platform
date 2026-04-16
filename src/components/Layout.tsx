@@ -342,19 +342,35 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 Панель администратора
               </button>
             )}
-            <a
-              href="/?desktop=1"
-              onClick={() => {
-                const meta = document.querySelector('meta[name="viewport"]');
-                if (meta) meta.setAttribute("content", "width=1280");
-                localStorage.setItem("force_desktop", "1");
-              }}
-              className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase border-t"
-              style={{ borderColor: "rgba(0,245,255,0.1)", color: "#00f5ff" }}
-            >
-              <Icon name="Monitor" size={15} />
-              Полная версия
-            </a>
+            {localStorage.getItem("force_desktop") !== "1" ? (
+              <a
+                href="/?desktop=1"
+                onClick={() => {
+                  const meta = document.querySelector('meta[name="viewport"]');
+                  if (meta) meta.setAttribute("content", "width=1280");
+                  localStorage.setItem("force_desktop", "1");
+                }}
+                className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase border-t"
+                style={{ borderColor: "rgba(0,245,255,0.1)", color: "#00f5ff" }}
+              >
+                <Icon name="Monitor" size={15} />
+                Полная версия
+              </a>
+            ) : (
+              <a
+                href="/"
+                onClick={() => {
+                  const meta = document.querySelector('meta[name="viewport"]');
+                  if (meta) meta.setAttribute("content", "width=device-width, initial-scale=1.0");
+                  localStorage.removeItem("force_desktop");
+                }}
+                className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase border-t"
+                style={{ borderColor: "rgba(0,245,255,0.1)", color: "#3a5570" }}
+              >
+                <Icon name="Smartphone" size={15} />
+                Мобильная версия
+              </a>
+            )}
           </div>
         )}
       </header>
