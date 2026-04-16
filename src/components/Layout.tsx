@@ -342,16 +342,19 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 Панель администратора
               </button>
             )}
-            {user && (
-              <a
-                href="/?mobile=1"
-                className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase border-t"
-                style={{ borderColor: "rgba(0,245,255,0.1)", color: "#00ff88" }}
-              >
-                <Icon name="Smartphone" size={15} />
-                Мобильное приложение
-              </a>
-            )}
+            <a
+              href="/?desktop=1"
+              onClick={() => {
+                const meta = document.querySelector('meta[name="viewport"]');
+                if (meta) meta.setAttribute("content", "width=1280");
+                localStorage.setItem("force_desktop", "1");
+              }}
+              className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase border-t"
+              style={{ borderColor: "rgba(0,245,255,0.1)", color: "#00f5ff" }}
+            >
+              <Icon name="Monitor" size={15} />
+              Полная версия
+            </a>
           </div>
         )}
       </header>
