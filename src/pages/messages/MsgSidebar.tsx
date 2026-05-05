@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
-import { Chat, Contact, FoundUser, getChatTitle } from "./MsgTypes";
+import { Chat, Contact, FoundUser, getChatTitle, formatTime } from "./MsgTypes";
 
 interface Props {
   chats: Chat[];
@@ -49,7 +49,7 @@ export default function MsgSidebar({
   ];
 
   return (
-    <div className="flex flex-col flex-shrink-0 overflow-hidden" style={{ width: 220, height: "100%", background: "rgba(3,5,11,0.98)", borderRight: "1px solid rgba(0,245,255,0.1)" }}>
+    <div className="flex flex-col flex-shrink-0 overflow-hidden" style={{ width: 260, height: "100%", background: "rgba(3,5,11,0.98)", borderRight: "1px solid rgba(0,245,255,0.1)" }}>
 
       {/* ── Header ── */}
       <div className="flex items-center gap-2 px-3 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
@@ -191,7 +191,12 @@ export default function MsgSidebar({
               </div>
               {/* Текст */}
               <div className="flex-1 min-w-0">
-                <div className="font-mono text-xs truncate" style={{ color: isActive ? accentColor : "#c0d4e4" }}>{title}</div>
+                <div className="flex items-center justify-between gap-1">
+                  <div className="font-mono text-xs truncate" style={{ color: isActive ? accentColor : "#c0d4e4" }}>{title}</div>
+                  {chat?.last_message_at && (
+                    <span className="font-mono text-[9px] flex-shrink-0" style={{ color: "#2a4060" }}>{formatTime(chat.last_message_at)}</span>
+                  )}
+                </div>
                 <div className="font-mono text-[10px] truncate" style={{ color: "#3a5570" }}>{sub}</div>
               </div>
               {/* Бейдж */}

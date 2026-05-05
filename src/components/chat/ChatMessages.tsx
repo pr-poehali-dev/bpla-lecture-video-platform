@@ -194,8 +194,14 @@ export default function ChatMessages({
 
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <div className="px-3 py-1 font-mono text-[9px] text-[#3a5570] animate-pulse flex-shrink-0">
-          {typingUsers.join(", ")} печатает...
+        <div className="px-3 py-1.5 flex-shrink-0 flex items-center gap-1.5">
+          <span className="font-mono text-[9px] text-[#00ff88]">{typingUsers.join(", ")} печатает</span>
+          <span className="flex gap-0.5 items-end">
+            {[0,1,2].map(i => (
+              <span key={i} className="w-1 h-1 rounded-full bg-[#00ff88]"
+                style={{ animation: `typingDot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+            ))}
+          </span>
         </div>
       )}
 
@@ -214,20 +220,15 @@ export default function ChatMessages({
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t p-2 flex gap-2 items-end"
+      <div className="flex-shrink-0 border-t px-2.5 py-2 flex gap-2 items-end"
         style={{ borderColor: "rgba(0,245,255,0.12)" }}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onFileChange}
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-1.5 text-[#3a5570] hover:text-[#00f5ff] transition-colors flex-shrink-0"
-          title="Загрузить изображение">
-          <Icon name="Paperclip" size={12} />
+          className="flex items-center justify-center w-8 h-8 flex-shrink-0 transition-colors text-[#3a5570] hover:text-[#00f5ff]"
+          style={{ border: "1px solid rgba(0,245,255,0.12)", borderRadius: 7 }}
+          title="Прикрепить изображение">
+          <Icon name="Paperclip" size={13} />
         </button>
         <textarea
           ref={textareaRef}
@@ -235,17 +236,18 @@ export default function ChatMessages({
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={onKey}
           onPaste={onPaste}
-          placeholder="Сообщение..."
+          placeholder="Сообщение...  (Enter — отправить)"
           rows={1}
-          className="flex-1 resize-none font-plex text-sm p-2 outline-none bg-[#0a1520] text-white overflow-hidden"
-          style={{ border: "1px solid rgba(0,245,255,0.12)", borderRadius: "2px", minHeight: "34px", maxHeight: "96px" }}
+          className="flex-1 resize-none font-plex text-[13px] px-3 py-2 outline-none bg-transparent text-white overflow-hidden focus:border-[#00f5ff] transition-colors"
+          style={{ border: "1px solid rgba(0,245,255,0.18)", borderRadius: 8, minHeight: "36px", maxHeight: "100px", lineHeight: "1.5" }}
         />
         <button
           onClick={onSend}
           disabled={sending || !input.trim()}
-          className="p-1.5 text-[#00f5ff] hover:text-white transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center w-8 h-8 flex-shrink-0 transition-all disabled:opacity-40 hover:scale-105"
+          style={{ border: "1px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.08)", color: "#00f5ff", borderRadius: 8 }}
           title="Отправить">
-          <Icon name={sending ? "Loader" : "Send"} size={12} className={sending ? "animate-spin" : ""} />
+          <Icon name={sending ? "Loader" : "Send"} size={13} className={sending ? "animate-spin" : ""} />
         </button>
       </div>
     </>

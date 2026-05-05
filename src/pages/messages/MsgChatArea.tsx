@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import { Chat, Message, QUICK_REACTIONS, formatTime, getChatIcon, getChatTitle } from "./MsgTypes";
 
@@ -98,9 +98,21 @@ export default function MsgChatArea({
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredMsg, setHoveredMsg] = useState<number | null>(null);
   const [showReactPicker, setShowReactPicker] = useState<number | null>(null);
   const [reactingId, setReactingId] = useState<number | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 120);
+  }, []);
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -228,14 +240,14 @@ export default function MsgChatArea({
       )}
 
       {/* ── Сообщения ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3" onClick={onCloseChatMenu}
+      <div className="flex-1 overflow-y-auto px-4 py-4 relative" ref={scrollRef} onClick={onCloseChatMenu} onScroll={handleScroll}
         style={{
           backgroundImage: "linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }}>
         {visibleMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-12">
-            <div className="w-14 h-14 flex items-center justify-center"
+            <div className="w-14 h-14 rounded-full flex items-center justify-center"
               style={{ border: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
               <Icon name={getChatIcon(activeChat)} size={24} className="text-[#1a2a3a]" />
             </div>
@@ -247,7 +259,7 @@ export default function MsgChatArea({
             )}
           </div>
         ) : (
-          <div className="space-y-0.5">
+          <div>
             {visibleMessages.map((msg, idx) => {
               const isMine = msg.sender_id === userId;
               const isHidden = msg.hidden;
@@ -257,39 +269,38 @@ export default function MsgChatArea({
 
               return (
                 <div key={msg.id}>
-                  {/* Дата-разделитель */}
                   {showDate && <DateDivider date={formatDateLabel(msg.created_at)} />}
 
                   <div
-                    className={`flex gap-2 ${isMine ? "justify-end" : "justify-start"} group relative ${grouped ? "mt-0.5" : "mt-3"}`}
+                    className={`flex gap-2.5 ${isMine ? "justify-end" : "justify-start"} group relative ${grouped ? "mt-1" : "mt-4"}`}
                     style={{ animation: "fadeSlideUp 0.18s ease-out" }}
                     onMouseEnter={() => setHoveredMsg(msg.id)}
                     onMouseLeave={() => { setHoveredMsg(null); if (showReactPicker === msg.id) setShowReactPicker(null); }}
                   >
-                    {/* Аватар слева (только первое в группе или одиночное) */}
+                    {/* Аватар — всегда для чужих, но прозрачный если в группе */}
                     {!isMine && (
-                      <div className="flex-shrink-0 self-end w-7">
-                        {lastInGroup && (
+                      <div className="flex-shrink-0 self-end w-8">
+                        <div style={{ opacity: lastInGroup ? 1 : 0 }}>
                           <MsgAvatar
                             callsign={msg.sender_callsign || msg.sender_name}
                             avatarUrl={activeChat.type === "direct" ? activeChat.partner?.avatar_url : undefined}
                           />
-                        )}
+                        </div>
                       </div>
                     )}
 
-                    <div className={`max-w-[68%] flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
-                      {/* Имя — только первое в группе */}
+                    <div className={`max-w-[68%] flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
+                      {/* Имя — первое в группе */}
                       {!isMine && !grouped && (
-                        <span className="font-mono text-[10px] text-[#00f5ff] px-1 mb-0.5">
+                        <span className="font-mono text-[11px] text-[#00f5ff] px-1">
                           {msg.sender_callsign || msg.sender_name}
                         </span>
                       )}
 
                       {/* Цитата */}
                       {msg.reply_to_id && msg.reply_content && (
-                        <div className="px-2 py-1 mb-0.5 border-l-2 border-[#00f5ff] max-w-full"
-                          style={{ background: "rgba(0,245,255,0.05)" }}>
+                        <div className="px-3 py-1.5 border-l-2 border-[#00f5ff] max-w-full rounded-r-lg"
+                          style={{ background: "rgba(0,245,255,0.06)" }}>
                           <div className="font-mono text-[10px] text-[#00f5ff]">@{msg.reply_callsign}</div>
                           <div className="font-plex text-xs text-[#5a7a95] truncate">{msg.reply_content}</div>
                         </div>
@@ -297,28 +308,31 @@ export default function MsgChatArea({
 
                       {/* Пузырь */}
                       <div
-                        className={`px-3 py-2 font-plex text-sm leading-relaxed ${isHidden ? "italic" : ""}`}
+                        className={`px-4 py-2.5 font-plex leading-relaxed ${isHidden ? "italic text-sm" : "text-[14px]"}`}
                         style={{
                           background: isHidden
                             ? "transparent"
                             : isMine
                               ? "rgba(0,245,255,0.18)"
-                              : "rgba(30,45,65,0.7)",
+                              : "rgba(30,45,65,0.75)",
                           border: isHidden
                             ? "1px dashed rgba(255,255,255,0.08)"
                             : isMine
                               ? "1px solid rgba(0,245,255,0.4)"
-                              : "1px solid rgba(255,255,255,0.08)",
-                          color: isHidden ? "#3a5570" : isMine ? "#e8faff" : "#b8cfe0",
-                          boxShadow: isMine && !isHidden ? "0 0 12px rgba(0,245,255,0.08)" : "none",
+                              : "1px solid rgba(255,255,255,0.09)",
+                          color: isHidden ? "#3a5570" : isMine ? "#e8faff" : "#c0d8ec",
+                          boxShadow: isMine && !isHidden
+                            ? "0 2px 16px rgba(0,245,255,0.14), inset 0 0 20px rgba(0,245,255,0.04)"
+                            : "none",
+                          lineHeight: 1.6,
                           borderRadius: isMine
-                            ? lastInGroup ? "12px 12px 3px 12px" : "12px"
-                            : lastInGroup ? "12px 12px 12px 3px" : "12px",
+                            ? lastInGroup ? "14px 14px 4px 14px" : "14px"
+                            : lastInGroup ? "14px 14px 14px 4px" : "14px",
                         }}>
                         {msg.image_url && !isHidden ? (
                           <img src={msg.image_url}
-                            className="max-w-full max-h-52 object-cover cursor-pointer mb-1"
-                            style={{ borderRadius: 4 }}
+                            className="max-w-full max-h-52 object-cover cursor-pointer mb-1.5"
+                            style={{ borderRadius: 8 }}
                             onClick={() => onSetLightbox(msg.image_url!)} />
                         ) : null}
                         {(msg.content && (!msg.image_url || msg.content !== "📷 Изображение")) && (
@@ -346,9 +360,9 @@ export default function MsgChatArea({
                         </div>
                       )}
 
-                      {/* Время — только последнее в группе */}
+                      {/* Время */}
                       {lastInGroup && (
-                        <span className="font-mono text-[10px] text-[#2a4060] px-1">{formatTime(msg.created_at)}</span>
+                        <span className="font-mono text-[10px] text-[#3a5570] px-1">{formatTime(msg.created_at)}</span>
                       )}
                     </div>
 
@@ -356,12 +370,12 @@ export default function MsgChatArea({
                     {hoveredMsg === msg.id && !isHidden && (
                       <div className={`absolute top-0 flex items-center gap-0.5 z-10 ${isMine ? "right-full mr-2" : "left-full ml-2"}`}>
                         <button onClick={() => onSetReplyTo(msg)}
-                          className="p-1 text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Ответить">
+                          className="p-1.5 text-[#3a5570] hover:text-[#00f5ff] transition-colors" title="Ответить">
                           <Icon name="Reply" size={13} />
                         </button>
                         <div className="relative">
                           <button onClick={() => setShowReactPicker(showReactPicker === msg.id ? null : msg.id)}
-                            className="p-1 text-[#3a5570] hover:text-[#ffbe32] transition-colors" title="Реакция">
+                            className="p-1.5 text-[#3a5570] hover:text-[#ffbe32] transition-colors" title="Реакция">
                             <Icon name="Smile" size={13} />
                           </button>
                           {showReactPicker === msg.id && (
@@ -378,7 +392,7 @@ export default function MsgChatArea({
                         </div>
                         {isMine && (
                           <button onClick={() => onRemoveMessage(msg.id)}
-                            className="p-1 text-[#3a5570] hover:text-[#ff2244] transition-colors" title="Удалить">
+                            className="p-1.5 text-[#3a5570] hover:text-[#ff2244] transition-colors" title="Удалить">
                             <Icon name="Trash2" size={13} />
                           </button>
                         )}
@@ -391,13 +405,28 @@ export default function MsgChatArea({
             <div ref={messagesEndRef} />
           </div>
         )}
+
+        {/* Кнопка прокрутки вниз */}
+        {showScrollBtn && (
+          <button onClick={scrollToBottom}
+            className="sticky bottom-4 float-right flex items-center justify-center w-9 h-9 transition-all hover:scale-110"
+            style={{ borderRadius: "50%", background: "rgba(5,8,16,0.95)", border: "1px solid rgba(0,245,255,0.35)", boxShadow: "0 0 16px rgba(0,245,255,0.2)", color: "#00f5ff" }}>
+            <Icon name="ChevronsDown" size={16} />
+          </button>
+        )}
       </div>
 
-      {/* Индикатор набора (для групповых — в области сообщений) */}
+      {/* Индикатор набора */}
       {typingUsers.length > 0 && activeChat.type === "group" && (
-        <div className="px-5 py-1 flex-shrink-0 font-mono text-[10px] text-[#00ff88] animate-pulse"
+        <div className="px-5 py-1.5 flex-shrink-0 flex items-center gap-2"
           style={{ borderTop: "1px solid rgba(0,245,255,0.06)" }}>
-          {typingUsers.join(", ")} печатает...
+          <span className="font-mono text-[10px] text-[#00ff88]">{typingUsers.join(", ")} печатает</span>
+          <span className="flex gap-0.5 items-end">
+            {[0,1,2].map(i => (
+              <span key={i} className="w-1 h-1 rounded-full bg-[#00ff88]"
+                style={{ animation: `typingDot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+            ))}
+          </span>
         </div>
       )}
 
@@ -417,30 +446,30 @@ export default function MsgChatArea({
       )}
 
       {/* ── Поле ввода ── */}
-      <div className="px-4 py-3 flex-shrink-0 flex gap-2 items-end border-t"
-        style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(3,5,11,0.95)" }}>
+      <div className="px-4 py-3 flex-shrink-0 flex gap-2.5 items-end border-t"
+        style={{ borderColor: "rgba(0,245,255,0.1)", background: "rgba(3,5,11,0.97)" }}>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) onSendImage(f); e.target.value = ""; }} />
         <button onClick={() => fileInputRef.current?.click()} disabled={sending}
-          className="flex items-center justify-center w-8 h-8 flex-shrink-0 transition-all disabled:opacity-30 mb-0.5"
-          style={{ border: "1px solid rgba(0,245,255,0.15)", color: "#5a7a95", borderRadius: 6 }}
+          className="flex items-center justify-center w-9 h-9 flex-shrink-0 transition-all disabled:opacity-30 hover:text-[#00f5ff]"
+          style={{ border: "1px solid rgba(0,245,255,0.15)", color: "#5a7a95", borderRadius: 8 }}
           title="Прикрепить изображение">
-          <Icon name="Image" size={14} />
+          <Icon name="Image" size={15} />
         </button>
         <textarea
           ref={textareaRef}
-          className="flex-1 bg-transparent border font-plex text-sm text-white px-3 py-2 outline-none focus:border-[#00f5ff] transition-colors resize-none overflow-hidden"
-          style={{ borderColor: "rgba(0,245,255,0.18)", borderRadius: 6, minHeight: 36, maxHeight: 120, lineHeight: "1.5" }}
-          placeholder="Сообщение... (Enter — отправить)"
+          className="flex-1 bg-transparent border font-plex text-[14px] text-white px-3.5 py-2.5 outline-none focus:border-[#00f5ff] transition-colors resize-none overflow-hidden"
+          style={{ borderColor: "rgba(0,245,255,0.2)", borderRadius: 10, minHeight: 42, maxHeight: 140, lineHeight: "1.55" }}
+          placeholder="Сообщение...  (Enter — отправить, Shift+Enter — перенос)"
           value={input}
           onChange={onInputChange}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
         />
         <button onClick={onSend} disabled={!input.trim() || sending}
-          className="flex items-center justify-center w-9 h-9 flex-shrink-0 transition-all disabled:opacity-30"
-          style={{ border: "1px solid rgba(0,245,255,0.4)", background: "rgba(0,245,255,0.08)", color: "#00f5ff", borderRadius: 6 }}>
-          <Icon name={sending ? "Loader" : "Send"} size={15} className={sending ? "animate-spin" : ""} />
+          className="flex items-center justify-center w-10 h-10 flex-shrink-0 transition-all disabled:opacity-30 hover:scale-105"
+          style={{ border: "1px solid rgba(0,245,255,0.45)", background: "rgba(0,245,255,0.1)", color: "#00f5ff", borderRadius: 10, boxShadow: input.trim() ? "0 0 12px rgba(0,245,255,0.15)" : "none" }}>
+          <Icon name={sending ? "Loader" : "Send"} size={16} className={sending ? "animate-spin" : ""} />
         </button>
       </div>
     </div>
