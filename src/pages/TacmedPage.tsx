@@ -3,7 +3,6 @@ import { api, FileItem } from "@/api";
 import { type User } from "@/App";
 import { usePageData } from "@/hooks/usePageData";
 import TacmedDocViewer from "./tacmed/TacmedDocViewer";
-import TacmedEquipment from "./tacmed/TacmedEquipment";
 import TacmedFileList from "./tacmed/TacmedFileList";
 
 const TACMED_CATEGORIES = ["Все", "Первая помощь", "Турникеты и жгуты", "Эвакуация", "Протоколы", "Аптечка"];
@@ -17,7 +16,6 @@ export default function TacmedPage({ user }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [viewing, setViewing] = useState<FileItem | null>(null);
-  const [equipTab, setEquipTab] = useState<"tourniquets" | "kits">("tourniquets");
 
   const canDownload = !user || user.is_admin || user.role !== "курсант";
 
@@ -48,8 +46,6 @@ export default function TacmedPage({ user }: Props) {
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// ТАКТИЧЕСКАЯ МЕДИЦИНА"}</span>
       </div>
       <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">{header?.title ?? "ТАК МЕД"}</h1>
-
-      <TacmedEquipment equipTab={equipTab} onTabChange={setEquipTab} />
 
       <TacmedFileList
         files={files}
