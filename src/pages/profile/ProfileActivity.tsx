@@ -1,15 +1,14 @@
 import Icon from "@/components/ui/icon";
 import { Page, User } from "@/App";
-import { Note, QuizResult, timeAgo, formatDate } from "./ProfileTypes";
+import { Note, timeAgo } from "./ProfileTypes";
 import AdminFilesTab from "@/components/admin/AdminFilesTab";
 
 interface Props {
   user: User;
   notes: Note[];
-  quizResults: QuizResult[];
-  rightTab: "notes" | "tests" | "upload";
+  rightTab: "notes" | "upload";
   deletingNote: number | null;
-  onSetRightTab: (tab: "notes" | "tests" | "upload") => void;
+  onSetRightTab: (tab: "notes" | "upload") => void;
   onDeleteNote: (id: number) => void;
   onNavigate: (page: Page) => void;
 }
@@ -18,14 +17,13 @@ const canUpload = (user: User) =>
   user.is_admin || ["инструктор кт", "инструктор fpv", "инструктор оператор-сапер"].includes(user.role || "");
 
 export default function ProfileActivity({
-  user, notes, quizResults, rightTab, deletingNote,
+  user, notes, rightTab, deletingNote,
   onSetRightTab, onDeleteNote, onNavigate,
 }: Props) {
   const showUpload = canUpload(user);
 
   const tabs = [
     { key: "notes" as const, label: "МОИ ЗАМЕТКИ", icon: "PenLine", count: notes.length },
-    { key: "tests" as const, label: "МОИ ТЕСТЫ", icon: "ClipboardCheck", count: quizResults.length },
     ...(showUpload ? [{ key: "upload" as const, label: "ЗАГРУЗКА", icon: "Upload", count: 0 }] : []),
   ];
 
@@ -92,43 +90,6 @@ export default function ProfileActivity({
           </div>
         )}
 
-        {/* Результаты тестов */}
-        {rightTab === "tests" && (
-          <div className="overflow-y-auto" style={{ maxHeight: 380 }}>
-            {quizResults.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-2">
-                <Icon name="ClipboardCheck" size={24} className="text-[#1a2a3a]" />
-                <div className="font-mono text-xs text-[#3a5570]">Тестов пока нет</div>
-                <div className="font-mono text-[10px] text-[#2a4060]">Проходите тесты в разделе Лекции</div>
-              </div>
-            ) : quizResults.map(r => (
-              <div key={r.id} className="flex items-center gap-3 px-4 py-3 border-b"
-                style={{ borderColor: "rgba(0,245,255,0.06)" }}>
-                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0"
-                  style={{
-                    border: `1px solid ${r.passed ? "rgba(0,255,136,0.3)" : "rgba(255,34,68,0.3)"}`,
-                    background: r.passed ? "rgba(0,255,136,0.06)" : "rgba(255,34,68,0.06)",
-                  }}>
-                  <Icon name={r.passed ? "CheckCircle" : "XCircle"} size={14}
-                    style={{ color: r.passed ? "#00ff88" : "#ff2244" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-mono text-xs text-white truncate">{r.title}</div>
-                  <div className="font-mono text-[10px] text-[#3a5570] mt-0.5">{formatDate(r.completed_at)}</div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="font-orbitron text-sm font-bold" style={{ color: r.passed ? "#00ff88" : "#ff2244" }}>
-                    {r.score}/{r.total}
-                  </div>
-                  <div className="font-mono text-[9px]" style={{ color: r.passed ? "#00ff88" : "#ff2244" }}>
-                    {Math.round((r.score / r.total) * 100)}%
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Загрузка материалов */}
         {rightTab === "upload" && showUpload && (
           <div className="overflow-y-auto" style={{ maxHeight: 520 }}>
@@ -142,7 +103,7 @@ export default function ProfileActivity({
         {[
           { page: "lectures" as Page, icon: "BookOpen", label: "Лекции", color: "#00f5ff" },
           { page: "videos" as Page, icon: "Play", label: "Видео", color: "#00f5ff" },
-          { page: "leaderboard" as Page, icon: "Trophy", label: "Рейтинг", color: "#ffbe32" },
+          { page: "materials" as Page, icon: "FileText", label: "Материалы", color: "#00f5ff" },
           { page: "discussions" as Page, icon: "MessageSquare", label: "Обсуждения", color: "#00ff88" },
           { page: "messages" as Page, icon: "MessageCircle", label: "Сообщения", color: "#00f5ff" },
           { page: "support" as Page, icon: "Headphones", label: "Поддержка", color: "#00ff88" },
@@ -158,7 +119,7 @@ export default function ProfileActivity({
               (e.currentTarget as HTMLElement).style.background = "transparent";
               (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.08)";
             }}>
-            <Icon name={item.icon as "Trophy"} size={13} style={{ color: item.color }} />
+            <Icon name={item.icon as "BookOpen"} size={13} style={{ color: item.color }} />
             <span className="font-mono text-[11px] text-[#5a7a95] group-hover:text-white transition-colors">{item.label}</span>
           </button>
         ))}

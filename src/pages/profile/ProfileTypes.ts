@@ -1,32 +1,12 @@
 import React from "react";
 import Icon from "@/components/ui/icon";
 
-export interface UserStats {
-  completed_count: number;
-  lectures_done: number;
-  videos_done: number;
-  quizzes_passed: number;
-  score: number;
-  my_position: number | null;
-}
-
 export interface Note {
   id: number;
   item_type: string;
   item_id: number;
   content: string;
   updated_at: string;
-}
-
-export interface QuizResult {
-  id: number;
-  quiz_id: number;
-  title: string;
-  lecture_id: number;
-  score: number;
-  total: number;
-  passed: boolean;
-  completed_at: string;
 }
 
 export const RANKS = [

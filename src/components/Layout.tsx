@@ -77,7 +77,7 @@ const PAGE_LABELS: Partial<Record<Page, string>> = {
   home: "ГЛАВНАЯ", lectures: "ЛЕКЦИИ", videos: "ВИДЕО",
   "drone-types": "ТИПЫ БПЛА", materials: "МАТЕРИАЛЫ",
   firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ", tacmed: "ТАК МЕД",
-  leaderboard: "РЕЙТИНГ", profile: "ПРОФИЛЬ",
+  profile: "ПРОФИЛЬ",
   messages: "СООБЩЕНИЯ", support: "ПОДДЕРЖКА",
   "content-upload": "ЗАГРУЗКА",
 };
@@ -311,17 +311,6 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 {item.label}
               </button>
             ))}
-            {user && (
-              <button
-                onClick={() => { onNavigate("leaderboard"); setMobileOpen(false); }}
-                className={`flex items-center gap-3 w-full px-6 py-4 font-plex text-sm tracking-wider uppercase transition-colors ${
-                  currentPage === "leaderboard" ? "text-[#ffbe32] bg-[rgba(255,190,50,0.06)]" : "text-[#7a9bb5]"
-                }`}
-              >
-                <Icon name="Trophy" size={16} />
-                Рейтинг
-              </button>
-            )}
             {user && (
               <button
                 onClick={() => { onNavigate("profile"); setMobileOpen(false); }}

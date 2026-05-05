@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "@/api";
 import { User, Page } from "@/App";
-import { UserStats, Note, QuizResult } from "./profile/ProfileTypes";
+import { Note } from "./profile/ProfileTypes";
 import ProfileCard from "./profile/ProfileCard";
-import ProfileStats from "./profile/ProfileStats";
 import ProfileActivity from "./profile/ProfileActivity";
 
 interface ProfilePageProps {
@@ -16,12 +15,8 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, onLogout }: ProfilePageProps) {
   // Remote data
-  const [stats, setStats] = useState<UserStats | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
-  const [totalLectures, setTotalLectures] = useState(0);
-  const [totalVideos, setTotalVideos] = useState(0);
-  const [rightTab, setRightTab] = useState<"notes" | "tests" | "upload">("notes");
+  const [rightTab, setRightTab] = useState<"notes" | "upload">("notes");
   const [deletingNote, setDeletingNote] = useState<number | null>(null);
 
   // Profile edit state
@@ -48,21 +43,9 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   const [avatarError, setAvatarError] = useState("");
 
   useEffect(() => {
-    api.progress.leaderboard().then(res => {
-      const me = (res.leaderboard || []).find((r: { id: number }) => r.id === user.id);
-      if (me) setStats({ ...me, my_position: res.my_position ?? null });
-    }).catch(() => {});
-
     api.progress.myNotes().then(res => {
       if (res.notes) setNotes(res.notes);
     }).catch(() => {});
-
-    api.quizzes.myResults().then(res => {
-      if (res.results) setQuizResults(res.results);
-    }).catch(() => {});
-
-    api.files.list("document").then(res => setTotalLectures((res.files || []).length)).catch(() => {});
-    api.files.list("video").then(res => setTotalVideos((res.files || []).length)).catch(() => {});
   }, [user.id]);
 
   useEffect(() => {
@@ -176,15 +159,9 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
         />
 
         <div className="lg:col-span-3 flex flex-col gap-4">
-          <ProfileStats
-            stats={stats}
-            totalLectures={totalLectures}
-            totalVideos={totalVideos}
-          />
           <ProfileActivity
             user={user}
             notes={notes}
-            quizResults={quizResults}
             rightTab={rightTab}
             deletingNote={deletingNote}
             onSetRightTab={setRightTab}
