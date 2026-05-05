@@ -52,7 +52,7 @@ export default function App() {
   const [siteEnabled, setSiteEnabled] = useState(true);
   const [maintenanceMessage, setMaintenanceMessage] = useState("Сайт временно недоступен. Ведутся технические работы.");
 
-  const [introDone] = useState(true);
+  const [introDone, setIntroDone] = useState(() => !!sessionStorage.getItem("intro_done"));
   const [showMaintenanceLogin, setShowMaintenanceLogin] = useState(false);
 
   useEffect(() => {
