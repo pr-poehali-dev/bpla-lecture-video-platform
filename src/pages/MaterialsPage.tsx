@@ -3,7 +3,6 @@ import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
 import { type User } from "@/App";
 import { usePageData } from "@/hooks/usePageData";
-import TacmedEquipment from "./tacmed/TacmedEquipment";
 
 const DOC_CATEGORIES = ["Все", "Регламенты", "Технические", "Учебные", "Схемы", "Карты"];
 
@@ -136,8 +135,6 @@ export default function MaterialsPage({ user }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [viewing, setViewing] = useState<FileItem | null>(null);
-  const [equipTab, setEquipTab] = useState<"tourniquets" | "kits">("tourniquets");
-
   const canDownload = !user || user.is_admin || user.role !== "курсант";
 
   useEffect(() => {
@@ -163,8 +160,6 @@ export default function MaterialsPage({ user }: Props) {
         <span className="font-mono text-xs text-[#00f5ff] tracking-[0.3em]">{header?.subtitle ?? "// ДОКУМЕНТЫ И РЕГЛАМЕНТЫ"}</span>
       </div>
       <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">{header?.title ?? "МАТЕРИАЛЫ"}</h1>
-
-      <TacmedEquipment equipTab={equipTab} onTabChange={setEquipTab} />
 
       <div className="flex gap-2 flex-wrap">
         {categories.map((cat) => (

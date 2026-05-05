@@ -129,33 +129,11 @@ const FIRST_AID_KITS = [
 
 interface Props {
   equipTab: "tourniquets" | "kits";
-  onTabChange: (tab: "tourniquets" | "kits") => void;
 }
 
-export default function TacmedEquipment({ equipTab, onTabChange }: Props) {
+export default function TacmedEquipment({ equipTab }: Props) {
   return (
     <div className="mb-8">
-      <div className="flex items-center gap-0 mb-6" style={{ borderBottom: "1px solid rgba(0,245,255,0.12)" }}>
-        {([
-          { key: "tourniquets", label: "ЖГУТЫ", icon: "Activity", color: "#00f5ff" },
-          { key: "kits", label: "АПТЕЧКИ", icon: "Cross", color: "#00ff88" },
-        ] as const).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => onTabChange(tab.key)}
-            className="flex items-center gap-2 px-5 py-3 font-mono text-xs tracking-wider transition-all"
-            style={{
-              color: equipTab === tab.key ? tab.color : "#3a5570",
-              borderBottom: equipTab === tab.key ? `2px solid ${tab.color}` : "2px solid transparent",
-              background: equipTab === tab.key ? `${tab.color}08` : "transparent",
-              marginBottom: -1,
-            }}
-          >
-            <Icon name={tab.icon} size={13} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
 
       {/* Вкладка: Жгуты */}
       {equipTab === "tourniquets" && (
