@@ -218,6 +218,7 @@ export default function TacmedPage({ user }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
   const [viewing, setViewing] = useState<FileItem | null>(null);
+  const [equipTab, setEquipTab] = useState<"tourniquets" | "kits">("tourniquets");
 
   const canDownload = !user || user.is_admin || user.role !== "курсант";
 
@@ -251,120 +252,119 @@ export default function TacmedPage({ user }: Props) {
       </div>
       <h1 className="font-orbitron text-2xl sm:text-3xl font-black text-white mb-5 sm:mb-6 tracking-wider">{header?.title ?? "ТАК МЕД"}</h1>
 
-      {/* ── Жгуты ── */}
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-6 bg-[#00f5ff]" />
-          <h2 className="font-orbitron text-lg font-bold text-white tracking-wider">ВИДЫ ЖГУТОВ</h2>
-          <div className="flex-1 h-px" style={{ background: "rgba(0,245,255,0.1)" }} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {TOURNIQUETS.map((t) => (
-            <div key={t.name} className="flex flex-col overflow-hidden transition-all hover:border-[rgba(0,245,255,0.3)]"
-              style={{ border: "1px solid rgba(0,245,255,0.12)", background: "rgba(4,7,14,0.8)" }}>
-              {/* Изображение */}
-              <div className="relative h-48 overflow-hidden flex-shrink-0">
-                <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(4,7,14,0.95))" }} />
-                <span className="absolute top-3 left-3 font-mono text-[10px] px-2 py-0.5 font-bold"
-                  style={{ background: `${t.badgeColor}22`, border: `1px solid ${t.badgeColor}60`, color: t.badgeColor }}>
-                  {t.badge}
-                </span>
-                <span className="absolute top-3 right-3 font-mono text-[10px] px-2 py-0.5"
-                  style={{ background: "rgba(4,7,14,0.8)", border: "1px solid rgba(255,255,255,0.1)", color: "#5a7a95" }}>
-                  {t.type}
-                </span>
-              </div>
-              {/* Контент */}
-              <div className="p-4 flex flex-col gap-3">
-                <h3 className="font-orbitron text-sm font-bold text-white leading-tight">{t.name}</h3>
-                <p className="font-plex text-sm text-[#8aacbf] leading-relaxed">{t.desc}</p>
-
-                {/* Порядок наложения */}
-                <div className="p-3" style={{ background: "rgba(0,245,255,0.04)", border: "1px solid rgba(0,245,255,0.1)" }}>
-                  <div className="font-mono text-[10px] text-[#00f5ff] tracking-wider mb-1.5">// ПОРЯДОК НАЛОЖЕНИЯ</div>
-                  <p className="font-plex text-xs text-[#7a9ab5] leading-relaxed">{t.apply}</p>
-                </div>
-
-                {/* Плюсы и минусы */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="font-mono text-[10px] text-[#00ff88] mb-1">✓ ПЛЮСЫ</div>
-                    {t.pros.map(p => (
-                      <div key={p} className="font-plex text-xs text-[#5a8a6a] leading-snug">· {p}</div>
-                    ))}
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] text-[#ff6b00] mb-1">✗ МИНУСЫ</div>
-                    {t.cons.map(c => (
-                      <div key={c} className="font-plex text-xs text-[#7a5040] leading-snug">· {c}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* ── Вкладки: Жгуты / Аптечки ── */}
+      <div className="mb-8">
+        <div className="flex items-center gap-0 mb-6" style={{ borderBottom: "1px solid rgba(0,245,255,0.12)" }}>
+          {([
+            { key: "tourniquets", label: "ЖГУТЫ", icon: "Activity", color: "#00f5ff" },
+            { key: "kits", label: "АПТЕЧКИ", icon: "Cross", color: "#00ff88" },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setEquipTab(tab.key)}
+              className="flex items-center gap-2 px-5 py-3 font-mono text-xs tracking-wider transition-all"
+              style={{
+                color: equipTab === tab.key ? tab.color : "#3a5570",
+                borderBottom: equipTab === tab.key ? `2px solid ${tab.color}` : "2px solid transparent",
+                background: equipTab === tab.key ? `${tab.color}08` : "transparent",
+                marginBottom: -1,
+              }}
+            >
+              <Icon name={tab.icon} size={13} />
+              {tab.label}
+            </button>
           ))}
         </div>
-      </div>
 
-      {/* ── Аптечки ── */}
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-6 bg-[#00ff88]" />
-          <h2 className="font-orbitron text-lg font-bold text-white tracking-wider">ВИДЫ АПТЕЧЕК</h2>
-          <div className="flex-1 h-px" style={{ background: "rgba(0,255,136,0.1)" }} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {FIRST_AID_KITS.map((kit) => (
-            <div key={kit.name} className="flex flex-col overflow-hidden transition-all hover:border-[rgba(0,255,136,0.3)]"
-              style={{ border: "1px solid rgba(0,255,136,0.12)", background: "rgba(4,7,14,0.8)" }}>
-              {/* Изображение */}
-              <div className="relative h-44 overflow-hidden flex-shrink-0">
-                <img src={kit.image} alt={kit.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(4,7,14,0.97))" }} />
-                <span className="absolute top-3 left-3 font-mono text-[10px] px-2 py-0.5 font-bold"
-                  style={{ background: `${kit.badgeColor}22`, border: `1px solid ${kit.badgeColor}60`, color: kit.badgeColor }}>
-                  {kit.badge}
-                </span>
-                <span className="absolute top-3 right-3 font-mono text-[10px] px-2 py-0.5"
-                  style={{ background: "rgba(4,7,14,0.8)", border: "1px solid rgba(255,255,255,0.1)", color: "#5a7a95" }}>
-                  {kit.level}
-                </span>
-              </div>
-              {/* Контент */}
-              <div className="p-4 flex flex-col gap-3 flex-1">
-                <h3 className="font-orbitron text-sm font-bold text-white leading-tight">{kit.name}</h3>
-                <p className="font-plex text-sm text-[#8aacbf] leading-relaxed">{kit.desc}</p>
-
-                {/* Состав */}
-                <div className="flex-1">
-                  <div className="font-mono text-[10px] text-[#00ff88] tracking-wider mb-2">// СОСТАВ</div>
-                  <div className="flex flex-col gap-1">
-                    {kit.contents.map(item => (
-                      <div key={item} className="flex items-start gap-1.5">
-                        <span className="text-[#00ff88] text-[10px] mt-0.5 flex-shrink-0">▸</span>
-                        <span className="font-plex text-xs text-[#6a8fa8] leading-snug">{item}</span>
-                      </div>
-                    ))}
-                  </div>
+        {/* Вкладка: Жгуты */}
+        {equipTab === "tourniquets" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {TOURNIQUETS.map((t) => (
+              <div key={t.name} className="flex flex-col overflow-hidden transition-all hover:border-[rgba(0,245,255,0.3)]"
+                style={{ border: "1px solid rgba(0,245,255,0.12)", background: "rgba(4,7,14,0.8)" }}>
+                <div className="relative h-48 overflow-hidden flex-shrink-0">
+                  <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(4,7,14,0.95))" }} />
+                  <span className="absolute top-3 left-3 font-mono text-[10px] px-2 py-0.5 font-bold"
+                    style={{ background: `${t.badgeColor}22`, border: `1px solid ${t.badgeColor}60`, color: t.badgeColor }}>
+                    {t.badge}
+                  </span>
+                  <span className="absolute top-3 right-3 font-mono text-[10px] px-2 py-0.5"
+                    style={{ background: "rgba(4,7,14,0.8)", border: "1px solid rgba(255,255,255,0.1)", color: "#5a7a95" }}>
+                    {t.type}
+                  </span>
                 </div>
-
-                {/* Мета */}
-                <div className="flex items-center justify-between pt-2"
-                  style={{ borderTop: "1px solid rgba(0,255,136,0.08)" }}>
-                  <div>
-                    <div className="font-mono text-[9px] text-[#3a5570]">КТО НОСИТ</div>
-                    <div className="font-mono text-[11px] text-[#00ff88]">{kit.who}</div>
+                <div className="p-4 flex flex-col gap-3">
+                  <h3 className="font-orbitron text-sm font-bold text-white leading-tight">{t.name}</h3>
+                  <p className="font-plex text-sm text-[#8aacbf] leading-relaxed">{t.desc}</p>
+                  <div className="p-3" style={{ background: "rgba(0,245,255,0.04)", border: "1px solid rgba(0,245,255,0.1)" }}>
+                    <div className="font-mono text-[10px] text-[#00f5ff] tracking-wider mb-1.5">// ПОРЯДОК НАЛОЖЕНИЯ</div>
+                    <p className="font-plex text-xs text-[#7a9ab5] leading-relaxed">{t.apply}</p>
                   </div>
-                  <div className="text-right">
-                    <div className="font-mono text-[9px] text-[#3a5570]">ВЕС</div>
-                    <div className="font-mono text-[11px] text-[#5a7a95]">{kit.weight}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="font-mono text-[10px] text-[#00ff88] mb-1">✓ ПЛЮСЫ</div>
+                      {t.pros.map(p => <div key={p} className="font-plex text-xs text-[#5a8a6a] leading-snug">· {p}</div>)}
+                    </div>
+                    <div>
+                      <div className="font-mono text-[10px] text-[#ff6b00] mb-1">✗ МИНУСЫ</div>
+                      {t.cons.map(c => <div key={c} className="font-plex text-xs text-[#7a5040] leading-snug">· {c}</div>)}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* Вкладка: Аптечки */}
+        {equipTab === "kits" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {FIRST_AID_KITS.map((kit) => (
+              <div key={kit.name} className="flex flex-col overflow-hidden transition-all hover:border-[rgba(0,255,136,0.3)]"
+                style={{ border: "1px solid rgba(0,255,136,0.12)", background: "rgba(4,7,14,0.8)" }}>
+                <div className="relative h-44 overflow-hidden flex-shrink-0">
+                  <img src={kit.image} alt={kit.name} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(4,7,14,0.97))" }} />
+                  <span className="absolute top-3 left-3 font-mono text-[10px] px-2 py-0.5 font-bold"
+                    style={{ background: `${kit.badgeColor}22`, border: `1px solid ${kit.badgeColor}60`, color: kit.badgeColor }}>
+                    {kit.badge}
+                  </span>
+                  <span className="absolute top-3 right-3 font-mono text-[10px] px-2 py-0.5"
+                    style={{ background: "rgba(4,7,14,0.8)", border: "1px solid rgba(255,255,255,0.1)", color: "#5a7a95" }}>
+                    {kit.level}
+                  </span>
+                </div>
+                <div className="p-4 flex flex-col gap-3 flex-1">
+                  <h3 className="font-orbitron text-sm font-bold text-white leading-tight">{kit.name}</h3>
+                  <p className="font-plex text-sm text-[#8aacbf] leading-relaxed">{kit.desc}</p>
+                  <div className="flex-1">
+                    <div className="font-mono text-[10px] text-[#00ff88] tracking-wider mb-2">// СОСТАВ</div>
+                    <div className="flex flex-col gap-1">
+                      {kit.contents.map(item => (
+                        <div key={item} className="flex items-start gap-1.5">
+                          <span className="text-[#00ff88] text-[10px] mt-0.5 flex-shrink-0">▸</span>
+                          <span className="font-plex text-xs text-[#6a8fa8] leading-snug">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2"
+                    style={{ borderTop: "1px solid rgba(0,255,136,0.08)" }}>
+                    <div>
+                      <div className="font-mono text-[9px] text-[#3a5570]">КТО НОСИТ</div>
+                      <div className="font-mono text-[11px] text-[#00ff88]">{kit.who}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-[9px] text-[#3a5570]">ВЕС</div>
+                      <div className="font-mono text-[11px] text-[#5a7a95]">{kit.weight}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Документы ── */}
