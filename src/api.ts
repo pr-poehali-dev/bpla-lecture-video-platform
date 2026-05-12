@@ -94,6 +94,30 @@ export const api = {
     deleteUser: (user_id: number) =>
       fetch(`${ADMIN_URL}/?action=delete-user`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
 
+    blockUser: (user_id: number, reason?: string) =>
+      fetch(`${ADMIN_URL}/?action=block-user`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id, reason }) }).then((r) => r.json()),
+
+    unblockUser: (user_id: number) =>
+      fetch(`${ADMIN_URL}/?action=unblock-user`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
+
+    resetPassword: (user_id: number) =>
+      fetch(`${ADMIN_URL}/?action=reset-password`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id }) }).then((r) => r.json()),
+
+    bulkApprove: (user_ids: number[]) =>
+      fetch(`${ADMIN_URL}/?action=bulk-approve`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_ids }) }).then((r) => r.json()),
+
+    bulkReject: (user_ids: number[]) =>
+      fetch(`${ADMIN_URL}/?action=bulk-reject`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_ids }) }).then((r) => r.json()),
+
+    auditLog: (params?: { limit?: number; offset?: number; filter_action?: string; filter_admin?: string }) => {
+      const p = new URLSearchParams({ action: "audit-log" });
+      if (params?.limit) p.set("limit", String(params.limit));
+      if (params?.offset) p.set("offset", String(params.offset));
+      if (params?.filter_action) p.set("filter_action", params.filter_action);
+      if (params?.filter_admin) p.set("filter_admin", params.filter_admin);
+      return fetch(`${ADMIN_URL}/?${p}`, { headers: authHeaders() }).then((r) => r.json());
+    },
+
     stats: () =>
       fetch(`${ADMIN_URL}/?action=stats`, { headers: authHeaders() }).then((r) => r.json()),
 

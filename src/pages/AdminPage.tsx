@@ -12,6 +12,8 @@ import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import AdminPagesTab from "@/components/admin/AdminPagesTab";
 import AdminSupportTab from "@/components/admin/AdminSupportTab";
 import AdminQuizzesTab from "@/components/admin/AdminQuizzesTab";
+import AdminContentTab from "@/components/admin/AdminContentTab";
+import AdminAuditTab from "@/components/admin/AdminAuditTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -24,7 +26,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "files" | "removals" | "discussions" | "lectures" | "videos" | "settings" | "pages" | "support" | "quizzes";
+type Tab = "dashboard" | "users" | "roles" | "content" | "removals" | "discussions" | "lectures" | "videos" | "files" | "settings" | "pages" | "support" | "quizzes" | "audit";
 
 interface Stats {
   total: number;
@@ -44,7 +46,8 @@ const tabLabels: Record<Tab, string> = {
   dashboard: "Панель управления",
   users: "Личный состав",
   roles: "Доступы",
-  files: "Файлы",
+  content: "Контент",
+  files: "Загрузчик",
   removals: "Заявки на удаление",
   discussions: "Обсуждения",
   lectures: "Лекции",
@@ -53,6 +56,7 @@ const tabLabels: Record<Tab, string> = {
   pages: "Страницы",
   support: "Поддержка",
   quizzes: "Тесты",
+  audit: "Журнал действий",
 };
 
 const sidebarGroups = [
@@ -66,14 +70,13 @@ const sidebarGroups = [
       { key: "users" as Tab, label: "Личный состав", icon: "Users" },
       { key: "roles" as Tab, label: "Доступы", icon: "Shield" },
       { key: "removals" as Tab, label: "Заявки", icon: "Trash2" },
+      { key: "audit" as Tab, label: "Журнал", icon: "ClipboardList" },
     ],
   },
   {
     label: "КОНТЕНТ",
     items: [
-      { key: "lectures" as Tab, label: "Лекции", icon: "BookOpen" },
-      { key: "videos" as Tab, label: "Видео", icon: "Play" },
-      { key: "files" as Tab, label: "Загрузчик", icon: "Upload" },
+      { key: "content" as Tab, label: "Все материалы", icon: "Layers" },
       { key: "discussions" as Tab, label: "Обсуждения", icon: "MessageSquare" },
       { key: "quizzes" as Tab, label: "Тесты", icon: "ClipboardCheck" },
     ],
@@ -165,6 +168,11 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
   const removeAdmin = async (id: number) => { const res = await api.admin.removeAdmin(id); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
   const setRole = async (id: number, role: string) => { const res = await api.admin.setRole(id, role); if (res.message) { showMsg(res.message); loadUsers(); } };
   const deleteUser = async (id: number) => { const res = await api.admin.deleteUser(id); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
+  const blockUser = async (id: number, reason: string) => { const res = await api.admin.blockUser(id, reason); if (res.message) { showMsg(res.message); loadUsers(); } };
+  const unblockUser = async (id: number) => { const res = await api.admin.unblockUser(id); if (res.message) { showMsg(res.message); loadUsers(); } };
+  const resetPassword = async (id: number) => { return await api.admin.resetPassword(id); };
+  const bulkApprove = async (ids: number[]) => { const res = await api.admin.bulkApprove(ids); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
+  const bulkReject = async (ids: number[]) => { const res = await api.admin.bulkReject(ids); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
 
   const pendingCount = users.filter(u => u.status === "pending").length;
   const total = stats?.total || 1;
@@ -401,14 +409,39 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                   </button>
                 </div>
               )}
+
+              {/* Quick actions */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { tab: "content" as Tab, icon: "Layers", label: "Все материалы", color: "#00f5ff", desc: `${stats?.files ?? 0} файлов` },
+                  { tab: "discussions" as Tab, icon: "MessageSquare", label: "Обсуждения", color: "#00ff88", desc: `${stats?.topics ?? 0} тем` },
+                  { tab: "support" as Tab, icon: "Headphones", label: "Поддержка", color: "#a855f7", desc: "Тикеты" },
+                  { tab: "audit" as Tab, icon: "ClipboardList", label: "Журнал", color: "#ff6b00", desc: "Действия" },
+                ].map(item => (
+                  <button key={item.tab} onClick={() => setActiveTab(item.tab)}
+                    className="flex flex-col gap-2 p-4 text-left transition-all hover:scale-[1.02]"
+                    style={{ background: "rgba(13,27,46,0.8)", border: `1px solid ${item.color}20` }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = `${item.color}40`)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = `${item.color}20`)}>
+                    <Icon name={item.icon as "Layers"} size={18} style={{ color: item.color }} />
+                    <div>
+                      <div className="font-mono text-xs text-white">{item.label}</div>
+                      <div className="font-mono text-[10px] text-[#3a5570]">{item.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
           {activeTab === "users" && (
             <AdminUsersTab users={users} loading={loading} filter={filter} setFilter={setFilter} msg=""
-              onApprove={approve} onReject={reject} onMakeAdmin={makeAdmin} onRemoveAdmin={removeAdmin} onSetRole={setRole} onDeleteUser={deleteUser} />
+              onApprove={approve} onReject={reject} onMakeAdmin={makeAdmin} onRemoveAdmin={removeAdmin} onSetRole={setRole}
+              onDeleteUser={deleteUser} onBlockUser={blockUser} onUnblockUser={unblockUser}
+              onResetPassword={resetPassword} onBulkApprove={bulkApprove} onBulkReject={bulkReject} />
           )}
           {activeTab === "roles" && <AdminRolesTab />}
+          {activeTab === "content" && <AdminContentTab />}
           {activeTab === "files" && <AdminFilesTab />}
           {activeTab === "lectures" && <AdminLecturesTab />}
           {activeTab === "videos" && <AdminVideosTab />}
@@ -418,6 +451,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "pages" && <AdminPagesTab />}
           {activeTab === "support" && <AdminSupportTab />}
           {activeTab === "quizzes" && <AdminQuizzesTab />}
+          {activeTab === "audit" && <AdminAuditTab />}
         </main>
       </div>
     </div>

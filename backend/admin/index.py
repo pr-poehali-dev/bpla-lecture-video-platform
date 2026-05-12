@@ -39,11 +39,18 @@ def get_admin(event, cur):
     token = auth.replace("Bearer ", "").strip()
     if not token:
         return None
-    cur.execute(f"SELECT id, name, email, is_admin FROM {q('users')} WHERE session_token = %s", (token,))
+    cur.execute(f"SELECT id, name, callsign, email, is_admin FROM {q('users')} WHERE session_token = %s", (token,))
     user = cur.fetchone()
     if not user or not user["is_admin"]:
         return None
     return user
+
+def audit(cur, admin, action, target_type=None, target_id=None, target_name=None, details=None):
+    admin_name = admin.get("callsign") or admin.get("name", "")
+    cur.execute(
+        f"INSERT INTO {q('admin_audit_log')} (admin_id, admin_name, action, target_type, target_id, target_name, details) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+        (admin["id"], admin_name, action, target_type, target_id, target_name, json.dumps(details or {}, ensure_ascii=False))
+    )
 
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
@@ -96,7 +103,7 @@ def handler(event: dict, context) -> dict:
 
     # GET ?action=users
     if action == "users" and method == "GET":
-        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, role, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
+        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, is_blocked, role, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
         users = [dict(u) for u in cur.fetchall()]
         return ok({"users": users})
 
@@ -148,12 +155,12 @@ def handler(event: dict, context) -> dict:
             return err("user_id обязателен")
         if role not in ("курсант", "инструктор кт", "инструктор fpv", "инструктор оператор-сапер", "администратор"):
             return err("Недопустимая роль")
-        # Сбрасываем кэш прав при смене роли
         cur.execute(f"UPDATE {q('users')} SET role = %s, permissions_cache = NULL WHERE id = %s RETURNING id, name, callsign", (role, user_id))
         user = cur.fetchone()
-        conn.commit()
         if not user:
-            return err("Пользователь не найден", 404)
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "set_role", "user", user["id"], user["callsign"] or user["name"], {"role": role})
+        conn.commit()
         return ok({"message": f"Роль пользователя {user['callsign'] or user['name']} изменена на «{role}»"})
 
     # POST ?action=approve
@@ -162,13 +169,14 @@ def handler(event: dict, context) -> dict:
         if not user_id:
             return err("user_id обязателен")
         cur.execute(
-            f"UPDATE {q('users')} SET status = 'approved', approved_at = NOW() WHERE id = %s RETURNING id, name, email",
+            f"UPDATE {q('users')} SET status = 'approved', approved_at = NOW() WHERE id = %s RETURNING id, name, callsign, email",
             (user_id,)
         )
         user = cur.fetchone()
-        conn.commit()
         if not user:
-            return err("Пользователь не найден", 404)
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "approve_user", "user", user["id"], user["callsign"] or user["name"])
+        conn.commit()
         return ok({"message": f"Пользователь {user['email']} одобрен", "user": dict(user)})
 
     # POST ?action=reject
@@ -177,13 +185,14 @@ def handler(event: dict, context) -> dict:
         if not user_id:
             return err("user_id обязателен")
         cur.execute(
-            f"UPDATE {q('users')} SET status = 'rejected' WHERE id = %s RETURNING id, name, email",
+            f"UPDATE {q('users')} SET status = 'rejected' WHERE id = %s RETURNING id, name, callsign, email",
             (user_id,)
         )
         user = cur.fetchone()
-        conn.commit()
         if not user:
-            return err("Пользователь не найден", 404)
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "reject_user", "user", user["id"], user["callsign"] or user["name"])
+        conn.commit()
         return ok({"message": f"Пользователь {user['email']} отклонён", "user": dict(user)})
 
     # POST ?action=make-admin
@@ -191,12 +200,112 @@ def handler(event: dict, context) -> dict:
         user_id = body.get("user_id")
         if not user_id:
             return err("user_id обязателен")
-        cur.execute(f"UPDATE {q('users')} SET is_admin = TRUE, status = 'approved' WHERE id = %s RETURNING id, email", (user_id,))
+        cur.execute(f"UPDATE {q('users')} SET is_admin = TRUE, status = 'approved' WHERE id = %s RETURNING id, name, callsign, email", (user_id,))
         user = cur.fetchone()
-        conn.commit()
         if not user:
-            return err("Пользователь не найден", 404)
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "make_admin", "user", user["id"], user["callsign"] or user["name"])
+        conn.commit()
         return ok({"message": f"{user['email']} назначен администратором"})
+
+    # POST ?action=block-user
+    if action == "block-user" and method == "POST":
+        user_id = body.get("user_id")
+        reason = body.get("reason", "")
+        if not user_id:
+            return err("user_id обязателен")
+        if user_id == admin["id"]:
+            return err("Нельзя заблокировать себя")
+        cur.execute(f"UPDATE {q('users')} SET is_blocked = TRUE, session_token = NULL WHERE id = %s RETURNING id, name, callsign, email", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "block_user", "user", user["id"], user["callsign"] or user["name"], {"reason": reason})
+        conn.commit()
+        return ok({"message": f"Пользователь {user['callsign'] or user['name']} заблокирован"})
+
+    # POST ?action=unblock-user
+    if action == "unblock-user" and method == "POST":
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        cur.execute(f"UPDATE {q('users')} SET is_blocked = FALSE WHERE id = %s RETURNING id, name, callsign, email", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "unblock_user", "user", user["id"], user["callsign"] or user["name"])
+        conn.commit()
+        return ok({"message": f"Пользователь {user['callsign'] or user['name']} разблокирован"})
+
+    # POST ?action=reset-password
+    if action == "reset-password" and method == "POST":
+        import secrets, hashlib
+        user_id = body.get("user_id")
+        if not user_id:
+            return err("user_id обязателен")
+        new_password = secrets.token_urlsafe(10)
+        pw_hash = hashlib.sha256(new_password.encode()).hexdigest()
+        cur.execute(f"UPDATE {q('users')} SET password_hash = %s, session_token = NULL WHERE id = %s RETURNING id, name, callsign, email", (pw_hash, user_id))
+        user = cur.fetchone()
+        if not user:
+            conn.commit(); return err("Пользователь не найден", 404)
+        audit(cur, admin, "reset_password", "user", user["id"], user["callsign"] or user["name"])
+        conn.commit()
+        return ok({"message": f"Пароль сброшен", "new_password": new_password, "email": user["email"]})
+
+    # POST ?action=bulk-approve
+    if action == "bulk-approve" and method == "POST":
+        user_ids = body.get("user_ids", [])
+        if not user_ids or not isinstance(user_ids, list):
+            return err("user_ids обязателен (массив)")
+        cur.execute(
+            f"UPDATE {q('users')} SET status = 'approved', approved_at = NOW() WHERE id = ANY(%s::int[]) AND status = 'pending' RETURNING id, name, callsign",
+            (user_ids,)
+        )
+        updated = cur.fetchall()
+        for u in updated:
+            audit(cur, admin, "approve_user", "user", u["id"], u["callsign"] or u["name"])
+        conn.commit()
+        return ok({"message": f"Одобрено {len(updated)} пользователей", "count": len(updated)})
+
+    # POST ?action=bulk-reject
+    if action == "bulk-reject" and method == "POST":
+        user_ids = body.get("user_ids", [])
+        if not user_ids or not isinstance(user_ids, list):
+            return err("user_ids обязателен (массив)")
+        cur.execute(
+            f"UPDATE {q('users')} SET status = 'rejected' WHERE id = ANY(%s::int[]) AND status = 'pending' RETURNING id, name, callsign",
+            (user_ids,)
+        )
+        updated = cur.fetchall()
+        for u in updated:
+            audit(cur, admin, "reject_user", "user", u["id"], u["callsign"] or u["name"])
+        conn.commit()
+        return ok({"message": f"Отклонено {len(updated)} пользователей", "count": len(updated)})
+
+    # GET ?action=audit-log
+    if action == "audit-log" and method == "GET":
+        limit = min(int(params.get("limit", 100)), 500)
+        offset = int(params.get("offset", 0))
+        filter_action = params.get("filter_action", "")
+        filter_admin = params.get("filter_admin", "")
+        where_parts = []
+        where_vals = []
+        if filter_action:
+            where_parts.append("action = %s")
+            where_vals.append(filter_action)
+        if filter_admin:
+            where_parts.append("admin_name ILIKE %s")
+            where_vals.append(f"%{filter_admin}%")
+        where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {q('admin_audit_log')} {where_sql}", where_vals)
+        total = cur.fetchone()["cnt"]
+        cur.execute(
+            f"SELECT id, admin_id, admin_name, action, target_type, target_id, target_name, details, created_at FROM {q('admin_audit_log')} {where_sql} ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            where_vals + [limit, offset]
+        )
+        logs = [dict(r) for r in cur.fetchall()]
+        return ok({"logs": logs, "total": total})
 
     # POST ?action=remove-admin
     if action == "remove-admin" and method == "POST":
@@ -269,7 +378,8 @@ def handler(event: dict, context) -> dict:
         user = cur.fetchone()
         if not user:
             return err("Пользователь не найден", 404)
-        cur.execute(f"DELETE FROM {q('users')} WHERE id = %s", (user_id,))
+        audit(cur, admin, "delete_user", "user", user["id"], user["callsign"] or user["email"])
+        cur.execute(f"UPDATE {q('users')} SET status = 'rejected', is_blocked = TRUE, session_token = NULL WHERE id = %s", (user_id,))
         conn.commit()
         return ok({"message": f"Пользователь {user['callsign'] or user['email']} удалён"})
 
