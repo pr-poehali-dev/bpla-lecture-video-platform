@@ -14,6 +14,7 @@ import AdminSupportTab from "@/components/admin/AdminSupportTab";
 import AdminQuizzesTab from "@/components/admin/AdminQuizzesTab";
 import AdminContentTab from "@/components/admin/AdminContentTab";
 import AdminAuditTab from "@/components/admin/AdminAuditTab";
+import AdminDronesTab from "@/components/admin/AdminDronesTab";
 import Icon from "@/components/ui/icon";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -26,7 +27,7 @@ interface Props {
   onGoToSite: () => void;
 }
 
-type Tab = "dashboard" | "users" | "roles" | "content" | "removals" | "discussions" | "lectures" | "videos" | "files" | "settings" | "pages" | "support" | "quizzes" | "audit";
+type Tab = "dashboard" | "users" | "roles" | "content" | "removals" | "discussions" | "lectures" | "videos" | "files" | "settings" | "pages" | "support" | "quizzes" | "audit" | "drones";
 
 interface Stats {
   total: number;
@@ -57,6 +58,7 @@ const tabLabels: Record<Tab, string> = {
   support: "Поддержка",
   quizzes: "Тесты",
   audit: "Журнал действий",
+  drones: "Типы БпЛА",
 };
 
 const sidebarGroups = [
@@ -77,6 +79,7 @@ const sidebarGroups = [
     label: "КОНТЕНТ",
     items: [
       { key: "content" as Tab, label: "Все материалы", icon: "Layers" },
+      { key: "drones" as Tab, label: "Типы БпЛА", icon: "Plane" },
       { key: "discussions" as Tab, label: "Обсуждения", icon: "MessageSquare" },
       { key: "quizzes" as Tab, label: "Тесты", icon: "ClipboardCheck" },
     ],
@@ -488,6 +491,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
           {activeTab === "support" && <AdminSupportTab />}
           {activeTab === "quizzes" && <AdminQuizzesTab />}
           {activeTab === "audit" && <AdminAuditTab />}
+          {activeTab === "drones" && <AdminDronesTab />}
         </main>
       </div>
     </div>

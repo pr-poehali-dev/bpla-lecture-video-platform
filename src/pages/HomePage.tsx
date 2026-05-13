@@ -6,10 +6,10 @@ import { api } from "@/api";
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/7d43b631-9cb0-457c-a9f1-31fabf7fd8fc/files/8f80af7c-9a3d-4495-af57-c7231397ef98.jpg";
 
 const DEFAULT_STATS = [
-  { value: "120+", label: "Лекций", icon: "BookOpen" },
-  { value: "85+", label: "Видеоматериалов", icon: "Play" },
-  { value: "12", label: "Типов БпЛА", icon: "Plane" },
-  { value: "3.4K", label: "Участников", icon: "Users" },
+  { value: "—", label: "Лекций", icon: "BookOpen" },
+  { value: "—", label: "Видеоматериалов", icon: "Play" },
+  { value: "—", label: "Типов БпЛА", icon: "Plane" },
+  { value: "—", label: "Участников", icon: "Users" },
 ];
 
 const DEFAULT_FEATURES = [
@@ -31,26 +31,39 @@ interface Block { id: number; type: string; sort_order: number; data: unknown; }
 
 interface Props { onNavigate: (page: Page) => void; }
 
+interface PublicStats { docs: number; videos: number; drones: number; users: number; }
+
 export default function HomePage({ onNavigate }: Props) {
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
 
   useEffect(() => {
     api.admin.getPage("home").then(res => {
       if (res.blocks) setBlocks(res.blocks);
+    }).catch(() => {});
+    api.admin.publicStats().then(res => {
+      if (res.docs !== undefined) setPublicStats(res as PublicStats);
     }).catch(() => {});
   }, []);
 
   const getBlock = (type: string) => blocks.find(b => b.type === type);
 
   const hero = (getBlock("hero")?.data ?? null) as HeroData | null;
-  const stats = (getBlock("stats")?.data ?? null) as StatItem[] | null;
+  const statsBlock = (getBlock("stats")?.data ?? null) as StatItem[] | null;
   const features = (getBlock("features")?.data ?? null) as FeatureItem[] | null;
   const cta = (getBlock("cta")?.data ?? null) as CtaData | null;
   const introVideo = (getBlock("intro-video")?.data ?? null) as { url?: string; caption?: string } | null;
   const textBlocks = blocks.filter(b => b.type === "text");
 
   const h = hero ?? { sysLabel: "SYS.INIT — БпС v2.6", title1: "БЕСПИЛОТНЫЕ", title2: "СИСТЕМЫ", title3: "", subtitle: "Профессиональная образовательная платформа для изучения тактики, управления и боевого применения беспилотных систем.", btn1Label: "Начать обучение", btn1Page: "lectures", btn2Label: "Смотреть видео", btn2Page: "videos" };
-  const s = stats ?? DEFAULT_STATS;
+
+  const s: StatItem[] = statsBlock ?? (publicStats ? [
+    { value: publicStats.docs > 0 ? String(publicStats.docs) : "—", label: "Лекций", icon: "BookOpen" },
+    { value: publicStats.videos > 0 ? String(publicStats.videos) : "—", label: "Видеоматериалов", icon: "Play" },
+    { value: publicStats.drones > 0 ? String(publicStats.drones) : "—", label: "Типов БпЛА", icon: "Plane" },
+    { value: publicStats.users > 0 ? (publicStats.users >= 1000 ? `${(publicStats.users / 1000).toFixed(1)}K` : String(publicStats.users)) : "—", label: "Участников", icon: "Users" },
+  ] : DEFAULT_STATS);
+
   const f = features ?? DEFAULT_FEATURES;
   const c = cta ?? { label: "// ПРИСОЕДИНЯЙСЯ К ПЛАТФОРМЕ", title: "ГОТОВ К ОБУЧЕНИЮ?", subtitle: "Изучай материалы, смотри видео, задавай вопросы в обсуждениях", btnLabel: "Войти в сообщество", btnPage: "discussions" };
 
@@ -91,7 +104,7 @@ export default function HomePage({ onNavigate }: Props) {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-12 sm:mt-20 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            {s.map((stat) => (
+            {(s as StatItem[]).map((stat) => (
               <div key={stat.label} className="corner-brackets p-3 sm:p-4" style={{ background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.1)" }}>
                 <div className="font-orbitron text-2xl sm:text-3xl font-black" style={{ color: "#00f5ff" }}>{stat.value}</div>
                 <div className="font-plex text-[10px] sm:text-xs text-[#5a7a95] mt-1 uppercase tracking-wider">{stat.label}</div>

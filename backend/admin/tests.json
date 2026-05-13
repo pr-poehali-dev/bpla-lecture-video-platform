@@ -44,6 +44,21 @@
       "path": "/?action=audit-log",
       "expectedStatus": 403,
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Public stats",
+      "method": "GET",
+      "path": "/?action=public-stats",
+      "expectedStatus": 200,
+      "expectedBody": {"drones": 6},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Drone create without auth",
+      "method": "POST",
+      "path": "/?action=drone-create",
+      "expectedStatus": 403,
+      "bodyMatcher": "partial"
     }
   ]
 }

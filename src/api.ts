@@ -121,6 +121,9 @@ export const api = {
     stats: () =>
       fetch(`${ADMIN_URL}/?action=stats`, { headers: authHeaders() }).then((r) => r.json()),
 
+    publicStats: () =>
+      fetch(`${ADMIN_URL}/?action=public-stats`).then((r) => r.json()),
+
     getSettings: () =>
       fetch(`${ADMIN_URL}/?action=get-settings`).then((r) => r.json()),
 
@@ -340,5 +343,16 @@ export const api = {
       fetch(`${NOTIF_URL}/?action=read-one`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
     adminSend: (data: { title: string; body?: string; link_page?: string; type?: string; user_id?: number }) =>
       fetch(`${NOTIF_URL}/?action=admin-send`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+  },
+
+  drones: {
+    list: (all = false) =>
+      fetch(`${ADMIN_URL}/?action=drones-list${all ? "&all=1" : ""}`).then(r => r.json()),
+    create: (data: Record<string, unknown>) =>
+      fetch(`${ADMIN_URL}/?action=drone-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    update: (data: Record<string, unknown>) =>
+      fetch(`${ADMIN_URL}/?action=drone-update`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    delete: (id: number) =>
+      fetch(`${ADMIN_URL}/?action=drone-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
   },
 };

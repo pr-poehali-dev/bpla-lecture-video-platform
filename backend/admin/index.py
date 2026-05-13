@@ -97,6 +97,28 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return ok({"settings": settings})
 
+    # GET ?action=drones-list — публичный список дронов
+    if action == "drones-list" and method == "GET":
+        only_visible = params.get("all") != "1"
+        where = "WHERE is_visible = TRUE" if only_visible else ""
+        cur.execute(f"SELECT id, code, name, category, range_val, payload, speed, endurance, emoji, color, description, tags, sort_order, is_visible FROM {q('drone_types')} {where} ORDER BY sort_order, id")
+        drones = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"drones": drones})
+
+    # GET ?action=public-stats — публичная статистика для главной
+    if action == "public-stats" and method == "GET":
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('files')} WHERE file_type = 'document'")
+        docs_cnt = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('files')} WHERE file_type = 'video' OR mime_type = 'youtube'")
+        vids_cnt = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('drone_types')} WHERE is_visible = TRUE")
+        drones_cnt = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('users')} WHERE status = 'approved'")
+        users_cnt = cur.fetchone()["cnt"]
+        conn.close()
+        return ok({"docs": docs_cnt, "videos": vids_cnt, "drones": drones_cnt, "users": users_cnt})
+
     admin = get_admin(event, cur)
     if not admin:
         return err("Доступ запрещён", 403)
@@ -539,6 +561,71 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"UPDATE {q('page_blocks')} SET data = '{{}}'::jsonb WHERE id = %s AND sort_order = -1", (block_id,))
         conn.commit()
         return ok({"message": "Блок удалён"})
+
+    # ── DRONE TYPES (CRUD, только для админов) ───────────────────────────────
+
+    # POST ?action=drone-create
+    if action == "drone-create" and method == "POST":
+        d = body
+        code = (d.get("code") or "").strip().upper()
+        name = (d.get("name") or "").strip()
+        if not code or not name:
+            return err("code и name обязательны")
+        cur.execute(f"SELECT id FROM {q('drone_types')} WHERE code = %s", (code,))
+        if cur.fetchone():
+            return err(f"Код {code} уже существует")
+        cur.execute(f"SELECT COALESCE(MAX(sort_order),0)+1 FROM {q('drone_types')}")
+        order = cur.fetchone()[0]
+        cur.execute(f"""
+            INSERT INTO {q('drone_types')} (code, name, category, range_val, payload, speed, endurance, emoji, color, description, tags, sort_order)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
+        """, (code, name, d.get("category",""), d.get("range_val","—"), d.get("payload","—"),
+              d.get("speed","—"), d.get("endurance","—"), d.get("emoji","🚁"),
+              d.get("color","#00f5ff"), d.get("description",""),
+              d.get("tags",[]), order))
+        new_id = cur.fetchone()["id"]
+        conn.commit()
+        audit(cur, admin, "drone_create", "drone", new_id, name)
+        conn.commit()
+        return ok({"id": new_id, "message": f"Тип БпЛА «{name}» создан"})
+
+    # POST ?action=drone-update
+    if action == "drone-update" and method == "POST":
+        drone_id = body.get("id")
+        if not drone_id:
+            return err("id обязателен")
+        d = body
+        fields, vals = [], []
+        for col in ["name","category","range_val","payload","speed","endurance","emoji","color","description","sort_order"]:
+            if col in d:
+                fields.append(f"{col} = %s"); vals.append(d[col])
+        if "tags" in d:
+            fields.append("tags = %s"); vals.append(d["tags"])
+        if "is_visible" in d:
+            fields.append("is_visible = %s"); vals.append(bool(d["is_visible"]))
+        if not fields:
+            return err("Нет полей для обновления")
+        fields.append("updated_at = NOW()")
+        vals.append(drone_id)
+        cur.execute(f"UPDATE {q('drone_types')} SET {', '.join(fields)} WHERE id = %s RETURNING name", vals)
+        row = cur.fetchone()
+        if not row:
+            conn.commit(); return err("Тип не найден", 404)
+        conn.commit()
+        return ok({"message": f"Тип «{row['name']}» обновлён"})
+
+    # POST ?action=drone-delete
+    if action == "drone-delete" and method == "POST":
+        drone_id = body.get("id")
+        if not drone_id:
+            return err("id обязателен")
+        cur.execute(f"DELETE FROM {q('drone_types')} WHERE id = %s RETURNING name", (drone_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.commit(); return err("Тип не найден", 404)
+        audit(cur, admin, "drone_delete", "drone", drone_id, row["name"])
+        conn.commit()
+        return ok({"message": f"Тип «{row['name']}» удалён"})
 
     return err("Не найдено", 404)
 
