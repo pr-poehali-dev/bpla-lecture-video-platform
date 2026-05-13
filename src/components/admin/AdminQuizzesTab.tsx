@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api, FileItem } from "@/api";
 import Icon from "@/components/ui/icon";
+import ConfirmModal from "./ConfirmModal";
 
 interface Quiz {
   id: number;
@@ -25,9 +26,10 @@ export default function AdminQuizzesTab() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "create">("list");
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Quiz | null>(null);
 
   // Form state
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formLectureId, setFormLectureId] = useState<number | "">("");
   const [formTitle, setFormTitle] = useState("");
   const [formQuestions, setFormQuestions] = useState<Question[]>([{ ...EMPTY_QUESTION, options: ["", "", "", ""] }]);
@@ -91,32 +93,39 @@ export default function AdminQuizzesTab() {
     }));
   };
 
+  const startEdit = (quiz: Quiz) => {
+    setEditingId(quiz.id);
+    setFormTitle(quiz.title);
+    setFormLectureId(quiz.lecture_id);
+    setView("create");
+  };
+
   const save = async () => {
     if (!formLectureId || !formTitle.trim()) return;
     for (const q of formQuestions) {
-      if (!q.question.trim() || q.options.some(o => !o.trim())) {
-        alert("Заполните все вопросы и варианты ответов");
-        return;
-      }
+      if (!q.question.trim() || q.options.some(o => !o.trim())) return;
     }
     setSaving(true);
+    if (editingId) {
+      await api.quizzes.adminDelete(editingId);
+    }
     const res = await api.quizzes.adminCreate({
       lecture_id: Number(formLectureId),
       title: formTitle.trim(),
       questions: formQuestions,
     });
     setSaving(false);
-    if (res.error) { alert(res.error); return; }
+    if (res.error) return;
+    setEditingId(null);
     resetForm();
     setView("list");
     await loadAll();
   };
 
-  const deleteQuiz = async (id: number) => {
-    if (!confirm("Удалить тест и все результаты?")) return;
-    setDeleting(id);
-    await api.quizzes.adminDelete(id);
-    setDeleting(null);
+  const deleteQuiz = async () => {
+    if (!deleteTarget) return;
+    await api.quizzes.adminDelete(deleteTarget.id);
+    setDeleteTarget(null);
     await loadAll();
   };
 
@@ -127,11 +136,11 @@ export default function AdminQuizzesTab() {
     return (
       <div className="p-6 max-w-3xl">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => { setView("list"); resetForm(); }}
+          <button onClick={() => { setView("list"); resetForm(); setEditingId(null); }}
             className="text-[#3a5570] hover:text-white transition-colors">
             <Icon name="ArrowLeft" size={16} />
           </button>
-          <span className="font-mono text-xs text-[#00f5ff] tracking-widest">НОВЫЙ ТЕСТ</span>
+          <span className="font-mono text-xs text-[#00f5ff] tracking-widest">{editingId ? "РЕДАКТИРОВАТЬ ТЕСТ" : "НОВЫЙ ТЕСТ"}</span>
         </div>
 
         {/* Lecture selector */}
@@ -291,18 +300,24 @@ export default function AdminQuizzesTab() {
                   <div className="font-mono text-[8px] text-[#2a4060]">прохождений</div>
                 </div>
               </div>
-              <button onClick={() => deleteQuiz(quiz.id)}
-                disabled={deleting === quiz.id}
-                className="flex items-center justify-center w-8 h-8 transition-colors disabled:opacity-40 flex-shrink-0"
-                style={{ border: "1px solid rgba(255,34,68,0.2)", color: "#3a5570" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#ff2244"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#3a5570"; }}>
+              <button onClick={() => startEdit(quiz)} title="Редактировать"
+                className="flex items-center justify-center w-8 h-8 transition-colors flex-shrink-0 text-[#3a5570] hover:text-[#00f5ff]"
+                style={{ border: "1px solid rgba(0,245,255,0.12)" }}>
+                <Icon name="Pencil" size={13} />
+              </button>
+              <button onClick={() => setDeleteTarget(quiz)}
+                className="flex items-center justify-center w-8 h-8 transition-colors flex-shrink-0 text-[#3a5570] hover:text-[#ff2244]"
+                style={{ border: "1px solid rgba(255,34,68,0.2)" }}>
                 <Icon name="Trash2" size={13} />
               </button>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal open={!!deleteTarget} title="Удалить тест"
+        message={`Тест «${deleteTarget?.title}» и все результаты прохождений будут удалены.`}
+        confirmLabel="Удалить" danger onConfirm={deleteQuiz} onCancel={() => setDeleteTarget(null)} />
     </div>
   );
 }

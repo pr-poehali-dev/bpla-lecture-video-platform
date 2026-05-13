@@ -3,6 +3,7 @@ import { api } from "@/api";
 import Icon from "@/components/ui/icon";
 import BlockEditor from "@/components/admin/BlockEditor";
 import PagesListPanel from "@/components/admin/PagesListPanel";
+import ConfirmModal from "./ConfirmModal";
 
 interface Page { id: number; slug: string; title: string; is_system: boolean; is_visible: boolean; sort_order: number; }
 interface Block { id: number; type: string; sort_order: number; data: unknown; }
@@ -24,6 +25,7 @@ export default function AdminPagesTab() {
   const [blocksLoading, setBlocksLoading] = useState(false);
   const [addingBlock, setAddingBlock] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [deleteBlockId, setDeleteBlockId] = useState<number | null>(null);
 
   const flash = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };
 
@@ -55,9 +57,14 @@ export default function AdminPagesTab() {
     await api.admin.updateBlock(block_id, data);
   };
 
-  const deleteBlock = async (block_id: number) => {
-    if (!confirm("Удалить блок?")) return;
-    const res = await api.admin.deleteBlock(block_id);
+  const deleteBlock = (block_id: number) => {
+    setDeleteBlockId(block_id);
+  };
+
+  const confirmDeleteBlock = async () => {
+    if (!deleteBlockId) return;
+    const res = await api.admin.deleteBlock(deleteBlockId);
+    setDeleteBlockId(null);
     if (res.message && selectedPage) loadBlocks(selectedPage);
     else flash(res.error || "Ошибка", false);
   };
@@ -100,7 +107,12 @@ export default function AdminPagesTab() {
                 <div className="font-mono text-xs text-[#00f5ff] tracking-widest">{selectedPage.title.toUpperCase()}</div>
                 <div className="font-mono text-[10px] text-[#3a5570]">/{selectedPage.slug} · {blocks.length} блоков</div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <a href={`/?page=${selectedPage.slug}`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 font-mono text-[10px] px-2 py-1 transition-colors text-[#5a7a95] hover:text-[#00f5ff]"
+                  style={{ border: "1px solid rgba(0,245,255,0.15)" }}>
+                  <Icon name="ExternalLink" size={10} /> Предпросмотр
+                </a>
                 {BLOCK_TYPES.map(bt => (
                   <button key={bt.type} onClick={() => addBlock(bt.type)} disabled={addingBlock}
                     title={bt.label}
@@ -129,6 +141,10 @@ export default function AdminPagesTab() {
           </div>
         )}
       </div>
+
+      <ConfirmModal open={!!deleteBlockId} title="Удалить блок"
+        message="Этот блок будет удалён со страницы."
+        confirmLabel="Удалить" danger onConfirm={confirmDeleteBlock} onCancel={() => setDeleteBlockId(null)} />
     </div>
   );
 }

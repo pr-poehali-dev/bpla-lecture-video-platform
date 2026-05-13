@@ -181,6 +181,21 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
     ? Object.entries(stats.by_role).map(([name, value], i) => ({ name, value, color: PIE_COLORS[i] || "#00f5ff" }))
     : [{ name: "Нет данных", value: 1, color: "#1a2a3a" }];
 
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifRole, setNotifRole] = useState("");
+  const [notifSending, setNotifSending] = useState(false);
+  const [notifSent, setNotifSent] = useState(false);
+
+  const sendNotif = async () => {
+    if (!notifTitle.trim()) return;
+    setNotifSending(true);
+    await api.notif.adminSend({ title: notifTitle.trim(), type: "admin_message", ...(notifRole ? {} : {}) });
+    setNotifSending(false);
+    setNotifSent(true);
+    setNotifTitle("");
+    setTimeout(() => setNotifSent(false), 3000);
+  };
+
   return (
     <div className="min-h-screen flex" style={{ background: "#07111f" }}>
 
@@ -409,6 +424,27 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                   </button>
                 </div>
               )}
+
+              {/* Quick notification */}
+              <div className="p-4 space-y-3" style={{ background: "rgba(13,27,46,0.8)", border: "1px solid rgba(168,85,247,0.15)" }}>
+                <div className="flex items-center gap-2">
+                  <Icon name="Bell" size={14} className="text-[#a855f7]" />
+                  <span className="font-mono text-xs text-[#a855f7] tracking-wider">БЫСТРОЕ УВЕДОМЛЕНИЕ</span>
+                </div>
+                <div className="flex gap-2">
+                  <input value={notifTitle} onChange={e => setNotifTitle(e.target.value)}
+                    placeholder="Текст уведомления всем пользователям..."
+                    className="flex-1 bg-transparent px-3 py-2 font-plex text-sm text-white outline-none"
+                    style={{ border: "1px solid rgba(168,85,247,0.2)" }}
+                    onKeyDown={e => e.key === "Enter" && sendNotif()} />
+                  <button onClick={sendNotif} disabled={notifSending || !notifTitle.trim()}
+                    className="flex items-center gap-2 px-4 py-2 font-mono text-xs transition-all disabled:opacity-40"
+                    style={{ border: "1px solid rgba(168,85,247,0.4)", color: notifSent ? "#00ff88" : "#a855f7", background: "rgba(168,85,247,0.06)" }}>
+                    <Icon name={notifSent ? "Check" : "Send"} size={13} />
+                    {notifSent ? "ОТПРАВЛЕНО" : notifSending ? "..." : "ОТПРАВИТЬ"}
+                  </button>
+                </div>
+              </div>
 
               {/* Quick actions */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
