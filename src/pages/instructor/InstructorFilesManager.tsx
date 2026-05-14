@@ -17,7 +17,6 @@ export default function InstructorFilesManager({ user }: Props) {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
 
@@ -39,12 +38,12 @@ export default function InstructorFilesManager({ user }: Props) {
 
   const load = () => {
     setLoading(true);
-    api.instructor.foldersList(showAll)
+    api.instructor.foldersList()
       .then(res => { setFolders(res.folders || []); setDocs(res.docs || []); setLoading(false); })
       .catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [showAll]);
+  useEffect(() => { load(); }, []);
 
   // Хлебные крошки
   const getBreadcrumbs = (): Folder[] => {
@@ -161,7 +160,7 @@ export default function InstructorFilesManager({ user }: Props) {
     await api.instructor.docUpdate({ id: editingDoc.id, content_html: html, ...meta });
     setSavingDoc(false);
     setEditingDoc(prev => prev ? { ...prev, ...meta, content_html: html } : prev);
-    api.instructor.foldersList(showAll).then(r => { setFolders(r.folders || []); setDocs(r.docs || []); });
+    api.instructor.foldersList().then(r => { setFolders(r.folders || []); setDocs(r.docs || []); });
   };
 
   // ── Экспорт в DOCX
@@ -199,14 +198,12 @@ export default function InstructorFilesManager({ user }: Props) {
       <FmToolbar
         search={search}
         viewMode={viewMode}
-        showAll={showAll}
         uploading={uploading}
         currentFolderId={currentFolderId}
         breadcrumbs={getBreadcrumbs()}
         dragOver={dragOver}
         onSearchChange={setSearch}
         onViewModeChange={setViewMode}
-        onShowAllToggle={() => setShowAll(v => !v)}
         onCreateFolder={() => setShowFolderModal(true)}
         onCreateDoc={() => setShowNewDoc(true)}
         onUploadFile={handleUploadFile}

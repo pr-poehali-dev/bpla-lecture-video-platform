@@ -432,8 +432,6 @@ export const api = {
       fetch(`${INSTRUCTOR_URL}/?action=doc-export-docx`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
 
     // Файловый менеджер с папками
-    foldersList: (all = false) =>
-      fetch(`${INSTRUCTOR_URL}/?action=folders-list${all ? "&all=1" : ""}`, { headers: authHeaders() }).then(r => r.json()),
     folderCreate: (data: { name: string; parent_id?: number | null; color?: string }) =>
       fetch(`${INSTRUCTOR_URL}/?action=folder-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
     folderUpdate: (data: { id: number; name?: string; color?: string; parent_id?: number | null; is_shared?: boolean }) =>
@@ -448,5 +446,17 @@ export const api = {
       fetch(`${INSTRUCTOR_URL}/?action=doc-move`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, folder_id }) }).then(r => r.json()),
     docCreateInFolder: (data: { title: string; folder_id?: number | null; category?: string; group_name?: string; subject?: string }) =>
       fetch(`${INSTRUCTOR_URL}/?action=doc-create-in-folder`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+
+    docShare: (doc_id: number, grantee_id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-share`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ doc_id, grantee_id }) }).then(r => r.json()),
+    docUnshare: (doc_id: number, grantee_id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-unshare`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ doc_id, grantee_id }) }).then(r => r.json()),
+    docAccessList: (doc_id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-access-list&doc_id=${doc_id}`, { headers: authHeaders() }).then(r => r.json()),
+    instructorsList: () =>
+      fetch(`${INSTRUCTOR_URL}/?action=instructors-list`, { headers: authHeaders() }).then(r => r.json()),
+
+    foldersList: (all = false) =>
+      fetch(`${INSTRUCTOR_URL}/?action=folders-list${all ? "&all=1" : ""}`, { headers: authHeaders() }).then(r => r.json()),
   },
 };

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { Doc, Folder, fmtDate, fmtSize, MIME_ICON } from "./DocTypes";
+import DocShareModal from "./DocShareModal";
 
 type ViewMode = "grid" | "list";
 
@@ -31,11 +33,14 @@ export default function FmFileGrid({
   onOpenDoc, onDeleteDoc,
   onDragOver, onDragLeave, onDrop, onDragStart,
 }: Props) {
+  const [sharingDoc, setSharingDoc] = useState<Doc | null>(null);
+
   if (loading) {
     return <div className="text-center py-16 font-mono text-xs text-[#3a5570] animate-pulse">ЗАГРУЗКА...</div>;
   }
 
   return (
+    <>
     <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3" : "space-y-1"}>
 
       {/* Папки */}
@@ -132,6 +137,10 @@ export default function FmFileGrid({
                     <Icon name="Download" size={12} />
                   </a>
                 )}
+                <button onClick={() => setSharingDoc(doc)} title="Выдать доступ"
+                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#a855f7] transition-colors">
+                  <Icon name="UserPlus" size={12} />
+                </button>
                 <button onClick={() => onDeleteDoc(doc)} title="Удалить"
                   className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
                   <Icon name="Trash2" size={12} />
@@ -156,5 +165,10 @@ export default function FmFileGrid({
         </div>
       )}
     </div>
+
+    {sharingDoc && (
+      <DocShareModal doc={sharingDoc} onClose={() => setSharingDoc(null)} />
+    )}
+    </>
   );
 }

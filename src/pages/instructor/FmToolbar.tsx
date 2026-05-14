@@ -7,14 +7,12 @@ type ViewMode = "grid" | "list";
 interface Props {
   search: string;
   viewMode: ViewMode;
-  showAll: boolean;
   uploading: boolean;
   currentFolderId: number | null;
   breadcrumbs: Folder[];
   dragOver: number | "root" | null;
   onSearchChange: (v: string) => void;
   onViewModeChange: (v: ViewMode) => void;
-  onShowAllToggle: () => void;
   onCreateFolder: () => void;
   onCreateDoc: () => void;
   onUploadFile: (file: File) => void;
@@ -25,9 +23,9 @@ interface Props {
 }
 
 export default function FmToolbar({
-  search, viewMode, showAll, uploading,
+  search, viewMode, uploading,
   currentFolderId, breadcrumbs, dragOver,
-  onSearchChange, onViewModeChange, onShowAllToggle,
+  onSearchChange, onViewModeChange,
   onCreateFolder, onCreateDoc, onUploadFile,
   onNavigate, onDragOver, onDragLeave, onDrop,
 }: Props) {
@@ -62,13 +60,6 @@ export default function FmToolbar({
             </button>
           ))}
         </div>
-
-        {/* Show all toggle */}
-        <button onClick={onShowAllToggle}
-          className="font-mono text-xs px-3 py-1.5 transition-all"
-          style={{ border: `1px solid ${showAll ? "rgba(0,255,136,0.4)" : "rgba(0,245,255,0.15)"}`, color: showAll ? "#00ff88" : "#5a7a95" }}>
-          {showAll ? "Все" : "Мои"}
-        </button>
 
         {/* Action buttons */}
         <button onClick={onCreateFolder}

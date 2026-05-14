@@ -401,30 +401,19 @@ def handler(event: dict, context) -> dict:
     # ── ДОКУМЕНТЫ (встроенный редактор) ──────────────────────────────────────
 
     if action == "docs-list" and method == "GET":
-        show_all = params.get("all") == "1"
-        if show_all:
-            # все свои + все расшаренные другими
-            cur.execute(f"""
-                SELECT d.id, d.title, d.category, d.group_name, d.subject,
-                       d.is_shared, d.created_at, d.updated_at,
-                       u.name AS instructor_name, u.callsign AS instructor_callsign,
-                       LENGTH(d.content_html) AS content_len
-                FROM {t('instructor_documents')} d
-                JOIN {t('users')} u ON u.id = d.instructor_id
-                WHERE d.instructor_id = %s OR d.is_shared = TRUE
-                ORDER BY d.updated_at DESC
-            """, (uid,))
-        else:
-            cur.execute(f"""
-                SELECT d.id, d.title, d.category, d.group_name, d.subject,
-                       d.is_shared, d.created_at, d.updated_at,
-                       u.name AS instructor_name, u.callsign AS instructor_callsign,
-                       LENGTH(d.content_html) AS content_len
-                FROM {t('instructor_documents')} d
-                JOIN {t('users')} u ON u.id = d.instructor_id
-                WHERE d.instructor_id = %s
-                ORDER BY d.updated_at DESC
-            """, (uid,))
+        # Только свои + те, к которым выдан персональный доступ
+        cur.execute(f"""
+            SELECT d.id, d.title, d.category, d.group_name, d.subject,
+                   d.is_shared, d.created_at, d.updated_at,
+                   u.name AS instructor_name, u.callsign AS instructor_callsign,
+                   LENGTH(d.content_html) AS content_len,
+                   (d.instructor_id = %s) AS is_own
+            FROM {t('instructor_documents')} d
+            JOIN {t('users')} u ON u.id = d.instructor_id
+            WHERE d.instructor_id = %s
+               OR EXISTS (SELECT 1 FROM {t('doc_access')} da WHERE da.doc_id = d.id AND da.grantee_id = %s)
+            ORDER BY d.updated_at DESC
+        """, (uid, uid, uid))
         docs = [dict(r) for r in cur.fetchall()]
         conn.close()
         return ok({"docs": docs})
@@ -443,8 +432,11 @@ def handler(event: dict, context) -> dict:
         if not row:
             conn.close(); return err("Документ не найден", 404)
         row = dict(row)
-        if not user["is_admin"] and row["instructor_id"] != uid and not row["is_shared"]:
-            conn.close(); return err("Нет доступа", 403)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            # Проверяем персональный доступ
+            cur.execute(f"SELECT 1 FROM {t('doc_access')} WHERE doc_id = %s AND grantee_id = %s", (did, uid))
+            if not cur.fetchone():
+                conn.close(); return err("Нет доступа", 403)
         conn.close()
         return ok({"doc": row})
 
@@ -501,6 +493,81 @@ def handler(event: dict, context) -> dict:
         conn.commit(); conn.close()
         return ok({"message": "Удалён"})
 
+    # ── ДОСТУП К ДОКУМЕНТУ ───────────────────────────────────────────────────
+
+    if action == "doc-share" and method == "POST":
+        did = body.get("doc_id")
+        grantee_id = body.get("grantee_id")
+        if not did or not grantee_id:
+            conn.close(); return err("doc_id и grantee_id обязательны")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        if row["instructor_id"] == grantee_id:
+            conn.close(); return err("Нельзя выдать доступ самому себе")
+        cur.execute(f"""
+            INSERT INTO {t('doc_access')} (doc_id, grantee_id, granted_by)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (doc_id, grantee_id) DO NOTHING
+        """, (did, grantee_id, uid))
+        conn.commit(); conn.close()
+        return ok({"message": "Доступ выдан"})
+
+    if action == "doc-unshare" and method == "POST":
+        did = body.get("doc_id")
+        grantee_id = body.get("grantee_id")
+        if not did or not grantee_id:
+            conn.close(); return err("doc_id и grantee_id обязательны")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        cur.execute(f"UPDATE {t('doc_access')} SET doc_id = doc_id WHERE doc_id = %s AND grantee_id = %s", (did, grantee_id))
+        # soft-remove: просто помечаем удалённым через updated_at trick - нет soft delete, делаем через INSERT с флагом
+        # Используем workaround: обновляем granted_by на -1 как маркер отозванного доступа
+        cur.execute(f"UPDATE {t('doc_access')} SET granted_by = -1 WHERE doc_id = %s AND grantee_id = %s", (did, grantee_id))
+        conn.commit(); conn.close()
+        return ok({"message": "Доступ отозван"})
+
+    if action == "doc-access-list" and method == "GET":
+        did = params.get("doc_id")
+        if not did:
+            conn.close(); return err("doc_id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        cur.execute(f"""
+            SELECT da.grantee_id, u.name, u.callsign, u.role, da.created_at
+            FROM {t('doc_access')} da
+            JOIN {t('users')} u ON u.id = da.grantee_id
+            WHERE da.doc_id = %s AND da.granted_by != -1
+            ORDER BY da.created_at DESC
+        """, (did,))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"access": rows})
+
+    if action == "instructors-list" and method == "GET":
+        cur.execute(f"""
+            SELECT id, name, callsign, role
+            FROM {t('users')}
+            WHERE status = 'approved'
+              AND (is_admin = TRUE OR role = ANY(%s))
+              AND id != %s
+            ORDER BY name
+        """, (list(INSTRUCTOR_ROLES), uid))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"instructors": rows})
+
     if action == "doc-export-docx" and method == "POST":
         """Конвертирует HTML-контент документа в DOCX и отдаёт base64."""
         did = body.get("id")
@@ -511,8 +578,11 @@ def handler(event: dict, context) -> dict:
         if not row:
             conn.close(); return err("Документ не найден", 404)
         row = dict(row)
-        if not user["is_admin"] and row["instructor_id"] != uid and not row["is_shared"]:
-            conn.close(); return err("Нет доступа", 403)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            cur2 = conn.cursor()
+            cur2.execute(f"SELECT 1 FROM {t('doc_access')} WHERE doc_id = %s AND grantee_id = %s AND granted_by != -1", (did, uid))
+            if not cur2.fetchone():
+                conn.close(); return err("Нет доступа", 403)
         conn.close()
 
         try:
@@ -602,55 +672,31 @@ def handler(event: dict, context) -> dict:
     # ── ПАПКИ ────────────────────────────────────────────────────────────────
 
     if action == "folders-list" and method == "GET":
-        # Возвращает все папки + документы в них для текущего инструктора
-        # (и расшаренные другими если ?all=1)
-        show_all = params.get("all") == "1"
-        if show_all:
-            cur.execute(f"""
-                SELECT f.id, f.name, f.parent_id, f.color, f.sort_order, f.is_shared,
-                       u.name AS owner_name, u.callsign AS owner_callsign
-                FROM {t('instructor_folders')} f
-                JOIN {t('users')} u ON u.id = f.instructor_id
-                WHERE f.instructor_id = %s OR f.is_shared = TRUE
-                ORDER BY f.parent_id NULLS FIRST, f.sort_order, f.name
-            """, (uid,))
-        else:
-            cur.execute(f"""
-                SELECT f.id, f.name, f.parent_id, f.color, f.sort_order, f.is_shared,
-                       u.name AS owner_name, u.callsign AS owner_callsign
-                FROM {t('instructor_folders')} f
-                JOIN {t('users')} u ON u.id = f.instructor_id
-                WHERE f.instructor_id = %s
-                ORDER BY f.parent_id NULLS FIRST, f.sort_order, f.name
-            """, (uid,))
+        # Только свои папки
+        cur.execute(f"""
+            SELECT f.id, f.name, f.parent_id, f.color, f.sort_order, f.is_shared,
+                   u.name AS owner_name, u.callsign AS owner_callsign
+            FROM {t('instructor_folders')} f
+            JOIN {t('users')} u ON u.id = f.instructor_id
+            WHERE f.instructor_id = %s
+            ORDER BY f.parent_id NULLS FIRST, f.sort_order, f.name
+        """, (uid,))
         folders = [dict(r) for r in cur.fetchall()]
-        # Документы в папках
-        folder_ids = [f["id"] for f in folders]
-        docs = []
-        if folder_ids or True:
-            if show_all:
-                cur.execute(f"""
-                    SELECT d.id, d.title, d.category, d.doc_type, d.folder_id,
-                           d.group_name, d.subject, d.is_shared, d.updated_at,
-                           d.file_url, d.file_original_name, d.file_size, d.file_mime,
-                           d.sort_order, u.name AS instructor_name, u.callsign AS instructor_callsign
-                    FROM {t('instructor_documents')} d
-                    JOIN {t('users')} u ON u.id = d.instructor_id
-                    WHERE d.instructor_id = %s OR d.is_shared = TRUE
-                    ORDER BY d.folder_id NULLS LAST, d.sort_order, d.updated_at DESC
-                """, (uid,))
-            else:
-                cur.execute(f"""
-                    SELECT d.id, d.title, d.category, d.doc_type, d.folder_id,
-                           d.group_name, d.subject, d.is_shared, d.updated_at,
-                           d.file_url, d.file_original_name, d.file_size, d.file_mime,
-                           d.sort_order, u.name AS instructor_name, u.callsign AS instructor_callsign
-                    FROM {t('instructor_documents')} d
-                    JOIN {t('users')} u ON u.id = d.instructor_id
-                    WHERE d.instructor_id = %s
-                    ORDER BY d.folder_id NULLS LAST, d.sort_order, d.updated_at DESC
-                """, (uid,))
-            docs = [dict(r) for r in cur.fetchall()]
+
+        # Свои документы + к которым выдан персональный доступ
+        cur.execute(f"""
+            SELECT d.id, d.title, d.category, d.doc_type, d.folder_id,
+                   d.group_name, d.subject, d.is_shared, d.updated_at,
+                   d.file_url, d.file_original_name, d.file_size, d.file_mime,
+                   d.sort_order, u.name AS instructor_name, u.callsign AS instructor_callsign,
+                   (d.instructor_id = %s) AS is_own
+            FROM {t('instructor_documents')} d
+            JOIN {t('users')} u ON u.id = d.instructor_id
+            WHERE d.instructor_id = %s
+               OR EXISTS (SELECT 1 FROM {t('doc_access')} da WHERE da.doc_id = d.id AND da.grantee_id = %s AND da.granted_by != -1)
+            ORDER BY d.folder_id NULLS LAST, d.sort_order, d.updated_at DESC
+        """, (uid, uid, uid))
+        docs = [dict(r) for r in cur.fetchall()]
         conn.close()
         return ok({"folders": folders, "docs": docs})
 
