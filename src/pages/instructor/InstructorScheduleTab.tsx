@@ -39,14 +39,15 @@ function weekday(iso: string) {
   return days[new Date(iso).getDay()];
 }
 
-interface Props { user: User; }
+interface Props { user: User; onOpenSheets?: (group?: string, subject?: string) => void; }
 
-export default function InstructorScheduleTab({ user }: Props) {
+export default function InstructorScheduleTab({ user, onOpenSheets }: Props) {
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ScheduleItem | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [repeat, setRepeat] = useState(0);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [filterFrom, setFilterFrom] = useState(() => {
@@ -75,11 +76,13 @@ export default function InstructorScheduleTab({ user }: Props) {
 
   const openCreate = () => {
     setEditing(null);
+    setRepeat(0);
     setForm({ ...EMPTY_FORM, scheduled_date: new Date().toISOString().slice(0, 10) });
     setShowForm(true);
   };
 
   const openEdit = (item: ScheduleItem) => {
+    setRepeat(0);
     setEditing(item);
     setForm({
       title: item.title, subject: item.subject, group_name: item.group_name,
@@ -93,14 +96,27 @@ export default function InstructorScheduleTab({ user }: Props) {
   const save = async () => {
     if (!form.title.trim() || !form.scheduled_date) { showMsg("Заполните название и дату", false); return; }
     setSaving(true);
-    const data = { ...form, time_start: form.time_start || null, time_end: form.time_end || null };
-    const res = editing
-      ? await api.instructor.scheduleUpdate({ id: editing.id, ...data })
-      : await api.instructor.scheduleCreate(data);
-    setSaving(false);
-    if (res.error) { showMsg(res.error, false); return; }
-    showMsg(res.message || "Сохранено");
-    setShowForm(false); setEditing(null);
+    const base = { ...form, time_start: form.time_start || null, time_end: form.time_end || null };
+    if (editing) {
+      const res = await api.instructor.scheduleUpdate({ id: editing.id, ...base });
+      setSaving(false);
+      if (res.error) { showMsg(res.error, false); return; }
+      showMsg("Сохранено");
+    } else {
+      // Создаём занятие + повторения
+      const dates: string[] = [base.scheduled_date];
+      for (let i = 1; i <= repeat; i++) {
+        const d = new Date(base.scheduled_date);
+        d.setDate(d.getDate() + i * 7);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      for (const date of dates) {
+        await api.instructor.scheduleCreate({ ...base, scheduled_date: date });
+      }
+      setSaving(false);
+      showMsg(dates.length > 1 ? `Создано ${dates.length} занятий` : "Занятие создано");
+    }
+    setShowForm(false); setEditing(null); setRepeat(0);
     load();
   };
 
@@ -215,6 +231,23 @@ export default function InstructorScheduleTab({ user }: Props) {
                 className="w-full bg-transparent px-3 py-2 font-plex text-sm text-white outline-none resize-none"
                 style={{ border: "1px solid rgba(0,255,136,0.2)" }} />
             </div>
+            {!editing && (
+              <div>
+                <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">ПОВТОРЯТЬ ЕЩЁ (НЕДЕЛЬ)</label>
+                <div className="flex items-center gap-2">
+                  {[0,1,2,3,4,7,11].map(n => (
+                    <button key={n} type="button" onClick={() => setRepeat(n)}
+                      className="font-mono text-xs px-3 py-1.5 transition-all"
+                      style={{ border: `1px solid ${repeat === n ? "rgba(0,245,255,0.4)" : "rgba(0,245,255,0.1)"}`, color: repeat === n ? "#00f5ff" : "#3a5570", background: repeat === n ? "rgba(0,245,255,0.06)" : "transparent" }}>
+                      {n === 0 ? "Нет" : `×${n+1}`}
+                    </button>
+                  ))}
+                  {repeat > 0 && (
+                    <span className="font-mono text-[10px] text-[#5a7a95]">→ {repeat + 1} занятий каждую неделю</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <button onClick={save} disabled={saving}
@@ -288,6 +321,14 @@ export default function InstructorScheduleTab({ user }: Props) {
                     </div>
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {onOpenSheets && !item.is_cancelled && (
+                        <button onClick={() => onOpenSheets(item.group_name, item.subject)}
+                          title="Открыть / создать ведомость"
+                          className="flex items-center gap-1 font-mono text-[10px] px-2 py-1.5 transition-all"
+                          style={{ border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7", background: "rgba(168,85,247,0.04)" }}>
+                          <Icon name="ClipboardList" size={11} /> Ведомость
+                        </button>
+                      )}
                       <button onClick={() => toggleCancel(item)} title={item.is_cancelled ? "Восстановить" : "Отменить"}
                         className="w-8 h-8 flex items-center justify-center transition-colors"
                         style={{ color: item.is_cancelled ? "#00ff88" : "#ff6b00" }}>

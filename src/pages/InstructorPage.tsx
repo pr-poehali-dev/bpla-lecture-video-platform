@@ -6,17 +6,18 @@ import ProfileCard from "./profile/ProfileCard";
 import InstructorFilesManager from "./instructor/InstructorFilesManager";
 import InstructorScheduleTab from "./instructor/InstructorScheduleTab";
 import InstructorSheetsTab from "./instructor/InstructorSheetsTab";
+import InstructorNotesTab from "./instructor/InstructorNotesTab";
+import InstructorDashboard from "./instructor/InstructorDashboard";
 
-type Tab = "files" | "schedule" | "sheets";
+type Tab = "dashboard" | "files" | "notes" | "schedule" | "sheets";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "files",    label: "Материалы",  icon: "FolderOpen" },
-  { id: "schedule", label: "Расписание", icon: "CalendarDays" },
-  { id: "sheets",   label: "Ведомости",  icon: "ClipboardList" },
+  { id: "dashboard", label: "Обзор",      icon: "LayoutDashboard" },
+  { id: "files",     label: "Материалы",  icon: "FolderOpen" },
+  { id: "notes",     label: "Конспекты",  icon: "BookOpen" },
+  { id: "schedule",  label: "Расписание", icon: "CalendarDays" },
+  { id: "sheets",    label: "Ведомости",  icon: "ClipboardList" },
 ];
-
-// Подсказка по возможностям режима лекции
-const LECTURE_HINT = "Откройте любой файл или документ и нажмите «Показать» — запустится полноэкранный режим лекции.";
 
 interface Props {
   user: User;
@@ -27,7 +28,7 @@ interface Props {
 }
 
 export default function InstructorPage({ user, onUpdate, onNavigate, onGoToAdmin, onLogout }: Props) {
-  const [tab, setTab] = useState<Tab>("files");
+  const [tab, setTab] = useState<Tab>("dashboard");
 
   // Profile edit state — зеркало ProfilePage
   const [editing, setEditing] = useState(false);
@@ -157,13 +158,6 @@ export default function InstructorPage({ user, onUpdate, onNavigate, onGoToAdmin
         {/* Правая колонка — инструкторский контент */}
         <div className="lg:col-span-3 flex flex-col gap-4">
 
-          {/* Баннер режима лекции */}
-          <div className="flex items-center gap-3 px-4 py-3"
-            style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)" }}>
-            <Icon name="Monitor" size={16} className="text-[#00ff88] flex-shrink-0" />
-            <p className="font-mono text-[11px] text-[#5a7a95] leading-relaxed">{LECTURE_HINT}</p>
-          </div>
-
           {/* Вкладки */}
           <div className="flex gap-0" style={{ borderBottom: "1px solid rgba(0,255,136,0.12)" }}>
             {TABS.map(t => (
@@ -186,9 +180,11 @@ export default function InstructorPage({ user, onUpdate, onNavigate, onGoToAdmin
           </div>
 
           {/* Контент вкладки */}
-          {tab === "files"    && <InstructorFilesManager user={user} />}
-          {tab === "schedule" && <InstructorScheduleTab  user={user} />}
-          {tab === "sheets"   && <InstructorSheetsTab    user={user} />}
+          {tab === "dashboard" && <InstructorDashboard user={user} onTabChange={t => setTab(t as Tab)} />}
+          {tab === "files"     && <InstructorFilesManager user={user} />}
+          {tab === "notes"     && <InstructorNotesTab user={user} />}
+          {tab === "schedule"  && <InstructorScheduleTab user={user} onOpenSheets={() => setTab("sheets")} />}
+          {tab === "sheets"    && <InstructorSheetsTab user={user} />}
         </div>
       </div>
     </div>

@@ -44,6 +44,7 @@ export default function InstructorSheetsTab({ user }: Props) {
   const [showAll, setShowAll] = useState(false);
   const [editing, setEditing] = useState<Sheet | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [statsSheet, setStatsSheet] = useState<Sheet | null>(null);
   const [form, setForm] = useState({ title: "", group_name: "", subject: "", notes: "" });
   const [sheetRows, setSheetRows] = useState<SheetRow[]>([]);
   const [columns, setColumns] = useState<string[]>(["Тема 1"]);
@@ -144,6 +145,11 @@ export default function InstructorSheetsTab({ user }: Props) {
     showMsg(res.message || "Сохранено");
     setShowCreate(false); setEditing(null);
     load();
+  };
+
+  const openStats = async (sheet: Sheet) => {
+    const res = await api.instructor.sheetGet(sheet.id);
+    if (!res.error) setStatsSheet(res.sheet);
   };
 
   const doDelete = async (id: number) => {
@@ -391,6 +397,32 @@ export default function InstructorSheetsTab({ user }: Props) {
                         </td>
                       </tr>
                     ))}
+                    {/* Строка итогов */}
+                    {sheetRows.length > 1 && (
+                      <tr style={{ borderTop: "2px solid rgba(0,255,136,0.15)", background: "rgba(0,255,136,0.03)" }}>
+                        <td colSpan={2} className="px-2 py-2 font-mono text-[10px] text-[#00ff88] tracking-wider">ИТОГО</td>
+                        {columns.map(col => {
+                          const numGrades = sheetRows.map(r => r.grades[col]).filter(g => ["5","4","3","2"].includes(g)).map(Number);
+                          const avg = numGrades.length ? (numGrades.reduce((a,b) => a+b, 0) / numGrades.length).toFixed(1) : "—";
+                          const present = sheetRows.filter(r => r.attendance[col] === "П").length;
+                          const total = sheetRows.filter(r => r.attendance[col]).length;
+                          const pct = total ? Math.round(present / total * 100) : null;
+                          return (
+                            <td key={col} className="px-2 py-2 text-center">
+                              <div className="font-mono text-xs font-bold" style={{ color: avg !== "—" ? "#00f5ff" : "#3a5570" }}>{avg}</div>
+                              {pct !== null && (
+                                <div className="font-mono text-[9px]" style={{ color: pct >= 80 ? "#00ff88" : pct >= 60 ? "#ff6b00" : "#ff2244" }}>{pct}% пос.</div>
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td colSpan={2} className="px-2 py-2">
+                          <div className="font-mono text-[10px] text-[#3a5570]">
+                            {sheetRows.length} чел.
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -439,6 +471,11 @@ export default function InstructorSheetsTab({ user }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={() => openStats(sheet)} title="Статистика группы"
+                  className="flex items-center gap-1 px-2.5 py-1.5 font-mono text-[10px] transition-all"
+                  style={{ border: "1px solid rgba(0,245,255,0.2)", color: "#00f5ff", background: "rgba(0,245,255,0.04)" }}>
+                  <Icon name="BarChart2" size={11} /> Статистика
+                </button>
                 <button onClick={() => toggleShare(sheet)} title={sheet.is_shared ? "Закрыть доступ" : "Поделиться"}
                   className="w-8 h-8 flex items-center justify-center transition-colors"
                   style={{ color: sheet.is_shared ? "#a855f7" : "#3a5570" }}>
@@ -466,6 +503,90 @@ export default function InstructorSheetsTab({ user }: Props) {
           ))}
         </div>
       )}
+
+      {/* Модалка статистики */}
+      {statsSheet && (() => {
+        const rows: SheetRow[] = statsSheet.sheet_data || [];
+        const cols = rows[0] ? Object.keys(rows[0].grades || {}) : [];
+        // Подсчёт по каждому курсанту
+        const perStudent = rows.map(r => {
+          const numGrades = cols.map(c => r.grades[c]).filter(g => ["5","4","3","2"].includes(g)).map(Number);
+          const avg = numGrades.length ? numGrades.reduce((a,b)=>a+b,0)/numGrades.length : null;
+          const attended = cols.filter(c => r.attendance[c] === "П").length;
+          const totalAtt = cols.filter(c => r.attendance[c]).length;
+          return { ...r, avg, pct: totalAtt ? Math.round(attended/totalAtt*100) : null };
+        });
+        const overallAvg = perStudent.filter(s=>s.avg!==null).reduce((a,b)=>a+(b.avg||0),0) / (perStudent.filter(s=>s.avg!==null).length||1);
+        const overallPct = perStudent.filter(s=>s.pct!==null).reduce((a,b)=>a+(b.pct||0),0) / (perStudent.filter(s=>s.pct!==null).length||1);
+        const lagging = perStudent.filter(s => (s.avg !== null && s.avg < 3.5) || (s.pct !== null && s.pct < 60));
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(5,8,16,0.96)" }} onClick={() => setStatsSheet(null)}>
+            <div className="w-full max-w-lg flex flex-col animate-fade-in"
+              style={{ border: "1px solid rgba(0,245,255,0.3)", background: "#070d18", maxHeight: "80vh" }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
+                style={{ borderBottom: "1px solid rgba(0,245,255,0.1)" }}>
+                <div>
+                  <div className="font-mono text-[10px] text-[#00f5ff] tracking-[0.3em]">// СТАТИСТИКА</div>
+                  <div className="font-orbitron text-sm font-bold text-white mt-0.5">{statsSheet.title}</div>
+                  {statsSheet.group_name && <div className="font-mono text-[10px] text-[#3a5570]">{statsSheet.group_name}</div>}
+                </div>
+                <button onClick={() => setStatsSheet(null)} className="text-[#3a5570] hover:text-white transition-colors"><Icon name="X" size={18} /></button>
+              </div>
+              {/* Общие показатели */}
+              <div className="grid grid-cols-3 gap-3 px-5 py-4 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)" }}>
+                {[
+                  { label: "Курсантов", val: rows.length, color: "#00f5ff" },
+                  { label: "Средний балл", val: perStudent.some(s=>s.avg!==null) ? overallAvg.toFixed(1) : "—", color: overallAvg >= 4 ? "#00ff88" : overallAvg >= 3 ? "#ff6b00" : "#ff2244" },
+                  { label: "Посещаемость", val: perStudent.some(s=>s.pct!==null) ? `${Math.round(overallPct)}%` : "—", color: overallPct >= 80 ? "#00ff88" : overallPct >= 60 ? "#ff6b00" : "#ff2244" },
+                ].map(w => (
+                  <div key={w.label} className="text-center p-3" style={{ border: `1px solid ${w.color}15`, background: `${w.color}06` }}>
+                    <div className="font-orbitron text-xl font-black" style={{ color: w.color }}>{w.val}</div>
+                    <div className="font-mono text-[9px] text-[#3a5570] mt-0.5">{w.label}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Отстающие */}
+              {lagging.length > 0 && (
+                <div className="px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,34,68,0.1)", background: "rgba(255,34,68,0.03)" }}>
+                  <div className="font-mono text-[10px] text-[#ff2244] tracking-wider mb-2">⚠ ТРЕБУЮТ ВНИМАНИЯ ({lagging.length})</div>
+                  <div className="space-y-1">
+                    {lagging.map((s,i) => (
+                      <div key={i} className="flex items-center gap-3 font-mono text-xs">
+                        <span className="text-[#00f5ff] w-24 truncate">{s.callsign || s.name}</span>
+                        {s.avg !== null && <span style={{ color: s.avg < 3 ? "#ff2244" : "#ff6b00" }}>ср.балл {s.avg.toFixed(1)}</span>}
+                        {s.pct !== null && <span style={{ color: s.pct < 60 ? "#ff2244" : "#ff6b00" }}>пос. {s.pct}%</span>}
+                        {s.comment && <span className="text-[#3a5570] truncate flex-1">{s.comment}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Все курсанты */}
+              <div className="overflow-y-auto flex-1 px-5 py-3">
+                <div className="font-mono text-[10px] text-[#3a5570] tracking-wider mb-2">ВСЕ КУРСАНТЫ</div>
+                <div className="space-y-1">
+                  {perStudent.map((s,i) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-2"
+                      style={{ background: "rgba(13,27,46,0.5)", border: "1px solid rgba(0,245,255,0.05)" }}>
+                      <span className="font-mono text-xs text-[#00f5ff] w-20 truncate">{s.callsign || s.name}</span>
+                      <span className="font-plex text-xs text-[#5a7a95] flex-1 truncate">{s.callsign ? s.name : ""}</span>
+                      {s.avg !== null
+                        ? <span className="font-orbitron text-xs font-bold" style={{ color: s.avg>=4?"#00ff88":s.avg>=3?"#ff6b00":"#ff2244" }}>{s.avg.toFixed(1)}</span>
+                        : <span className="font-mono text-[10px] text-[#2a4060]">—</span>}
+                      {s.pct !== null
+                        ? <span className="font-mono text-[10px]" style={{ color: s.pct>=80?"#00ff88":s.pct>=60?"#ff6b00":"#ff2244" }}>{s.pct}%</span>
+                        : <span className="font-mono text-[10px] text-[#2a4060]">—</span>}
+                      {s.comment && <Icon name="MessageSquare" size={11} className="text-[#ff6b00]" title={s.comment} />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <ConfirmModal
         open={confirmDeleteId !== null}
