@@ -31,8 +31,8 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   // Data
   const [notes, setNotes] = useState<Note[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [totalLectures, setTotalLectures] = useState(0);
-  const [totalVideos, setTotalVideos] = useState(0);
+  const [totalLectures] = useState(0);
+  const [totalVideos] = useState(0);
   const [deletingNote, setDeletingNote] = useState<number | null>(null);
 
   // Edit state
@@ -64,9 +64,15 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   useEffect(() => {
     api.progress.myNotes().then(res => { if (res.notes) setNotes(res.notes); }).catch(() => {});
     api.progress.myProgress().then(res => {
-      if (res.stats) setStats(res.stats);
-      if (res.total_lectures) setTotalLectures(res.total_lectures);
-      if (res.total_videos) setTotalVideos(res.total_videos);
+      const rows: { item_type: string }[] = res.progress || [];
+      const lectures_done = rows.filter(r => r.item_type === "lecture").length;
+      const videos_done   = rows.filter(r => r.item_type === "video").length;
+      setStats({ lectures_done, videos_done, quizzes_passed: 0, score: lectures_done * 10 + videos_done * 5 });
+    }).catch(() => {});
+
+    api.quizzes.myResults().then(res => {
+      const passed = (res.results || []).filter((r: { passed: boolean }) => r.passed).length;
+      setStats(prev => prev ? { ...prev, quizzes_passed: passed, score: (prev.lectures_done * 10) + (prev.videos_done * 5) + (passed * 25) } : null);
     }).catch(() => {});
   }, [user.id]);
 
