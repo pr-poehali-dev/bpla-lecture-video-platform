@@ -10,25 +10,6 @@ import GlobalSearch from "@/components/GlobalSearch";
 import { useChatContext } from "@/context/ChatContext";
 import { api } from "@/api";
 
-function useServerStatus() {
-  const [online, setOnline] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const check = () => {
-      fetch("https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199/?action=me", {
-        method: "GET",
-        signal: AbortSignal.timeout(5000),
-      })
-        .then(() => setOnline(true))
-        .catch(() => setOnline(false));
-    };
-    check();
-    const id = setInterval(check, 30000);
-    return () => clearInterval(id);
-  }, []);
-
-  return online;
-}
 
 const navItems: { id: Page; label: string; icon: string; instructorOnly?: boolean }[] = [
   { id: "lectures", label: "Лекции", icon: "BookOpen" },
@@ -38,8 +19,6 @@ const navItems: { id: Page; label: string; icon: string; instructorOnly?: boolea
   { id: "tacmed", label: "Так Мед", icon: "HeartPulse" },
   { id: "firmware", label: "Загрузки и прошивки", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
-  { id: "leaderboard", label: "Рейтинг", icon: "Trophy" },
-  { id: "instructor", label: "Инструктор", icon: "GraduationCap", instructorOnly: true },
 ];
 
 interface LayoutProps {
@@ -88,8 +67,6 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const serverOnline = useServerStatus();
-
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
@@ -103,10 +80,7 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
   useEffect(() => { if (currentPage === "messages") resetUnread(); }, [currentPage]);
   const unreadSupport = useUnreadSupport(user, currentPage);
 
-  const isInstructor = user?.is_admin || ["инструктор кт","инструктор fpv","инструктор оператор-сапер"].includes(user?.role || "");
-
   const visibleNavItems = navItems.filter(item => {
-    if (item.instructorOnly && !isInstructor) return false;
     if (!user?.permissions) return true;
     return user.permissions[item.id] !== false;
   });
@@ -131,10 +105,6 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("home")}>
             <div className="relative w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ border: "1px solid #00f5ff", boxShadow: "0 0 12px rgba(0,245,255,0.4)" }}>
               <LogoIcon size={18} className="text-[#00f5ff]" />
-              {serverOnline !== null && (
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#050810]"
-                  style={{ background: serverOnline ? "#00ff88" : "#ff2244", boxShadow: `0 0 5px ${serverOnline ? "#00ff88" : "#ff2244"}` }} />
-              )}
             </div>
             <div className="flex items-center gap-2">
               <div className="font-orbitron font-bold text-sm tracking-[0.2em] text-[#00f5ff] leading-none">БпС</div>
@@ -264,16 +234,6 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                           <Icon name="User" size={12} />
                           ЛИЧНОЕ ДЕЛО
                         </button>
-                        {isInstructor && (
-                          <button
-                            onClick={() => { onNavigate("instructor"); setProfileOpen(false); }}
-                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs hover:bg-[rgba(0,255,136,0.05)] transition-all"
-                            style={{ color: "#00ff88" }}
-                          >
-                            <Icon name="GraduationCap" size={12} />
-                            КАБИНЕТ ИНСТРУКТОРА
-                          </button>
-                        )}
                         {user.is_admin && onGoToAdmin && (
                           <button
                             onClick={() => { onGoToAdmin(); setProfileOpen(false); }}
