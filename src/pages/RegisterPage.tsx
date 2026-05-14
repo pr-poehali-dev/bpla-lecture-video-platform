@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import Avatar from "@/components/Avatar";
 import { api } from "@/api";
@@ -6,16 +6,19 @@ import { api } from "@/api";
 interface RuleItem { num: string; title: string; text: string; }
 
 const DEFAULT_RULES: RuleItem[] = [
-  { num: "01", title: "Конфиденциальность", text: "Все материалы платформы являются закрытыми. Запрещено передавать, копировать или публиковать учебные материалы, видео, схемы и любые другие данные платформы третьим лицам." },
-  { num: "02", title: "Достоверность данных", text: "При регистрации необходимо указывать реальные данные. Использование чужих данных или ложной информации является основанием для немедленной блокировки." },
-  { num: "03", title: "Дисциплина и уважение", text: "В обсуждениях и чате соблюдать воинскую этику. Запрещены оскорбления, провокации, распространение дезинформации и флуд." },
-  { num: "04", title: "Защита данных", text: "Запрещено передавать свои учётные данные другим лицам. При подозрении на компрометацию аккаунта — немедленно сообщить администратору." },
-  { num: "05", title: "Использование материалов", text: "Материалы платформы предназначены исключительно для учебных и оперативных целей. Использование в личных, коммерческих или иных целях запрещено." },
-  { num: "06", title: "Ответственность", text: "Каждый участник несёт личную ответственность за свои действия на платформе. Нарушение правил влечёт блокировку без предупреждения." },
+  { num: "01", title: "Конфиденциальность", text: "Все материалы платформы являются закрытыми. Запрещено передавать, копировать или публиковать учебные материалы, видео, схемы и любые другие данные платформы третьим лицам. Нарушение влечёт немедленную блокировку и юридическую ответственность." },
+  { num: "02", title: "Режим информационной безопасности", text: "Запрещено обсуждать в открытых каналах: координаты позиций, данные о личном составе, технические характеристики оборудования, планы операций и любую иную информацию, которая может нанести ущерб оперативной деятельности." },
+  { num: "03", title: "Достоверность данных", text: "При регистрации необходимо указывать реальные данные: ФИО, позывной, звание. Использование чужих данных или ложной информации является основанием для немедленной блокировки без объяснений." },
+  { num: "04", title: "Дисциплина и воинская этика", text: "В обсуждениях и чате соблюдать воинскую этику и субординацию. Запрещены оскорбления, провокации, распространение дезинформации и флуд." },
+  { num: "05", title: "Защита учётных данных", text: "Запрещено передавать свои учётные данные другим лицам. Каждый участник несёт личную ответственность за все действия, совершённые под его аккаунтом. При подозрении на компрометацию — немедленно сообщить администратору." },
+  { num: "06", title: "Использование материалов", text: "Материалы платформы предназначены исключительно для учебных и оперативных целей личного состава. Использование в личных, коммерческих или иных целях строго запрещено." },
+  { num: "07", title: "Правила загрузки контента", text: "Инструкторы, размещающие материалы, несут ответственность за их достоверность и соответствие требованиям безопасности. Запрещено публиковать материалы из непроверенных источников." },
+  { num: "08", title: "Порядок подачи заявки", text: "При регистрации необходимо указать реальное звание, ФИО и контактные данные. Заявки рассматриваются администратором вручную. Срок рассмотрения — до 48 часов." },
+  { num: "09", title: "Ответственность", text: "Каждый участник несёт личную ответственность за свои действия на платформе. Нарушение любого из правил влечёт немедленную блокировку без предупреждения." },
 ];
 
-const DEFAULT_INTRO = "Платформа «Беспилотные Системы» является закрытым учебным ресурсом. Доступ предоставляется только уполномоченным лицам. Регистрируясь, вы принимаете следующие обязательства:";
-const DEFAULT_FOOTER = "Администрация платформы оставляет за собой право изменять правила без предварительного уведомления. Актуальная версия всегда доступна при регистрации.";
+const DEFAULT_INTRO = "Платформа «Беспилотные Системы» является закрытым учебным ресурсом для личного состава. Доступ предоставляется только уполномоченным лицам после ручной проверки администратором. Регистрируясь, вы принимаете следующие обязательства:";
+const DEFAULT_FOOTER = "Администрация платформы оставляет за собой право изменять правила без предварительного уведомления. Продолжение использования платформы означает согласие с актуальной версией правил.";
 
 const RANKS = [
   "Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант",
@@ -38,10 +41,14 @@ function pwStrength(pw: string): { level: 0 | 1 | 2 | 3; label: string; color: s
   return { level: 3, label: "Сильный", color: "#00ff88" };
 }
 
-function RulesModal({ onClose }: { onClose: () => void }) {
+const RULES_UPDATED = "15 мая 2026";
+
+function RulesModal({ onClose, onRead }: { onClose: () => void; onRead?: () => void }) {
   const [rules, setRules] = useState<RuleItem[]>(DEFAULT_RULES);
   const [intro, setIntro] = useState(DEFAULT_INTRO);
   const [footer, setFooter] = useState(DEFAULT_FOOTER);
+  const [scrolledToEnd, setScrolledToEnd] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.admin.getPage("rules").then(res => {
@@ -53,6 +60,18 @@ function RulesModal({ onClose }: { onClose: () => void }) {
     }).catch(() => {});
   }, []);
 
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (atBottom) setScrolledToEnd(true);
+  };
+
+  const handleConfirm = () => {
+    onRead?.();
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(5,8,16,0.97)" }} onClick={onClose}>
@@ -63,10 +82,21 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           <div>
             <div className="font-mono text-[10px] text-[#00f5ff] tracking-[0.3em] mb-0.5">// ДОКУМЕНТ</div>
             <div className="font-orbitron text-sm font-bold text-white tracking-wider">ПРАВИЛА ПЛАТФОРМЫ</div>
+            <div className="font-mono text-[9px] text-[#3a5570] mt-0.5">Версия от {RULES_UPDATED}</div>
           </div>
           <button onClick={onClose} className="text-[#3a5570] hover:text-white transition-colors"><Icon name="X" size={18} /></button>
         </div>
-        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+
+        {/* Подсказка прокрутки */}
+        {!scrolledToEnd && (
+          <div className="flex items-center justify-center gap-2 px-5 py-2 flex-shrink-0"
+            style={{ background: "rgba(255,107,0,0.06)", borderBottom: "1px solid rgba(255,107,0,0.15)" }}>
+            <Icon name="ArrowDown" size={11} className="text-[#ff6b00] animate-bounce" />
+            <span className="font-mono text-[10px] text-[#ff6b00]">Прокрутите до конца чтобы принять правила</span>
+          </div>
+        )}
+
+        <div ref={scrollRef} onScroll={handleScroll} className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           <p className="font-plex text-xs text-[#5a7a95] leading-relaxed pb-2" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)" }}>{intro}</p>
           {rules.map(rule => (
             <div key={rule.num} className="flex gap-3">
@@ -80,11 +110,26 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(0,245,255,0.06)" }}>
             <p className="font-mono text-[10px] text-[#3a5570] leading-relaxed">{footer}</p>
           </div>
+          <div className="text-center pt-1">
+            <span className="font-mono text-[9px] text-[#2a4060]">Последнее обновление: {RULES_UPDATED}</span>
+          </div>
         </div>
-        <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: "1px solid rgba(0,245,255,0.1)" }}>
-          <button onClick={onClose} className="w-full font-orbitron text-xs font-bold tracking-wider py-2.5 transition-all"
-            style={{ background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff" }}>
-            ПОНЯТНО
+
+        <div className="px-5 py-4 flex-shrink-0 space-y-2" style={{ borderTop: "1px solid rgba(0,245,255,0.1)" }}>
+          {onRead && (
+            <button onClick={handleConfirm} disabled={!scrolledToEnd}
+              className="w-full font-orbitron text-xs font-bold tracking-wider py-2.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: scrolledToEnd ? "rgba(0,255,136,0.1)" : "rgba(0,255,136,0.03)",
+                border: `1px solid ${scrolledToEnd ? "#00ff88" : "rgba(0,255,136,0.2)"}`,
+                color: scrolledToEnd ? "#00ff88" : "#2a4a3a",
+              }}>
+              {scrolledToEnd ? "✓ ПРОЧИТАЛ, ПРИНИМАЮ ПРАВИЛА" : "↓ ПРОКРУТИТЕ ДО КОНЦА"}
+            </button>
+          )}
+          <button onClick={onClose} className="w-full font-mono text-xs tracking-wider py-2 transition-all text-[#3a5570] hover:text-white"
+            style={{ border: "1px solid rgba(0,245,255,0.1)" }}>
+            ЗАКРЫТЬ
           </button>
         </div>
       </div>
@@ -192,7 +237,7 @@ export default function RegisterPage({ onBack }: Props) {
 
   return (
     <div className="min-h-screen flex items-center justify-center grid-bg px-4" style={{ background: "#050810" }}>
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      {showRules && <RulesModal onClose={() => setShowRules(false)} onRead={() => { setAgreed(true); setShowRules(false); }} />}
 
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}

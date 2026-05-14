@@ -60,7 +60,7 @@ const PAGE_LABELS: Partial<Record<Page, string>> = {
   firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ", tacmed: "ТАК МЕД",
   profile: "ПРОФИЛЬ", leaderboard: "РЕЙТИНГ",
   messages: "СООБЩЕНИЯ", support: "ПОДДЕРЖКА",
-  "content-upload": "ЗАГРУЗКА", instructor: "ИНСТРУКТОР",
+  "content-upload": "ЗАГРУЗКА", instructor: "ИНСТРУКТОР", rules: "ПРАВИЛА",
 };
 
 export default function Layout({ currentPage, onNavigate, children, user, onLogout, onGoToAdmin }: LayoutProps) {
@@ -254,6 +254,13 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                             ПАНЕЛЬ АДМИНИСТРАТОРА
                           </button>
                         )}
+                        <button
+                          onClick={() => { onNavigate("rules"); setProfileOpen(false); }}
+                          className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs text-[#3a5570] hover:text-[#00f5ff] hover:bg-[rgba(0,245,255,0.05)] transition-all"
+                        >
+                          <Icon name="ScrollText" size={12} />
+                          ПРАВИЛА ПЛАТФОРМЫ
+                        </button>
                         {onLogout && (
                           <button
                             onClick={onLogout}
@@ -328,6 +335,13 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                 Панель администратора
               </button>
             )}
+            <button
+              onClick={() => { onNavigate("rules"); setMobileOpen(false); }}
+              className="flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors text-[#3a5570] hover:text-[#00f5ff]"
+            >
+              <Icon name="ScrollText" size={15} />
+              Правила платформы
+            </button>
             {localStorage.getItem("force_desktop") !== "1" ? (
               <a
                 href="/?desktop=1"

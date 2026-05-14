@@ -226,6 +226,17 @@ export default function ProfileCard({
         <Icon name="Info" size={11} className="text-[#2a4060] inline mr-1.5" />
         Позывной и email изменить нельзя — обратитесь к администратору
       </div>
+
+      {/* Правила */}
+      <button onClick={() => onNavigate("rules")}
+        className="w-full flex items-center gap-3 px-4 py-3 transition-all group"
+        style={{ border: "1px solid rgba(0,245,255,0.06)", background: "transparent" }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.15)"; (e.currentTarget as HTMLElement).style.background = "rgba(0,245,255,0.03)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.06)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+        <Icon name="ScrollText" size={14} className="text-[#3a5570] flex-shrink-0 group-hover:text-[#00f5ff] transition-colors" />
+        <span className="font-mono text-xs text-[#3a5570] group-hover:text-[#00f5ff] transition-colors">ПРАВИЛА ПЛАТФОРМЫ</span>
+        <Icon name="ChevronRight" size={12} className="text-[#2a4060] flex-shrink-0 ml-auto" />
+      </button>
     </div>
   );
 }

@@ -20,13 +20,14 @@ import SupportPage from "@/pages/SupportPage";
 import TacmedPage from "@/pages/TacmedPage";
 import InstructorPage from "@/pages/InstructorPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import RulesPage from "@/pages/RulesPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import AdminPage from "@/pages/AdminPage";
 import { api } from "@/api";
 import { ChatProvider } from "@/context/ChatContext";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "tacmed" | "profile" | "messages" | "content-upload" | "support" | "instructor" | "leaderboard";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "tacmed" | "profile" | "messages" | "content-upload" | "support" | "instructor" | "leaderboard" | "rules";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -204,6 +205,7 @@ export default function App() {
           : <HomePage onNavigate={navigate} />;
       }
       case "leaderboard": return <LeaderboardPage user={user} />;
+      case "rules": return <RulesPage />;
       default: return <HomePage onNavigate={navigate} />;
     }
   };
