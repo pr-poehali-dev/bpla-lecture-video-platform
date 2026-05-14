@@ -2,6 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Стили для режима лекции (LiveLectureView) ── */
+.prose-lecture {
+  color: #c8dce8;
+  line-height: 1.75;
+}
+.prose-lecture h1,
+.prose-lecture h2 {
+  color: #00f5ff;
+  font-family: "Orbitron", sans-serif;
+  font-weight: 700;
+  margin: 1.5em 0 0.5em;
+  letter-spacing: 0.05em;
+}
+.prose-lecture h3,
+.prose-lecture h4 {
+  color: #7fd8ff;
+  font-family: "Orbitron", sans-serif;
+  font-weight: 600;
+  margin: 1.2em 0 0.4em;
+}
+.prose-lecture p {
+  margin: 0.75em 0;
+}
+.prose-lecture ul,
+.prose-lecture ol {
+  padding-left: 1.5em;
+  margin: 0.75em 0;
+}
+.prose-lecture li {
+  margin: 0.35em 0;
+}
+.prose-lecture table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+.prose-lecture th {
+  background: rgba(0, 245, 255, 0.06);
+  color: #00f5ff;
+  border: 1px solid rgba(0, 245, 255, 0.2);
+  padding: 6px 10px;
+  font-family: monospace;
+  font-size: 0.85em;
+  text-align: left;
+}
+.prose-lecture td {
+  border: 1px solid rgba(0, 245, 255, 0.1);
+  padding: 6px 10px;
+}
+.prose-lecture tr:nth-child(even) td {
+  background: rgba(0, 245, 255, 0.02);
+}
+.prose-lecture blockquote {
+  border-left: 3px solid #00ff88;
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  background: rgba(0, 255, 136, 0.04);
+  color: #7fd8ff;
+}
+.prose-lecture strong {
+  color: #e0f4ff;
+}
+.prose-lecture em {
+  color: #a8d8f0;
+}
+.prose-lecture code {
+  background: rgba(0, 245, 255, 0.08);
+  padding: 2px 6px;
+  font-family: monospace;
+  color: #00f5ff;
+  font-size: 0.9em;
+}
+.prose-lecture a {
+  color: #00f5ff;
+  text-decoration: underline;
+}
+.prose-lecture hr {
+  border: none;
+  border-top: 1px solid rgba(0, 245, 255, 0.1);
+  margin: 1.5em 0;
+}
+
 /* ── Анимация точек "печатает..." ── */
 @keyframes typingDot {
   0%,

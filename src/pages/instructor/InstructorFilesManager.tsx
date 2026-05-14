@@ -7,6 +7,7 @@ import DocEditor from "./DocEditor";
 import { FolderModal, NewDocModal, FileViewer } from "./FmModals";
 import FmToolbar from "./FmToolbar";
 import FmFileGrid from "./FmFileGrid";
+import LiveLectureView from "./LiveLectureView";
 
 interface Props { user: User; }
 
@@ -30,6 +31,8 @@ export default function InstructorFilesManager({ user }: Props) {
   const [savingDoc, setSavingDoc] = useState(false);
   const [exportingDoc, setExportingDoc] = useState(false);
 
+  const [lectureOpen, setLectureOpen] = useState(false);
+  const [lectureDoc, setLectureDoc] = useState<Doc | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "folder" | "doc"; id: number; name: string } | null>(null);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [dragOver, setDragOver] = useState<number | "root" | null>(null);
@@ -177,6 +180,18 @@ export default function InstructorFilesManager({ user }: Props) {
     URL.revokeObjectURL(url);
   };
 
+  // ── Если открыт режим лекции
+  if (lectureOpen) {
+    return (
+      <LiveLectureView
+        docs={docs}
+        folders={folders}
+        initialDoc={lectureDoc || undefined}
+        onClose={() => { setLectureOpen(false); setLectureDoc(null); }}
+      />
+    );
+  }
+
   // ── Если открыт редактор
   if (editingDoc) {
     const canEdit = user.is_admin || editingDoc.instructor_name === user.name || editingDoc.instructor_callsign === user.callsign;
@@ -207,6 +222,7 @@ export default function InstructorFilesManager({ user }: Props) {
         onCreateFolder={() => setShowFolderModal(true)}
         onCreateDoc={() => setShowNewDoc(true)}
         onUploadFile={handleUploadFile}
+        onStartLecture={() => setLectureOpen(true)}
         onNavigate={setCurrentFolderId}
         onDragOver={setDragOver}
         onDragLeave={() => setDragOver(null)}
@@ -234,6 +250,7 @@ export default function InstructorFilesManager({ user }: Props) {
         onDeleteFolder={f => setConfirmDelete({ type: "folder", id: f.id, name: f.name })}
         onOpenDoc={doc => doc.doc_type === "file" ? setViewingFile(doc) : setEditingDoc(doc)}
         onDeleteDoc={doc => setConfirmDelete({ type: "doc", id: doc.id, name: doc.title })}
+        onPresent={doc => { setLectureDoc(doc); setLectureOpen(true); }}
         onDragOver={setDragOver}
         onDragLeave={() => setDragOver(null)}
         onDrop={handleDrop}

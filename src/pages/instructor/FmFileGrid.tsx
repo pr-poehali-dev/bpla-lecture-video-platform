@@ -20,6 +20,7 @@ interface Props {
   onDeleteFolder: (folder: Folder) => void;
   onOpenDoc: (doc: Doc) => void;
   onDeleteDoc: (doc: Doc) => void;
+  onPresent?: (doc: Doc) => void;
   onDragOver: (id: number) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, folderId: number | null) => void;
@@ -30,7 +31,7 @@ export default function FmFileGrid({
   subfolders, currentDocs, folders, docs, loading, viewMode,
   currentFolderId, dragOver, isOwn,
   onOpenFolder, onEditFolder, onDeleteFolder,
-  onOpenDoc, onDeleteDoc,
+  onOpenDoc, onDeleteDoc, onPresent,
   onDragOver, onDragLeave, onDrop, onDragStart,
 }: Props) {
   const [sharingDoc, setSharingDoc] = useState<Doc | null>(null);
@@ -128,25 +129,35 @@ export default function FmFileGrid({
               )}
             </div>
 
-            {isOwn(doc) && (
-              <div className={`flex items-center gap-1 ${viewMode === "grid" ? "mt-2" : "flex-shrink-0"}`}
-                onClick={e => e.stopPropagation()}>
-                {isFile && (
-                  <a href={doc.file_url || ""} download={doc.file_original_name || doc.title} title="Скачать"
-                    className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
-                    <Icon name="Download" size={12} />
-                  </a>
-                )}
-                <button onClick={() => setSharingDoc(doc)} title="Выдать доступ"
-                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#a855f7] transition-colors">
-                  <Icon name="UserPlus" size={12} />
+            <div className={`flex items-center gap-1 ${viewMode === "grid" ? "mt-2" : "flex-shrink-0"}`}
+              onClick={e => e.stopPropagation()}>
+              {onPresent && (
+                <button onClick={() => onPresent(doc)} title="Показать на лекции"
+                  className="flex items-center gap-1 font-mono text-[10px] px-2 py-1 transition-all"
+                  style={{ border: "1px solid rgba(0,255,136,0.3)", color: "#00ff88", background: "rgba(0,255,136,0.05)" }}>
+                  <Icon name="Monitor" size={11} />
+                  {viewMode === "list" && <span>Показать</span>}
                 </button>
-                <button onClick={() => onDeleteDoc(doc)} title="Удалить"
-                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
-                  <Icon name="Trash2" size={12} />
-                </button>
-              </div>
-            )}
+              )}
+              {isOwn(doc) && (
+                <>
+                  {isFile && (
+                    <a href={doc.file_url || ""} download={doc.file_original_name || doc.title} title="Скачать"
+                      className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
+                      <Icon name="Download" size={12} />
+                    </a>
+                  )}
+                  <button onClick={() => setSharingDoc(doc)} title="Выдать доступ"
+                    className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#a855f7] transition-colors">
+                    <Icon name="UserPlus" size={12} />
+                  </button>
+                  <button onClick={() => onDeleteDoc(doc)} title="Удалить"
+                    className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
+                    <Icon name="Trash2" size={12} />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         );
       })}

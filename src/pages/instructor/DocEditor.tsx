@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import { Doc, CATEGORIES } from "./DocTypes";
+import LiveLectureView from "./LiveLectureView";
 
 interface EditorProps {
   doc: Doc;
@@ -14,11 +15,13 @@ interface EditorProps {
 
 export default function DocEditor({ doc, onSave, onClose, onExport, onPrint, saving, readOnly }: EditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const imgInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(doc.title);
   const [subject, setSubject] = useState(doc.subject);
   const [groupName, setGroupName] = useState(doc.group_name);
   const [category, setCategory] = useState(doc.category);
   const [dirty, setDirty] = useState(false);
+  const [presenting, setPresenting] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Init editor content
@@ -76,12 +79,28 @@ export default function DocEditor({ doc, onSave, onClose, onExport, onPrint, sav
     setDirty(true);
   };
 
+  const insertImage = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target?.result as string;
+      const html = `<img src="${dataUrl}" style="max-width:100%;height:auto;display:block;margin:8px 0" alt="${file.name}" /><p></p>`;
+      document.execCommand("insertHTML", false, html);
+      setDirty(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const toolbarButtons = [
     { cmd: "bold",          icon: "Bold",          title: "Жирный (Ctrl+B)" },
     { cmd: "italic",        icon: "Italic",        title: "Курсив (Ctrl+I)" },
     { cmd: "underline",     icon: "Underline",     title: "Подчёркнутый (Ctrl+U)" },
     { cmd: "strikeThrough", icon: "Strikethrough", title: "Зачёркнутый" },
   ];
+
+  if (presenting) {
+    const liveDoc = { ...doc, title, subject, group_name: groupName, category, content_html: editorRef.current?.innerHTML || doc.content_html };
+    return <LiveLectureView docs={[liveDoc]} folders={[]} initialDoc={liveDoc} onClose={() => setPresenting(false)} />;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#050810" }}>
@@ -105,6 +124,11 @@ export default function DocEditor({ doc, onSave, onClose, onExport, onPrint, sav
               {saving ? "..." : "Сохранить"}
             </button>
           )}
+          <button onClick={() => setPresenting(true)} title="Показать на лекции"
+            className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-all"
+            style={{ border: "1px solid rgba(0,255,136,0.4)", color: "#00ff88", background: "rgba(0,255,136,0.06)" }}>
+            <Icon name="Monitor" size={12} /> Показать
+          </button>
           <button onClick={onPrint} title="Печать (Ctrl+P)"
             className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-all"
             style={{ border: "1px solid rgba(0,245,255,0.2)", color: "#00f5ff", background: "rgba(0,245,255,0.04)" }}>
@@ -187,11 +211,18 @@ export default function DocEditor({ doc, onSave, onClose, onExport, onPrint, sav
             className="w-7 h-7 flex items-center justify-center text-[#5a7a95] hover:text-white hover:bg-[rgba(0,245,255,0.1)] transition-colors rounded">
             <Icon name="Redo" size={13} />
           </button>
+          <div className="w-px h-5 mx-1" style={{ background: "rgba(0,245,255,0.15)" }} />
+          <button onMouseDown={e => { e.preventDefault(); imgInputRef.current?.click(); }} title="Вставить изображение"
+            className="w-7 h-7 flex items-center justify-center text-[#5a7a95] hover:text-[#00ff88] hover:bg-[rgba(0,255,136,0.08)] transition-colors rounded">
+            <Icon name="Image" size={13} />
+          </button>
           {readOnly && (
             <span className="ml-auto font-mono text-[10px] text-[#ff6b00] flex items-center gap-1">
               <Icon name="EyeOff" size={10} /> Только чтение (чужой документ)
             </span>
           )}
+          <input ref={imgInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) { insertImage(f); e.target.value = ""; } }} />
         </div>
       )}
 

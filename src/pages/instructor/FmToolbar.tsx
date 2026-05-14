@@ -16,6 +16,7 @@ interface Props {
   onCreateFolder: () => void;
   onCreateDoc: () => void;
   onUploadFile: (file: File) => void;
+  onStartLecture?: () => void;
   onNavigate: (id: number | null) => void;
   onDragOver: (target: number | "root") => void;
   onDragLeave: () => void;
@@ -26,7 +27,7 @@ export default function FmToolbar({
   search, viewMode, uploading,
   currentFolderId, breadcrumbs, dragOver,
   onSearchChange, onViewModeChange,
-  onCreateFolder, onCreateDoc, onUploadFile,
+  onCreateFolder, onCreateDoc, onUploadFile, onStartLecture,
   onNavigate, onDragOver, onDragLeave, onDrop,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,10 +77,17 @@ export default function FmToolbar({
           className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-all disabled:opacity-50"
           style={{ border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7", background: "rgba(168,85,247,0.04)" }}>
           <Icon name={uploading ? "Loader" : "Upload"} size={13} className={uploading ? "animate-spin" : ""} />
-          {uploading ? "Загрузка..." : "Загрузить файл"}
+          {uploading ? "Загрузка..." : "Загрузить"}
         </button>
+        {onStartLecture && (
+          <button onClick={onStartLecture}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-all"
+            style={{ border: "1px solid rgba(0,255,136,0.5)", color: "#00ff88", background: "rgba(0,255,136,0.08)", boxShadow: "0 0 8px rgba(0,255,136,0.1)" }}>
+            <Icon name="Monitor" size={13} /> Лекция
+          </button>
+        )}
         <input ref={fileInputRef} type="file" className="hidden"
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.xlsx,.xls"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.xlsx,.xls,.png,.jpg,.jpeg,.gif,.mp4,.webm"
           onChange={handleFileSelected} />
       </div>
 

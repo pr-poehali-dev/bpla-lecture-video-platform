@@ -15,6 +15,9 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "sheets",   label: "Ведомости",  icon: "ClipboardList" },
 ];
 
+// Подсказка по возможностям режима лекции
+const LECTURE_HINT = "Откройте любой файл или документ и нажмите «Показать» — запустится полноэкранный режим лекции.";
+
 interface Props {
   user: User;
   onUpdate: (user: User) => void;
@@ -153,6 +156,14 @@ export default function InstructorPage({ user, onUpdate, onNavigate, onGoToAdmin
 
         {/* Правая колонка — инструкторский контент */}
         <div className="lg:col-span-3 flex flex-col gap-4">
+
+          {/* Баннер режима лекции */}
+          <div className="flex items-center gap-3 px-4 py-3"
+            style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)" }}>
+            <Icon name="Monitor" size={16} className="text-[#00ff88] flex-shrink-0" />
+            <p className="font-mono text-[11px] text-[#5a7a95] leading-relaxed">{LECTURE_HINT}</p>
+          </div>
+
           {/* Вкладки */}
           <div className="flex gap-0" style={{ borderBottom: "1px solid rgba(0,255,136,0.12)" }}>
             {TABS.map(t => (
