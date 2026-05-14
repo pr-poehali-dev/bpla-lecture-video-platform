@@ -124,6 +124,24 @@ export const api = {
     publicStats: () =>
       fetch(`${ADMIN_URL}/?action=public-stats`).then((r) => r.json()),
 
+    userProfile: (user_id: number) =>
+      fetch(`${ADMIN_URL}/?action=user-profile&user_id=${user_id}`, { headers: authHeaders() }).then((r) => r.json()),
+
+    saveNote: (user_id: number, note: string) =>
+      fetch(`${ADMIN_URL}/?action=save-note`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ user_id, note }) }).then((r) => r.json()),
+
+    registrationsChart: () =>
+      fetch(`${ADMIN_URL}/?action=registrations-chart`, { headers: authHeaders() }).then((r) => r.json()),
+
+    topContent: () =>
+      fetch(`${ADMIN_URL}/?action=top-content`, { headers: authHeaders() }).then((r) => r.json()),
+
+    updateFile: (id: number, data: { title?: string; description?: string; category?: string }) =>
+      fetch(`${ADMIN_URL}/?action=update-file`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, ...data }) }).then((r) => r.json()),
+
+    bulkDeleteFiles: (ids: number[]) =>
+      fetch(`${ADMIN_URL}/?action=bulk-delete-files`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ ids }) }).then((r) => r.json()),
+
     getSettings: () =>
       fetch(`${ADMIN_URL}/?action=get-settings`).then((r) => r.json()),
 

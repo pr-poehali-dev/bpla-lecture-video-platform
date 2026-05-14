@@ -427,6 +427,107 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         return ok({"message": "Настройки сохранены"})
 
+    # ── USER PROFILE + NOTES ─────────────────────────────────────────────────
+
+    if action == "user-profile" and method == "GET":
+        uid = params.get("user_id")
+        if not uid:
+            return err("user_id обязателен")
+        cur.execute(f"""
+            SELECT id, name, callsign, email, rank, role, status, is_admin, is_blocked,
+                   created_at, approved_at, last_seen
+            FROM {q('users')} WHERE id = %s
+        """, (uid,))
+        u = cur.fetchone()
+        if not u:
+            return err("Пользователь не найден", 404)
+        u = dict(u)
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('user_progress')} WHERE user_id = %s", (uid,))
+        u["progress_count"] = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('topics')} WHERE user_id = %s", (uid,))
+        u["topics_count"] = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('topic_replies')} WHERE user_id = %s", (uid,))
+        u["replies_count"] = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('messages')} WHERE sender_id = %s", (uid,))
+        u["messages_count"] = cur.fetchone()["cnt"]
+        cur.execute(f"SELECT note FROM {q('admin_user_notes')} WHERE user_id = %s AND admin_id = %s", (uid, admin["id"]))
+        note_row = cur.fetchone()
+        u["admin_note"] = note_row["note"] if note_row else ""
+        return ok({"user": u})
+
+    if action == "save-note" and method == "POST":
+        uid = body.get("user_id")
+        note = body.get("note", "")
+        if not uid:
+            return err("user_id обязателен")
+        cur.execute(f"""
+            INSERT INTO {q('admin_user_notes')} (user_id, admin_id, note)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (user_id, admin_id) DO UPDATE SET note = EXCLUDED.note, updated_at = NOW()
+        """, (uid, admin["id"], note))
+        conn.commit()
+        return ok({"message": "Заметка сохранена"})
+
+    # ── ANALYTICS ────────────────────────────────────────────────────────────
+
+    if action == "registrations-chart" and method == "GET":
+        cur.execute(f"""
+            SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') AS month,
+                   COUNT(*) AS new_total,
+                   COUNT(*) FILTER (WHERE status = 'approved') AS approved_total
+            FROM {q('users')}
+            WHERE created_at >= NOW() - INTERVAL '12 months'
+            GROUP BY DATE_TRUNC('month', created_at)
+            ORDER BY DATE_TRUNC('month', created_at)
+        """)
+        rows = [dict(r) for r in cur.fetchall()]
+        return ok({"chart": rows})
+
+    if action == "top-content" and method == "GET":
+        cur.execute(f"""
+            SELECT f.id, f.title, f.file_type, f.category,
+                   COUNT(up.id) AS views
+            FROM {q('files')} f
+            LEFT JOIN {q('user_progress')} up ON up.item_id = f.id
+            GROUP BY f.id, f.title, f.file_type, f.category
+            ORDER BY views DESC, f.created_at DESC
+            LIMIT 8
+        """)
+        rows = [dict(r) for r in cur.fetchall()]
+        return ok({"top": rows})
+
+    # ── FILE MANAGEMENT ──────────────────────────────────────────────────────
+
+    # POST ?action=update-file
+    if action == "update-file" and method == "POST":
+        fid = body.get("id")
+        if not fid:
+            return err("id обязателен")
+        fields, vals = [], []
+        for col in ["title", "description", "category"]:
+            if col in body and body[col] is not None:
+                fields.append(f"{col} = %s"); vals.append(body[col])
+        if not fields:
+            return err("Нет полей")
+        vals.append(fid)
+        cur.execute(f"UPDATE {q('files')} SET {', '.join(fields)} WHERE id = %s RETURNING title", vals)
+        row = cur.fetchone()
+        if not row:
+            conn.commit(); return err("Файл не найден", 404)
+        conn.commit()
+        return ok({"message": f"Файл обновлён"})
+
+    # POST ?action=bulk-delete-files
+    if action == "bulk-delete-files" and method == "POST":
+        ids = body.get("ids", [])
+        if not ids or not isinstance(ids, list):
+            return err("ids обязателен")
+        cur.execute(f"SELECT COUNT(*) AS cnt FROM {q('files')} WHERE id = ANY(%s::int[])", (ids,))
+        count = cur.fetchone()["cnt"]
+        cur.execute(f"UPDATE {q('files')} SET section = 'deleted' WHERE id = ANY(%s::int[])", (ids,))
+        conn.commit()
+        return ok({"message": f"Удалено {count} файлов"})
+
     # ── PAGES ────────────────────────────────────────────────────────────────
 
     # GET ?action=get-pages

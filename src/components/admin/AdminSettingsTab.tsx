@@ -10,6 +10,11 @@ export default function AdminSettingsTab() {
   const [contactEmail, setContactEmail] = useState("");
   const [registrationOpen, setRegistrationOpen] = useState(true);
   const [maxFileSize, setMaxFileSize] = useState("100");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -29,6 +34,11 @@ export default function AdminSettingsTab() {
         if (res.settings.site_name) setSiteName(res.settings.site_name);
         if (res.settings.contact_email) setContactEmail(res.settings.contact_email);
         if (res.settings.max_file_size_mb) setMaxFileSize(res.settings.max_file_size_mb);
+        if (res.settings.logo_url) setLogoUrl(res.settings.logo_url);
+        if (res.settings.favicon_url) setFaviconUrl(res.settings.favicon_url);
+        if (res.settings.seo_title) setSeoTitle(res.settings.seo_title);
+        if (res.settings.seo_description) setSeoDescription(res.settings.seo_description);
+        if (res.settings.welcome_message) setWelcomeMessage(res.settings.welcome_message);
       }
       setLoading(false);
     });
@@ -48,6 +58,11 @@ export default function AdminSettingsTab() {
       site_name: siteName,
       contact_email: contactEmail,
       max_file_size_mb: maxFileSize,
+      logo_url: logoUrl,
+      favicon_url: faviconUrl,
+      seo_title: seoTitle,
+      seo_description: seoDescription,
+      welcome_message: welcomeMessage,
     });
     setSaving(false);
     if (res.message) showMsg(res.message);
@@ -119,6 +134,58 @@ export default function AdminSettingsTab() {
         <SettingRow label="Регистрация открыта" desc="Новые пользователи могут подать заявку">
           <Toggle value={registrationOpen} onChange={setRegistrationOpen} />
         </SettingRow>
+      </div>
+
+      {/* Branding */}
+      <div className="p-5" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "#0a1520" }}>
+        <div className="font-mono text-xs text-[#00f5ff] tracking-widest mb-4">БРЕНДИНГ</div>
+        <SettingRow label="URL логотипа" desc="Ссылка на изображение логотипа">
+          <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..."
+            className="w-48 bg-transparent px-3 py-1.5 font-plex text-sm text-white outline-none"
+            style={{ border: "1px solid rgba(0,245,255,0.15)" }} />
+        </SettingRow>
+        {logoUrl && (
+          <div className="mt-2 flex items-center gap-3">
+            <img src={logoUrl} alt="logo preview" className="h-10 object-contain" onError={e => (e.currentTarget.style.display = "none")} />
+            <span className="font-mono text-[10px] text-[#3a5570]">Предпросмотр</span>
+          </div>
+        )}
+        <SettingRow label="URL favicon" desc="Иконка вкладки браузера (ico/png)">
+          <input value={faviconUrl} onChange={e => setFaviconUrl(e.target.value)} placeholder="https://..."
+            className="w-48 bg-transparent px-3 py-1.5 font-plex text-sm text-white outline-none"
+            style={{ border: "1px solid rgba(0,245,255,0.15)" }} />
+        </SettingRow>
+      </div>
+
+      {/* SEO */}
+      <div className="p-5" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "#0a1520" }}>
+        <div className="font-mono text-xs text-[#00f5ff] tracking-widest mb-4">SEO</div>
+        <SettingRow label="Title страницы" desc="Заголовок в поисковике и вкладке">
+          <input value={seoTitle} onChange={e => setSeoTitle(e.target.value)} placeholder="БпС — Платформа"
+            className="w-48 bg-transparent px-3 py-1.5 font-plex text-sm text-white outline-none"
+            style={{ border: "1px solid rgba(0,245,255,0.15)" }} />
+        </SettingRow>
+        <div className="py-3" style={{ borderBottom: "1px solid rgba(0,245,255,0.05)" }}>
+          <div className="font-plex text-sm text-white mb-1">Meta description</div>
+          <div className="font-mono text-[10px] text-[#3a5570] mb-2">Описание сайта для поисковиков</div>
+          <textarea value={seoDescription} onChange={e => setSeoDescription(e.target.value)} rows={2}
+            placeholder="Профессиональная образовательная платформа..."
+            className="w-full bg-transparent px-3 py-2 font-plex text-sm text-white outline-none resize-none"
+            style={{ border: "1px solid rgba(0,245,255,0.15)" }} />
+        </div>
+      </div>
+
+      {/* Welcome */}
+      <div className="p-5" style={{ border: "1px solid rgba(0,245,255,0.1)", background: "#0a1520" }}>
+        <div className="font-mono text-xs text-[#00f5ff] tracking-widest mb-4">ПРИВЕТСТВИЕ</div>
+        <div className="py-3">
+          <div className="font-plex text-sm text-white mb-1">Сообщение при одобрении заявки</div>
+          <div className="font-mono text-[10px] text-[#3a5570] mb-2">Отправляется пользователю когда его заявка одобрена</div>
+          <textarea value={welcomeMessage} onChange={e => setWelcomeMessage(e.target.value)} rows={3}
+            placeholder="Добро пожаловать на платформу! Ваша заявка одобрена. Теперь вам доступны все материалы..."
+            className="w-full bg-transparent px-3 py-2 font-plex text-sm text-white outline-none resize-none"
+            style={{ border: "1px solid rgba(0,245,255,0.15)" }} />
+        </div>
       </div>
 
       {/* Limits */}

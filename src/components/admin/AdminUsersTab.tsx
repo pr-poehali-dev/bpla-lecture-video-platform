@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import ConfirmModal from "./ConfirmModal";
+import AdminUserProfileModal from "./AdminUserProfileModal";
 
 export interface User {
   id: number;
@@ -69,6 +70,7 @@ export default function AdminUsersTab({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [blockReason, setBlockReason] = useState("");
   const [resetResult, setResetResult] = useState<{ password: string; email: string } | null>(null);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
 
   const filtered = users.filter((u) => {
     const matchFilter = filter === "all" || u.status === filter;
@@ -286,6 +288,11 @@ export default function AdminUsersTab({
 
               {/* Actions */}
               <div className="flex flex-wrap gap-1.5 flex-shrink-0">
+                <button onClick={() => setProfileUser(user)} title="Профиль"
+                  className="flex items-center gap-1 px-2.5 py-1.5 font-mono text-[10px] transition-all text-[#00f5ff]"
+                  style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.04)" }}>
+                  <Icon name="User" size={10} /> ПРОФИЛЬ
+                </button>
                 {user.status === "pending" && !user.is_admin && (
                   <>
                     <button onClick={() => onApprove(user.id)}
@@ -410,6 +417,10 @@ export default function AdminUsersTab({
         onConfirm={handleConfirm}
         onCancel={() => setConfirmAction(null)}
       />
+
+      {profileUser && (
+        <AdminUserProfileModal user={profileUser} onClose={() => setProfileUser(null)} />
+      )}
 
       {/* Reset password result */}
       {resetResult && (

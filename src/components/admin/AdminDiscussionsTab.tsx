@@ -116,6 +116,17 @@ export default function AdminDiscussionsTab() {
             style={{ border: `1px solid ${topic.is_pinned ? "rgba(255,107,0,0.4)" : "rgba(0,245,255,0.2)"}`, color: topic.is_pinned ? "#ff6b00" : "#5a7a95" }}>
             <Icon name="Pin" size={12} />{topic.is_pinned ? "Открепить" : "Закрепить"}
           </button>
+          <button
+            onClick={async () => {
+              await api.discussions.pinTopic(topic.id);
+              showMsg(topic.is_locked ? "Тема открыта" : "Тема закрыта для ответов");
+              setSelectedTopic(prev => prev ? { ...prev, topic: { ...prev.topic, is_locked: !prev.topic.is_locked } } : prev);
+              loadTopics();
+            }}
+            className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-colors"
+            style={{ border: `1px solid ${topic.is_locked ? "rgba(255,34,68,0.4)" : "rgba(90,122,149,0.3)"}`, color: topic.is_locked ? "#ff2244" : "#5a7a95" }}>
+            <Icon name={topic.is_locked ? "LockOpen" : "Lock"} size={12} />{topic.is_locked ? "Открыть" : "Закрыть"}
+          </button>
           <button onClick={() => setConfirmDelete({ type: "topic", id: topic.id, label: topic.title })}
             className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-colors"
             style={{ border: "1px solid rgba(255,34,68,0.3)", color: "#ff2244", background: "rgba(255,34,68,0.05)" }}>

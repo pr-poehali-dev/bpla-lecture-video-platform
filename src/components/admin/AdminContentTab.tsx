@@ -61,6 +61,8 @@ export default function AdminContentTab() {
   const [deleteTarget, setDeleteTarget] = useState<FileItem | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "name" | "size">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const loadFiles = () => {
     setLoading(true);
@@ -129,6 +131,28 @@ export default function AdminContentTab() {
     setDeleteTarget(null);
     loadFiles();
     showMsg("Файл удалён");
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Удалить ${selected.size} файлов?`)) return;
+    setBulkDeleting(true);
+    await api.admin.bulkDeleteFiles(Array.from(selected));
+    setSelected(new Set());
+    setBulkDeleting(false);
+    loadFiles();
+    showMsg(`Удалено ${selected.size} файлов`);
+  };
+
+  const toggleSelect = (id: number) => {
+    const s = new Set(selected);
+    if (s.has(id)) s.delete(id); else s.add(id);
+    setSelected(s);
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(f => f.id)));
   };
 
   const toggleSort = (col: "date" | "name" | "size") => {
@@ -313,20 +337,39 @@ export default function AdminContentTab() {
         <span className="font-mono text-[10px] text-[#3a5570] ml-auto">{filtered.length} файлов</span>
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 animate-fade-in" style={{ background: "rgba(0,245,255,0.04)", border: "1px solid rgba(0,245,255,0.15)" }}>
+          <input type="checkbox" checked={selected.size === filtered.length} onChange={toggleSelectAll} className="w-3.5 h-3.5 cursor-pointer accent-[#00f5ff]" />
+          <span className="font-mono text-xs text-[#00f5ff]">Выбрано: {selected.size}</span>
+          <button onClick={handleBulkDelete} disabled={bulkDeleting}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs text-[#ff2244] disabled:opacity-50 transition-colors"
+            style={{ border: "1px solid rgba(255,34,68,0.3)" }}>
+            <Icon name={bulkDeleting ? "Loader" : "Trash2"} size={11} className={bulkDeleting ? "animate-spin" : ""} />
+            Удалить выбранные
+          </button>
+          <button onClick={() => setSelected(new Set())} className="ml-auto font-mono text-[10px] text-[#3a5570] hover:text-white">
+            <Icon name="X" size={13} />
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div style={{ border: "1px solid rgba(0,245,255,0.08)", background: "rgba(4,7,14,0.6)" }}>
         {/* Header */}
         <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2" style={{ borderBottom: "1px solid rgba(0,245,255,0.06)", background: "rgba(0,245,255,0.02)" }}>
           {[
-            { label: "ТИП", cols: 1 },
+            { label: "", cols: 1, isCheckbox: true },
             { label: "НАЗВАНИЕ", cols: 5, sort: "name" as const },
             { label: "РАЗДЕЛ", cols: 2 },
             { label: "КАТЕГОРИЯ", cols: 2 },
             { label: "РАЗМЕР", cols: 1, sort: "size" as const },
             { label: "", cols: 1 },
           ].map(col => (
-            <div key={col.label} className={`col-span-${col.cols} font-mono text-[9px] text-[#2a4060] tracking-widest flex items-center gap-1`}>
-              {col.sort ? (
+            <div key={col.label || "cb"} className={`col-span-${col.cols} font-mono text-[9px] text-[#2a4060] tracking-widest flex items-center gap-1`}>
+              {(col as { isCheckbox?: boolean }).isCheckbox ? (
+                <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0}
+                  onChange={toggleSelectAll} className="w-3.5 h-3.5 cursor-pointer accent-[#00f5ff]" />
+              ) : col.sort ? (
                 <button onClick={() => toggleSort(col.sort!)} className="flex items-center gap-1 hover:text-[#00f5ff] transition-colors">
                   {col.label}
                   <Icon name={sortBy === col.sort ? (sortDir === "asc" ? "ChevronUp" : "ChevronDown") : "ChevronsUpDown"} size={10} />
@@ -349,8 +392,10 @@ export default function AdminContentTab() {
               const ft = file.mime_type === "youtube" ? "youtube" : file.file_type;
               return (
                 <div key={file.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 px-4 py-3 hover:bg-[rgba(0,245,255,0.02)] transition-colors animate-fade-in"
-                  style={{ animationDelay: `${i * 0.02}s` }}>
-                  <div className="md:col-span-1 flex items-center">
+                  style={{ animationDelay: `${i * 0.02}s`, background: selected.has(file.id) ? "rgba(0,245,255,0.03)" : undefined }}>
+                  <div className="md:col-span-1 flex items-center gap-2">
+                    <input type="checkbox" checked={selected.has(file.id)} onChange={() => toggleSelect(file.id)}
+                      className="w-3.5 h-3.5 cursor-pointer accent-[#00f5ff] flex-shrink-0" />
                     <div className="w-7 h-7 flex items-center justify-center" style={{ background: `${typeColor[ft]}10`, border: `1px solid ${typeColor[ft]}25` }}>
                       <Icon name={typeIcon[ft] as "Play"} size={12} style={{ color: typeColor[ft] }} />
                     </div>

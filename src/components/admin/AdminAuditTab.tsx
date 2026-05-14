@@ -56,6 +56,8 @@ export default function AdminAuditTab() {
   const [page, setPage] = useState(0);
   const [filterAction, setFilterAction] = useState("");
   const [filterAdmin, setFilterAdmin] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const LIMIT = 50;
 
   const load = (p = 0, fa = filterAction, fadm = filterAdmin) => {
@@ -67,6 +69,12 @@ export default function AdminAuditTab() {
   useEffect(() => { load(); }, []);
 
   const handleFilter = () => { setPage(0); load(0, filterAction, filterAdmin); };
+
+  const logsFiltered = logs.filter(l => {
+    if (filterDateFrom && new Date(l.created_at) < new Date(filterDateFrom)) return false;
+    if (filterDateTo && new Date(l.created_at) > new Date(filterDateTo + "T23:59:59")) return false;
+    return true;
+  });
 
   const exportCSV = () => {
     const rows = [["ID", "Администратор", "Действие", "Цель", "Детали", "Дата"]];
@@ -111,13 +119,19 @@ export default function AdminAuditTab() {
           className="flex-1 min-w-[160px] bg-transparent px-3 py-2 font-mono text-xs text-white outline-none"
           style={{ border: "1px solid rgba(0,245,255,0.15)" }}
           onKeyDown={e => e.key === "Enter" && handleFilter()} />
+        <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
+          className="bg-transparent px-3 py-2 font-mono text-xs text-white outline-none"
+          style={{ border: "1px solid rgba(0,245,255,0.15)", colorScheme: "dark" }} title="С даты" />
+        <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
+          className="bg-transparent px-3 py-2 font-mono text-xs text-white outline-none"
+          style={{ border: "1px solid rgba(0,245,255,0.15)", colorScheme: "dark" }} title="По дату" />
         <button onClick={handleFilter}
           className="flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold text-[#00f5ff]"
           style={{ border: "1px solid rgba(0,245,255,0.25)", background: "rgba(0,245,255,0.06)" }}>
           <Icon name="Filter" size={13} /> Применить
         </button>
-        {(filterAction || filterAdmin) && (
-          <button onClick={() => { setFilterAction(""); setFilterAdmin(""); setPage(0); load(0, "", ""); }}
+        {(filterAction || filterAdmin || filterDateFrom || filterDateTo) && (
+          <button onClick={() => { setFilterAction(""); setFilterAdmin(""); setFilterDateFrom(""); setFilterDateTo(""); setPage(0); load(0, "", ""); }}
             className="font-mono text-[10px] text-[#3a5570] hover:text-white transition-colors flex items-center gap-1">
             <Icon name="X" size={11} /> Сбросить
           </button>
@@ -135,7 +149,7 @@ export default function AdminAuditTab() {
           </div>
         ) : (
           <div className="divide-y" style={{ borderColor: "rgba(0,245,255,0.04)" }}>
-            {logs.map((log, i) => {
+            {logsFiltered.map((log, i) => {
               const meta = ACTION_LABELS[log.action] || { label: log.action, icon: "Activity", color: "#5a7a95" };
               return (
                 <div key={log.id} className="flex items-start gap-4 px-4 py-3 hover:bg-[rgba(0,245,255,0.02)] transition-colors animate-fade-in"

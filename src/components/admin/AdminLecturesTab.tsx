@@ -32,6 +32,11 @@ export default function AdminLecturesTab() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("Все");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [editingFile, setEditingFile] = useState<FileItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editCat, setEditCat] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   // Upload form
   const [showUpload, setShowUpload] = useState(false);
@@ -62,6 +67,19 @@ export default function AdminLecturesTab() {
     const res = await api.files.delete(id);
     if (res.message) { showMsg(res.message); loadFiles(); }
     else showMsg(res.error || "Ошибка удаления", false);
+  };
+
+  const openEdit = (f: FileItem) => {
+    setEditingFile(f); setEditTitle(f.title); setEditDesc(f.description || ""); setEditCat(f.category || "");
+  };
+
+  const saveEdit = async () => {
+    if (!editingFile) return;
+    setEditSaving(true);
+    const res = await api.admin.updateFile(editingFile.id, { title: editTitle.trim(), description: editDesc.trim(), category: editCat });
+    setEditSaving(false);
+    if (res.message) { showMsg("Данные обновлены"); setEditingFile(null); loadFiles(); }
+    else showMsg(res.error || "Ошибка", false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,23 +277,67 @@ export default function AdminLecturesTab() {
                 {f.uploader && <span className="font-mono text-xs">{f.uploader}</span>}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <a
-                  href={f.cdn_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors"
-                >
+                <a href={f.cdn_url} target="_blank" rel="noopener noreferrer"
+                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
                   <Icon name="ExternalLink" size={13} />
                 </a>
-                <button
-                  onClick={() => deleteFile(f.id, f.title)}
-                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors"
-                >
+                <button onClick={() => openEdit(f)}
+                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#f59e0b] transition-colors">
+                  <Icon name="Pencil" size={13} />
+                </button>
+                <button onClick={() => deleteFile(f.id, f.title)}
+                  className="w-7 h-7 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
                   <Icon name="Trash2" size={13} />
                 </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(5,8,16,0.92)" }}
+          onClick={e => { if (e.target === e.currentTarget) setEditingFile(null); }}>
+          <div className="w-full max-w-md" style={{ background: "#0a1520", border: "1px solid rgba(0,245,255,0.2)" }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(0,245,255,0.08)" }}>
+              <span className="font-orbitron text-sm font-bold text-[#00f5ff]">РЕДАКТИРОВАТЬ</span>
+              <button onClick={() => setEditingFile(null)} className="text-[#3a5570] hover:text-white transition-colors"><Icon name="X" size={15} /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">НАЗВАНИЕ</label>
+                <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                  className="w-full bg-transparent px-3 py-2 font-plex text-sm text-white outline-none"
+                  style={{ border: "1px solid rgba(0,245,255,0.2)" }} />
+              </div>
+              <div>
+                <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">КАТЕГОРИЯ</label>
+                <select value={editCat} onChange={e => setEditCat(e.target.value)}
+                  className="w-full bg-[#0a1520] px-3 py-2 font-mono text-sm text-white outline-none"
+                  style={{ border: "1px solid rgba(0,245,255,0.2)" }}>
+                  {DOC_CATEGORIES.map(c => <option key={c} value={c} style={{ background: "#050810" }}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">ОПИСАНИЕ</label>
+                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={2}
+                  className="w-full bg-transparent px-3 py-2 font-plex text-sm text-white outline-none resize-none"
+                  style={{ border: "1px solid rgba(0,245,255,0.2)" }} />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button onClick={saveEdit} disabled={editSaving}
+                  className="flex items-center gap-2 px-5 py-2 font-mono text-xs disabled:opacity-50 transition-all"
+                  style={{ border: "1px solid rgba(0,245,255,0.4)", color: "#00f5ff", background: "rgba(0,245,255,0.06)" }}>
+                  <Icon name={editSaving ? "Loader" : "Save"} size={12} className={editSaving ? "animate-spin" : ""} />
+                  {editSaving ? "СОХРАНЕНИЕ..." : "СОХРАНИТЬ"}
+                </button>
+                <button onClick={() => setEditingFile(null)}
+                  className="px-4 py-2 font-mono text-xs text-[#5a7a95] hover:text-white transition-colors"
+                  style={{ border: "1px solid rgba(0,245,255,0.1)" }}>ОТМЕНА</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

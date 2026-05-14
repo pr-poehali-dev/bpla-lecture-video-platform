@@ -99,13 +99,8 @@ const sidebarGroups = [
   },
 ];
 
-const trafficData = [
-  { month: "Янв", new: 4, old: 2 }, { month: "Фев", new: 7, old: 3 },
-  { month: "Мар", new: 13, old: 5 }, { month: "Апр", new: 9, old: 6 },
-  { month: "Май", new: 11, old: 4 }, { month: "Июн", new: 8, old: 7 },
-  { month: "Июл", new: 14, old: 5 }, { month: "Авг", new: 10, old: 8 },
-  { month: "Сен", new: 6, old: 3 },
-];
+interface ChartRow { month: string; new_total: number; approved_total: number; }
+interface TopItem { id: number; title: string; file_type: string; category: string; views: number; }
 
 const PIE_COLORS = ["#00f5ff", "#00ff88", "#ff6b00", "#a855f7"];
 
@@ -158,11 +153,26 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
   const [msg, setMsg] = useState("");
   const [stats, setStats] = useState<Stats | null>(null);
   const [removalPendingCount, setRemovalPendingCount] = useState(0);
+  const [supportPendingCount, setSupportPendingCount] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [chartData, setChartData] = useState<ChartRow[]>([]);
+  const [topContent, setTopContent] = useState<TopItem[]>([]);
 
   const loadUsers = async () => { setLoading(true); const res = await api.admin.users(); if (res.users) setUsers(res.users); setLoading(false); };
   const loadStats = async () => { const res = await api.admin.stats(); if (res.total !== undefined) setStats(res as Stats); };
-  useEffect(() => { loadUsers(); loadStats(); }, []);
+  const loadSupportCount = async () => {
+    const res = await api.support.adminTickets("open").catch(() => ({}));
+    setSupportPendingCount((res as { tickets?: unknown[] }).tickets?.length ?? 0);
+  };
+  const loadAnalytics = async () => {
+    const [chartRes, topRes] = await Promise.all([
+      api.admin.registrationsChart().catch(() => ({})),
+      api.admin.topContent().catch(() => ({})),
+    ]);
+    if ((chartRes as { chart?: ChartRow[] }).chart) setChartData((chartRes as { chart: ChartRow[] }).chart);
+    if ((topRes as { top?: TopItem[] }).top) setTopContent((topRes as { top: TopItem[] }).top);
+  };
+  useEffect(() => { loadUsers(); loadStats(); loadSupportCount(); loadAnalytics(); }, []);
 
   const showMsg = (text: string) => { setMsg(text); setTimeout(() => setMsg(""), 3500); };
   const approve = async (id: number) => { const res = await api.admin.approve(id); if (res.message) { showMsg(res.message); loadUsers(); loadStats(); } };
@@ -233,7 +243,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
               )}
               {group.items.map((item) => {
                 const isActive = activeTab === item.key;
-                const badge = item.key === "users" ? pendingCount : item.key === "removals" ? removalPendingCount : 0;
+                const badge = item.key === "users" ? pendingCount : item.key === "removals" ? removalPendingCount : item.key === "support" ? supportPendingCount : 0;
                 return (
                   <button key={item.key} onClick={() => { setActiveTab(item.key); if (window.innerWidth < 768) setSidebarCollapsed(true); }}
                     title={sidebarCollapsed ? item.label : undefined}
@@ -338,7 +348,7 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#00ff88]" /><span className="font-mono text-[10px] text-[#5a7a95]">Одобренные</span></div>
                   </div>
                   <ResponsiveContainer width="100%" height={180}>
-                    <AreaChart data={trafficData}>
+                    <AreaChart data={chartData.length > 0 ? chartData.map(r => ({ month: r.month, new: r.new_total, approved: r.approved_total })) : [{ month: "—", new: 0, approved: 0 }]}>
                       <defs>
                         <linearGradient id="gradNew" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#00f5ff" stopOpacity={0.3} /><stop offset="95%" stopColor="#00f5ff" stopOpacity={0} />
@@ -351,8 +361,8 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                       <XAxis dataKey="month" tick={{ fill: "#3a5570", fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: "#3a5570", fontSize: 10, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ background: "#0d1b2e", border: "1px solid rgba(0,245,255,0.2)", borderRadius: 6, fontFamily: "monospace", fontSize: 11, color: "#fff" }} />
-                      <Area type="monotone" dataKey="new" stroke="#00f5ff" strokeWidth={2} fill="url(#gradNew)" />
-                      <Area type="monotone" dataKey="old" stroke="#00ff88" strokeWidth={2} fill="url(#gradOld)" />
+                      <Area type="monotone" dataKey="new" stroke="#00f5ff" strokeWidth={2} fill="url(#gradNew)" name="Заявки" />
+                      <Area type="monotone" dataKey="approved" stroke="#00ff88" strokeWidth={2} fill="url(#gradOld)" name="Одобрено" />
                     </AreaChart>
                   </ResponsiveContainer>
                   <div className="grid grid-cols-3 gap-4 mt-4 pt-4" style={{ borderTop: "1px solid rgba(0,245,255,0.06)" }}>
@@ -425,6 +435,33 @@ export default function AdminPage({ currentUser, onLogout, onGoToSite }: Props) 
                     style={{ border: "1px solid rgba(255,107,0,0.4)", color: "#ff6b00", background: "rgba(255,107,0,0.08)", borderRadius: 4 }}>
                     <Icon name="ArrowRight" size={12} />РАССМОТРЕТЬ
                   </button>
+                </div>
+              )}
+
+              {/* Top content */}
+              {topContent.length > 0 && (
+                <div className="p-5" style={{ background: "rgba(13,27,46,0.8)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 8 }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="font-orbitron text-sm font-bold text-white">Топ материалов</div>
+                    <button onClick={() => setActiveTab("content")} className="font-mono text-[10px] text-[#3a5570] hover:text-[#00f5ff] transition-colors">все →</button>
+                  </div>
+                  <div className="space-y-2">
+                    {topContent.map((item, i) => (
+                      <div key={item.id} className="flex items-center gap-3">
+                        <span className="font-mono text-[10px] text-[#2a4060] w-4 flex-shrink-0">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-plex text-xs text-white truncate">{item.title}</div>
+                          <div className="font-mono text-[9px] text-[#3a5570]">{item.category || item.file_type}</div>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                            <div className="h-full rounded-full" style={{ width: `${Math.min(100, (item.views / (topContent[0]?.views || 1)) * 100)}%`, background: "#00f5ff" }} />
+                          </div>
+                          <span className="font-mono text-[9px] text-[#3a5570] w-6 text-right">{item.views}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
