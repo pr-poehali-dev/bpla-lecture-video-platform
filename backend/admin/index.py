@@ -3,7 +3,10 @@
 """
 import json
 import os
+import base64
+import uuid
 import psycopg2
+import boto3
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
@@ -471,6 +474,86 @@ def handler(event: dict, context) -> dict:
         """, (uid, admin["id"], note))
         conn.commit()
         return ok({"message": "Заметка сохранена"})
+
+    # ── ЗВАНИЯ ───────────────────────────────────────────────────────────────
+
+    if action == "set-rank" and method == "POST":
+        uid = body.get("user_id")
+        new_rank = (body.get("new_rank") or "").strip()
+        order_number = (body.get("order_number") or "").strip()
+        order_date = body.get("order_date") or None
+        note = (body.get("note") or "").strip()
+        file_data = body.get("file_data")
+        file_name = (body.get("file_name") or "").strip()
+        file_mime = (body.get("file_mime") or "application/octet-stream").strip()
+
+        if not uid or not new_rank:
+            conn.close(); return err("user_id и new_rank обязательны")
+
+        cur.execute(f"SELECT id, name, callsign, rank FROM {q('users')} WHERE id = %s", (uid,))
+        user = cur.fetchone()
+        if not user:
+            conn.close(); return err("Пользователь не найден", 404)
+
+        old_rank = user["rank"]
+
+        # Загрузка файла приказа в S3
+        file_url = None
+        s3_key = None
+        file_size = None
+        if file_data and file_name:
+            try:
+                raw = base64.b64decode(file_data.split(",")[-1] if "," in file_data else file_data)
+                ext = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else "pdf"
+                s3_key = f"rank-orders/{uuid.uuid4()}.{ext}"
+                s3 = boto3.client(
+                    "s3",
+                    endpoint_url="https://bucket.poehali.dev",
+                    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+                )
+                s3.put_object(Bucket="files", Key=s3_key, Body=raw, ContentType=file_mime)
+                file_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{s3_key}"
+                file_size = len(raw)
+            except Exception as e:
+                conn.close(); return err(f"Ошибка загрузки файла: {str(e)}", 500)
+
+        # Обновляем звание
+        cur.execute(f"UPDATE {q('users')} SET rank = %s WHERE id = %s", (new_rank, uid))
+
+        # Сохраняем запись приказа
+        cur.execute(f"""
+            INSERT INTO {q('rank_orders')}
+            (user_id, old_rank, new_rank, order_number, order_date, note,
+             file_url, file_name, file_size, s3_key, issued_by, issued_by_name)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (uid, old_rank, new_rank, order_number or None, order_date,
+              note or None, file_url, file_name or None, file_size,
+              s3_key, admin["id"], admin["callsign"] or admin["name"]))
+
+        audit(cur, admin, "set_rank", "user", user["id"],
+              user["callsign"] or user["name"],
+              {"old_rank": old_rank, "new_rank": new_rank, "order_number": order_number})
+        conn.commit()
+        conn.close()
+        return ok({"message": f"Звание {user['callsign'] or user['name']} изменено: {old_rank or '—'} → {new_rank}",
+                   "file_url": file_url})
+
+    if action == "get-rank-orders" and method == "GET":
+        uid = params.get("user_id")
+        if not uid:
+            conn.close(); return err("user_id обязателен")
+        cur.execute(f"""
+            SELECT id, old_rank, new_rank, order_number, order_date, note,
+                   file_url, file_name, file_size, issued_by_name, created_at
+            FROM {q('rank_orders')}
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """, (uid,))
+        orders = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"orders": orders})
 
     # ── ANALYTICS ────────────────────────────────────────────────────────────
 

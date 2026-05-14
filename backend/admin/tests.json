@@ -59,6 +59,20 @@
       "path": "/?action=drone-create",
       "expectedStatus": 403,
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Set rank without auth",
+      "method": "POST",
+      "path": "/?action=set-rank",
+      "expectedStatus": 403,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get rank orders without auth",
+      "method": "GET",
+      "path": "/?action=get-rank-orders&user_id=1",
+      "expectedStatus": 403,
+      "bodyMatcher": "partial"
     }
   ]
 }

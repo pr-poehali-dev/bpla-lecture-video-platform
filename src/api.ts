@@ -175,6 +175,12 @@ export const api = {
 
     deleteBlock: (block_id: number) =>
       fetch(`${ADMIN_URL}/?action=delete-block`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ block_id }) }).then((r) => r.json()),
+
+    setRank: (data: { user_id: number; new_rank: string; order_number?: string; order_date?: string; note?: string; file_data?: string; file_name?: string; file_mime?: string }) =>
+      fetch(`${ADMIN_URL}/?action=set-rank`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then((r) => r.json()),
+
+    getRankOrders: (user_id: number) =>
+      fetch(`${ADMIN_URL}/?action=get-rank-orders&user_id=${user_id}`, { headers: authHeaders() }).then((r) => r.json()),
   },
 
   msg: {

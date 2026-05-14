@@ -1,7 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { api } from "@/api";
 import { User } from "./AdminUsersTab";
+
+const RANKS = [
+  "Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант",
+  "Старшина", "Прапорщик", "Старший прапорщик",
+  "Младший лейтенант", "Лейтенант", "Старший лейтенант", "Капитан",
+  "Майор", "Подполковник", "Полковник",
+  "Генерал-майор", "Генерал-лейтенант", "Генерал-полковник", "Генерал армии",
+];
+
+interface RankOrder {
+  id: number;
+  old_rank: string | null;
+  new_rank: string;
+  order_number: string | null;
+  order_date: string | null;
+  note: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  issued_by_name: string;
+  created_at: string;
+}
 
 interface ProfileData extends User {
   rank?: string;
@@ -47,6 +69,19 @@ export default function AdminUserProfileModal({ user, onClose }: Props) {
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
 
+  // Звание
+  const [showRankForm, setShowRankForm] = useState(false);
+  const [rankOrders, setRankOrders] = useState<RankOrder[]>([]);
+  const [rankOrdersLoaded, setRankOrdersLoaded] = useState(false);
+  const [newRank, setNewRank] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [orderDate, setOrderDate] = useState("");
+  const [rankNote, setRankNote] = useState("");
+  const [rankFile, setRankFile] = useState<File | null>(null);
+  const [rankSaving, setRankSaving] = useState(false);
+  const [rankMsg, setRankMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const rankFileRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
@@ -69,6 +104,60 @@ export default function AdminUserProfileModal({ user, onClose }: Props) {
     setNoteSaved(true);
     setTimeout(() => setNoteSaved(false), 2500);
   };
+
+  const loadRankOrders = async () => {
+    const res = await api.admin.getRankOrders(user.id).catch(() => null);
+    if (res?.orders) setRankOrders(res.orders);
+    setRankOrdersLoaded(true);
+  };
+
+  const handleOpenRankForm = () => {
+    setShowRankForm(true);
+    setNewRank(profile?.rank || user.rank || "");
+    if (!rankOrdersLoaded) loadRankOrders();
+  };
+
+  const saveRank = async () => {
+    if (!newRank) { setRankMsg({ text: "Выберите звание", ok: false }); return; }
+    setRankSaving(true);
+    setRankMsg(null);
+    let file_data: string | undefined;
+    let file_name: string | undefined;
+    let file_mime: string | undefined;
+    if (rankFile) {
+      await new Promise<void>(resolve => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          file_data = ev.target?.result as string;
+          file_name = rankFile.name;
+          file_mime = rankFile.type || "application/octet-stream";
+          resolve();
+        };
+        reader.readAsDataURL(rankFile);
+      });
+    }
+    const res = await api.admin.setRank({
+      user_id: user.id, new_rank: newRank,
+      order_number: orderNumber || undefined,
+      order_date: orderDate || undefined,
+      note: rankNote || undefined,
+      file_data, file_name, file_mime,
+    });
+    setRankSaving(false);
+    if (res.error) { setRankMsg({ text: res.error, ok: false }); return; }
+    setRankMsg({ text: res.message || "Звание присвоено", ok: true });
+    setOrderNumber(""); setOrderDate(""); setRankNote(""); setRankFile(null);
+    if (rankFileRef.current) rankFileRef.current.value = "";
+    setRankOrdersLoaded(false);
+    loadRankOrders();
+    load();
+  };
+
+  function fmtFileSize(bytes?: number | null) {
+    if (!bytes) return "";
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  }
 
   const exportCSV = () => {
     const p = profile || user;
@@ -178,6 +267,140 @@ export default function AdminUserProfileModal({ user, onClose }: Props) {
                   <div className="font-mono text-xs text-[#8ab0cc]">{d.value}</div>
                 </div>
               ))}
+            </div>
+
+            {/* ── Смена звания ── */}
+            <div style={{ border: "1px solid rgba(255,190,50,0.15)", background: "rgba(255,190,50,0.02)" }}>
+              <button onClick={handleOpenRankForm}
+                className="w-full flex items-center justify-between px-4 py-3 transition-all"
+                style={{ color: showRankForm ? "#ffbe32" : "#5a7a95" }}>
+                <div className="flex items-center gap-2">
+                  <Icon name="Award" size={14} />
+                  <span className="font-mono text-xs tracking-wider">ИЗМЕНИТЬ ЗВАНИЕ</span>
+                  {(profile?.rank || user.rank) && (
+                    <span className="font-mono text-[10px] px-2 py-0.5"
+                      style={{ background: "rgba(255,190,50,0.1)", border: "1px solid rgba(255,190,50,0.25)", color: "#ffbe32" }}>
+                      {profile?.rank || user.rank}
+                    </span>
+                  )}
+                </div>
+                <Icon name={showRankForm ? "ChevronUp" : "ChevronDown"} size={14} />
+              </button>
+
+              {showRankForm && (
+                <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: "rgba(255,190,50,0.1)" }}>
+
+                  {rankMsg && (
+                    <div className="mt-3 p-2 font-mono text-xs"
+                      style={{ background: rankMsg.ok ? "rgba(0,255,136,0.06)" : "rgba(255,34,68,0.06)", border: `1px solid ${rankMsg.ok ? "rgba(0,255,136,0.3)" : "rgba(255,34,68,0.3)"}`, color: rankMsg.ok ? "#00ff88" : "#ff2244" }}>
+                      {rankMsg.ok ? "✓" : "✗"} {rankMsg.text}
+                    </div>
+                  )}
+
+                  {/* Новое звание */}
+                  <div className="pt-3">
+                    <label className="font-mono text-[10px] text-[#ffbe32] tracking-wider block mb-1.5">НОВОЕ ЗВАНИЕ *</label>
+                    <select value={newRank} onChange={e => setNewRank(e.target.value)}
+                      className="w-full bg-[#080d1a] font-plex text-sm text-white px-3 py-2 outline-none"
+                      style={{ border: "1px solid rgba(255,190,50,0.3)" }}>
+                      <option value="">— выберите звание —</option>
+                      {RANKS.map(r => <option key={r} value={r} style={{ background: "#050810" }}>{r}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Реквизиты приказа */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">№ ПРИКАЗА</label>
+                      <input value={orderNumber} onChange={e => setOrderNumber(e.target.value)}
+                        placeholder="123/2026"
+                        className="w-full bg-transparent font-plex text-sm text-white px-3 py-2 outline-none"
+                        style={{ border: "1px solid rgba(255,190,50,0.2)" }} />
+                    </div>
+                    <div>
+                      <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">ДАТА ПРИКАЗА</label>
+                      <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)}
+                        className="w-full bg-transparent font-mono text-sm text-white px-3 py-2 outline-none"
+                        style={{ border: "1px solid rgba(255,190,50,0.2)", colorScheme: "dark" }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1">ПРИМЕЧАНИЕ</label>
+                    <textarea value={rankNote} onChange={e => setRankNote(e.target.value)}
+                      rows={2} placeholder="Основание, дополнительные сведения..."
+                      className="w-full bg-transparent font-plex text-sm text-white px-3 py-2 outline-none resize-none"
+                      style={{ border: "1px solid rgba(255,190,50,0.2)" }} />
+                  </div>
+
+                  {/* Прикрепить файл приказа */}
+                  <div>
+                    <label className="font-mono text-[10px] text-[#3a5570] tracking-wider block mb-1.5">ФАЙЛ ПРИКАЗА (PDF, DOC, JPG...)</label>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => rankFileRef.current?.click()}
+                        className="flex items-center gap-2 px-3 py-2 font-mono text-xs transition-all"
+                        style={{ border: "1px solid rgba(255,190,50,0.3)", color: "#ffbe32", background: "rgba(255,190,50,0.05)" }}>
+                        <Icon name="Paperclip" size={12} />
+                        {rankFile ? rankFile.name : "Прикрепить файл"}
+                      </button>
+                      {rankFile && (
+                        <button onClick={() => { setRankFile(null); if (rankFileRef.current) rankFileRef.current.value = ""; }}
+                          className="text-[#3a5570] hover:text-[#ff2244] transition-colors">
+                          <Icon name="X" size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <input ref={rankFileRef} type="file" className="hidden"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) setRankFile(f); }} />
+                  </div>
+
+                  <button onClick={saveRank} disabled={rankSaving || !newRank}
+                    className="flex items-center gap-2 px-5 py-2.5 font-mono text-xs font-bold tracking-wider transition-all disabled:opacity-40"
+                    style={{ border: "1px solid rgba(255,190,50,0.5)", color: "#ffbe32", background: "rgba(255,190,50,0.08)" }}>
+                    <Icon name={rankSaving ? "Loader" : "Award"} size={13} className={rankSaving ? "animate-spin" : ""} />
+                    {rankSaving ? "ПРИСВОЕНИЕ..." : "ПРИСВОИТЬ ЗВАНИЕ"}
+                  </button>
+
+                  {/* История приказов */}
+                  {rankOrders.length > 0 && (
+                    <div className="pt-2 border-t" style={{ borderColor: "rgba(255,190,50,0.1)" }}>
+                      <div className="font-mono text-[10px] text-[#3a5570] tracking-wider mb-2">ИСТОРИЯ ИЗМЕНЕНИЙ ЗВАНИЯ</div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {rankOrders.map(ord => (
+                          <div key={ord.id} className="px-3 py-2.5"
+                            style={{ background: "rgba(13,27,46,0.6)", border: "1px solid rgba(255,190,50,0.08)" }}>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="font-mono text-[10px] text-[#3a5570]">{ord.old_rank || "—"}</span>
+                              <Icon name="ArrowRight" size={10} className="text-[#ffbe32]" />
+                              <span className="font-mono text-xs font-bold text-[#ffbe32]">{ord.new_rank}</span>
+                              {ord.order_number && (
+                                <span className="font-mono text-[10px] text-[#5a7a95]">пр. №{ord.order_number}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {ord.order_date && (
+                                <span className="font-mono text-[9px] text-[#3a5570]">
+                                  {new Date(ord.order_date).toLocaleDateString("ru-RU")}
+                                </span>
+                              )}
+                              <span className="font-mono text-[9px] text-[#3a5570]">от: {ord.issued_by_name}</span>
+                              {ord.note && <span className="font-plex text-[10px] text-[#5a7a95] truncate flex-1">{ord.note}</span>}
+                              {ord.file_url && (
+                                <a href={ord.file_url} target="_blank" rel="noreferrer"
+                                  className="flex items-center gap-1 font-mono text-[10px] text-[#00f5ff] hover:underline">
+                                  <Icon name="FileText" size={10} />
+                                  {ord.file_name || "Приказ"} {ord.file_size ? `(${fmtFileSize(ord.file_size)})` : ""}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Admin note */}
