@@ -234,6 +234,16 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                           <Icon name="User" size={12} />
                           ЛИЧНОЕ ДЕЛО
                         </button>
+                        {(user.is_admin || ["инструктор кт","инструктор fpv","инструктор оператор-сапер"].includes(user.role || "")) && (
+                          <button
+                            onClick={() => { onNavigate("instructor"); setProfileOpen(false); }}
+                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs hover:bg-[rgba(0,255,136,0.05)] transition-all"
+                            style={{ color: currentPage === "instructor" ? "#00ff88" : "#5a7a95" }}
+                          >
+                            <Icon name="GraduationCap" size={12} />
+                            КАБИНЕТ ИНСТРУКТОРА
+                          </button>
+                        )}
                         {user.is_admin && onGoToAdmin && (
                           <button
                             onClick={() => { onGoToAdmin(); setProfileOpen(false); }}
@@ -295,6 +305,17 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
               >
                 <Icon name="User" size={15} />
                 Личное Дело
+              </button>
+            )}
+            {user && (user.is_admin || ["инструктор кт","инструктор fpv","инструктор оператор-сапер"].includes(user.role || "")) && (
+              <button
+                onClick={() => { onNavigate("instructor"); setMobileOpen(false); }}
+                className={`flex items-center gap-3 w-full px-6 py-3 font-plex text-sm tracking-wider uppercase transition-colors ${
+                  currentPage === "instructor" ? "text-[#00ff88] bg-[rgba(0,255,136,0.06)]" : "text-[#5a7a95]"
+                }`}
+              >
+                <Icon name="GraduationCap" size={15} />
+                Кабинет инструктора
               </button>
             )}
             {user?.is_admin && onGoToAdmin && (
