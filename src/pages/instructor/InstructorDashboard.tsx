@@ -80,10 +80,6 @@ export default function InstructorDashboard({ user, onTabChange }: Props) {
 
   const recentSheets = sheets.slice(0, 4);
 
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting = hour < 6 ? "Ночной режим" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
-
   const METRICS = [
     { label: "Сегодня",     value: todayItems.length,      icon: "Zap",          color: "#00ff88",  tab: "schedule" },
     { label: "Впереди",     value: upcomingItems.length,   icon: "CalendarDays", color: "#00f5ff",  tab: "schedule" },
@@ -105,35 +101,25 @@ export default function InstructorDashboard({ user, onTabChange }: Props) {
   return (
     <div className="space-y-6">
 
-      {/* ── Зона 1: Статус-бар ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 px-5 py-4"
-        style={{ background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.12)" }}>
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-[#00ff88]"
-            style={{ boxShadow: "0 0 8px #00ff88", animation: "pulse 2s infinite" }} />
-          <div>
-            <div className="font-mono text-[10px] text-[#00ff88] tracking-[0.25em]">{greeting.toUpperCase()}</div>
-            <div className="font-orbitron text-sm font-bold text-white">{user.callsign || user.name}</div>
-          </div>
-        </div>
-
-        {/* Метрики */}
-        <div className="flex gap-3 sm:gap-5 flex-wrap">
-          {METRICS.map(m => (
-            <button key={m.label} onClick={() => onTabChange(m.tab)}
-              className="flex items-center gap-2 group transition-all">
-              <div className="flex items-center justify-center w-8 h-8"
-                style={{ border: `1px solid ${m.color}30`, background: `${m.color}0a` }}>
-                <Icon name={m.icon as "Zap"} size={14} style={{ color: m.color }} />
-              </div>
-              <div>
-                <div className="font-orbitron text-base font-black leading-none"
-                  style={{ color: m.value > 0 ? m.color : "#2a4060" }}>{m.value}</div>
-                <div className="font-mono text-[9px] text-[#3a5570] tracking-wide group-hover:text-white transition-colors">{m.label.toUpperCase()}</div>
-              </div>
-            </button>
-          ))}
-        </div>
+      {/* ── Метрики ── */}
+      <div className="flex gap-3 sm:gap-4 flex-wrap">
+        {METRICS.map(m => (
+          <button key={m.label} onClick={() => onTabChange(m.tab)}
+            className="flex items-center gap-3 px-4 py-3 flex-1 min-w-[120px] transition-all group"
+            style={{ border: `1px solid ${m.color}20`, background: `${m.color}06` }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${m.color}45`; (e.currentTarget as HTMLElement).style.background = `${m.color}0e`; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = `${m.color}20`; (e.currentTarget as HTMLElement).style.background = `${m.color}06`; }}>
+            <div className="flex items-center justify-center w-9 h-9 flex-shrink-0"
+              style={{ border: `1px solid ${m.color}35`, background: `${m.color}10` }}>
+              <Icon name={m.icon as "Zap"} size={16} style={{ color: m.color }} />
+            </div>
+            <div>
+              <div className="font-orbitron text-xl font-black leading-none"
+                style={{ color: m.value > 0 ? m.color : "#2a4060" }}>{m.value}</div>
+              <div className="font-mono text-[9px] text-[#3a5570] tracking-wide mt-0.5 group-hover:text-[#5a7a95] transition-colors">{m.label.toUpperCase()}</div>
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* ── Зона 2: Сегодня + Расписание ── */}
