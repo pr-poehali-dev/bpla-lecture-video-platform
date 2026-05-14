@@ -58,7 +58,7 @@ def err(msg: str, status: int = 400) -> dict:
     return {"statusCode": status, "headers": {**CORS, "Content-Type": "application/json"}, "body": json.dumps({"error": msg}, ensure_ascii=False)}
 
 def user_fields():
-    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role, permissions_cache, gender"
+    return "id, name, callsign, email, status, is_admin, rank, contacts, avatar_url, role, permissions_cache, gender, dog_tag, unit"
 
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
@@ -78,6 +78,17 @@ def handler(event: dict, context) -> dict:
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
+    # check-callsign — проверка уникальности позывного (без авторизации)
+    if action == "check-callsign" and method == "GET":
+        callsign = (params.get("callsign") or "").strip()
+        if not callsign or len(callsign) < 2:
+            conn.close()
+            return ok({"available": False, "reason": "Минимум 2 символа"})
+        cur.execute(f"SELECT id FROM {q('users')} WHERE callsign = %s", (callsign,))
+        taken = cur.fetchone()
+        conn.close()
+        return ok({"available": not taken, "reason": "Позывной уже занят" if taken else ""})
+
     # register
     if action == "register" and method == "POST":
         email = (body.get("email") or "").strip().lower()
@@ -85,29 +96,36 @@ def handler(event: dict, context) -> dict:
         name = (body.get("name") or "").strip()
         callsign = (body.get("callsign") or "").strip()
         rank = (body.get("rank") or "").strip()
-        gender = (body.get("gender") or "").strip()
+        dog_tag = (body.get("dog_tag") or "").strip()
+        unit = (body.get("unit") or "").strip()
 
         if not email or not password or not name or not callsign:
-            return err("Заполните все поля")
+            conn.close(); return err("Заполните все обязательные поля")
         if not rank:
-            return err("Укажите звание")
-        if not gender or gender not in ("male", "female"):
-            return err("Укажите пол")
+            conn.close(); return err("Укажите звание")
+        if not dog_tag:
+            conn.close(); return err("Укажите номер жетона")
         if len(password) < 6:
-            return err("Пароль минимум 6 символов")
+            conn.close(); return err("Пароль минимум 6 символов")
 
-        cur.execute(f"SELECT id FROM {q('users')} WHERE email = %s OR callsign = %s", (email, callsign))
-        existing = cur.fetchone()
-        if existing:
-            cur.execute(f"SELECT id FROM {q('users')} WHERE email = %s", (email,))
-            return err("Email уже зарегистрирован") if cur.fetchone() else err("Позывной уже занят")
+        # Проверяем уникальность
+        cur.execute(f"SELECT id, callsign, email, dog_tag FROM {q('users')} WHERE email = %s OR callsign = %s OR (dog_tag = %s AND dog_tag != '')", (email, callsign, dog_tag))
+        existing = cur.fetchall()
+        for ex in existing:
+            if ex["email"] == email:
+                conn.close(); return err("Email уже зарегистрирован")
+            if ex["callsign"] == callsign:
+                conn.close(); return err("Позывной уже занят")
+            if ex["dog_tag"] == dog_tag:
+                conn.close(); return err("Номер жетона уже зарегистрирован")
 
         pw_hash = hash_password(password)
         cur.execute(
-            f"INSERT INTO {q('users')} (email, password_hash, name, callsign, rank, gender, status) VALUES (%s, %s, %s, %s, %s, %s, 'pending') RETURNING id",
-            (email, pw_hash, name, callsign, rank, gender)
+            f"INSERT INTO {q('users')} (email, password_hash, name, callsign, rank, dog_tag, unit, status) VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending') RETURNING id",
+            (email, pw_hash, name, callsign, rank, dog_tag, unit or None)
         )
         conn.commit()
+        conn.close()
         return ok({"message": "Заявка отправлена. Ожидайте одобрения администратора."}, 201)
 
     # login — по позывному

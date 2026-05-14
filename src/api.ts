@@ -46,8 +46,11 @@ export interface RemovalRequest {
 }
 
 export const api = {
-  register: (data: { callsign: string; name: string; email: string; password: string; rank: string; gender: string }) =>
+  register: (data: { callsign: string; name: string; email: string; password: string; rank: string; dog_tag: string; unit?: string }) =>
     fetch(`${AUTH_URL}/?action=register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then((r) => r.json()),
+
+  checkCallsign: (callsign: string) =>
+    fetch(`${AUTH_URL}/?action=check-callsign&callsign=${encodeURIComponent(callsign)}`).then((r) => r.json()),
 
   login: (data: { callsign: string; password: string }) =>
     fetch(`${AUTH_URL}/?action=login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data), signal: AbortSignal.timeout(10000) }).then((r) => r.json()).catch(() => ({ error: "Нет соединения с сервером. Проверьте интернет и попробуйте снова." })),

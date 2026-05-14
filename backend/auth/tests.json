@@ -6,7 +6,15 @@
       "path": "/?action=register",
       "body": {"email": "", "password": "", "name": "", "callsign": ""},
       "expectedStatus": 400,
-      "expectedBody": {"error": "Заполните все поля"},
+      "expectedBody": {"error": "Заполните все обязательные поля"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Check callsign available",
+      "method": "GET",
+      "path": "/?action=check-callsign&callsign=НеСуществует999",
+      "expectedStatus": 200,
+      "expectedBody": {"available": true},
       "bodyMatcher": "partial"
     },
     {
