@@ -39,6 +39,10 @@ function weekday(iso: string) {
   return days[new Date(iso).getDay()];
 }
 
+function isToday(iso: string) {
+  return iso === new Date().toISOString().slice(0, 10);
+}
+
 interface Props { user: User; onOpenSheets?: (group?: string, subject?: string) => void; }
 
 export default function InstructorScheduleTab({ user, onOpenSheets }: Props) {
@@ -283,31 +287,77 @@ export default function InstructorScheduleTab({ user, onOpenSheets }: Props) {
                 <div className="font-mono text-[10px] text-[#3a5570]">{dayItems.length} занятий</div>
               </div>
               <div className="space-y-2">
-                {dayItems.map(item => (
-                  <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 transition-all"
-                    style={{ background: item.is_cancelled ? "rgba(255,34,68,0.03)" : "rgba(13,27,46,0.5)", border: `1px solid ${item.is_cancelled ? "rgba(255,34,68,0.15)" : "rgba(0,255,136,0.1)"}`, opacity: item.is_cancelled ? 0.6 : 1 }}>
-                    {/* Time */}
-                    <div className="flex-shrink-0 text-center" style={{ minWidth: 60 }}>
+                {dayItems.map(item => {
+                  const isNow = (() => {
+                    if (!item.time_start || !isToday(item.scheduled_date)) return false;
+                    const now = new Date();
+                    const [sh, sm] = item.time_start.split(":").map(Number);
+                    const start = sh * 60 + sm;
+                    const cur = now.getHours() * 60 + now.getMinutes();
+                    const end = item.time_end ? (() => { const [eh, em] = item.time_end!.split(":").map(Number); return eh * 60 + em; })() : start + 90;
+                    return cur >= start && cur <= end;
+                  })();
+                  return (
+                  <div key={item.id} className="flex gap-0 overflow-hidden transition-all group"
+                    style={{
+                      background: item.is_cancelled ? "rgba(255,34,68,0.02)" : isNow ? "rgba(0,255,136,0.04)" : "rgba(13,27,46,0.5)",
+                      border: `1px solid ${item.is_cancelled ? "rgba(255,34,68,0.2)" : isNow ? "rgba(0,255,136,0.35)" : "rgba(0,245,255,0.08)"}`,
+                      opacity: item.is_cancelled ? 0.65 : 1,
+                      boxShadow: isNow ? "0 0 16px rgba(0,255,136,0.08)" : "none",
+                    }}
+                    onMouseEnter={e => { if (!item.is_cancelled && !isNow) (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.2)"; }}
+                    onMouseLeave={e => { if (!item.is_cancelled && !isNow) (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,245,255,0.08)"; }}>
+
+                    {/* Полоса времени */}
+                    <div className="flex flex-col items-center justify-center px-3 py-3 flex-shrink-0"
+                      style={{
+                        background: item.is_cancelled ? "rgba(255,34,68,0.06)" : isNow ? "rgba(0,255,136,0.1)" : "rgba(0,245,255,0.04)",
+                        borderRight: `1px solid ${item.is_cancelled ? "rgba(255,34,68,0.15)" : isNow ? "rgba(0,255,136,0.2)" : "rgba(0,245,255,0.07)"}`,
+                        minWidth: 60,
+                      }}>
                       {item.time_start ? (
                         <>
-                          <div className="font-orbitron text-sm font-bold" style={{ color: item.is_cancelled ? "#ff2244" : "#00ff88" }}>{fmtTime(item.time_start)}</div>
-                          {item.time_end && <div className="font-mono text-[10px] text-[#3a5570]">{fmtTime(item.time_end)}</div>}
+                          <div className="font-orbitron text-sm font-black leading-none"
+                            style={{ color: item.is_cancelled ? "#ff2244" : isNow ? "#00ff88" : "#00f5ff" }}>
+                            {fmtTime(item.time_start)}
+                          </div>
+                          {item.time_end && <div className="font-mono text-[9px] text-[#3a5570] mt-0.5">{fmtTime(item.time_end)}</div>}
                         </>
                       ) : (
-                        <div className="font-mono text-[10px] text-[#3a5570]">—</div>
+                        <Icon name="Clock" size={14} className="text-[#3a5570]" />
                       )}
                     </div>
+
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        {item.is_cancelled && (
-                          <span className="font-mono text-[9px] px-1.5 py-0.5" style={{ background: "rgba(255,34,68,0.1)", color: "#ff2244", border: "1px solid rgba(255,34,68,0.3)" }}>ОТМЕНЕНО</span>
+                    <div className="flex-1 min-w-0 px-4 py-3">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {isNow && (
+                          <span className="font-mono text-[9px] px-2 py-0.5 flex items-center gap-1"
+                            style={{ background: "rgba(0,255,136,0.12)", color: "#00ff88", border: "1px solid rgba(0,255,136,0.3)" }}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00ff88] inline-block" style={{ animation: "pulse 1.5s infinite" }} />
+                            ИДЁТ СЕЙЧАС
+                          </span>
                         )}
-                        <span className="font-plex text-sm text-white">{item.title}</span>
+                        {item.is_cancelled && (
+                          <span className="font-mono text-[9px] px-2 py-0.5"
+                            style={{ background: "rgba(255,34,68,0.1)", color: "#ff2244", border: "1px solid rgba(255,34,68,0.3)" }}>
+                            ОТМЕНЕНО
+                          </span>
+                        )}
+                        <span className="font-plex text-sm text-white font-medium">{item.title}</span>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                        {item.subject && <span className="font-mono text-[10px] text-[#5a7a95]">{item.subject}</span>}
-                        {item.group_name && <span className="font-mono text-[10px] text-[#00f5ff]">{item.group_name}</span>}
+                        {item.subject && (
+                          <span className="font-mono text-[10px] text-[#5a7a95] flex items-center gap-1">
+                            <Icon name="BookOpen" size={9} />{item.subject}
+                          </span>
+                        )}
+                        {item.group_name && (
+                          <span className="font-mono text-[10px] px-1.5 py-0.5"
+                            style={{ background: "rgba(0,245,255,0.06)", color: "#00f5ff", border: "1px solid rgba(0,245,255,0.15)" }}>
+                            {item.group_name}
+                          </span>
+                        )}
                         {item.location && (
                           <span className="font-mono text-[10px] text-[#3a5570] flex items-center gap-1">
                             <Icon name="MapPin" size={9} />{item.location}
@@ -319,24 +369,24 @@ export default function InstructorScheduleTab({ user, onOpenSheets }: Props) {
                       </div>
                       {item.notes && <div className="font-plex text-[11px] text-[#3a5570] mt-1 truncate">{item.notes}</div>}
                     </div>
+
                     {/* Actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-0.5 px-2 flex-shrink-0">
                       {onOpenSheets && !item.is_cancelled && (
                         <button onClick={() => onOpenSheets(item.group_name, item.subject)}
                           title="Открыть / создать ведомость"
-                          className="flex items-center gap-1 font-mono text-[10px] px-2 py-1.5 transition-all"
-                          style={{ border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7", background: "rgba(168,85,247,0.04)" }}>
-                          <Icon name="ClipboardList" size={11} /> Ведомость
+                          className="w-8 h-8 flex items-center justify-center transition-colors text-[#3a5570] hover:text-[#a855f7]">
+                          <Icon name="ClipboardList" size={13} />
                         </button>
                       )}
                       <button onClick={() => toggleCancel(item)} title={item.is_cancelled ? "Восстановить" : "Отменить"}
                         className="w-8 h-8 flex items-center justify-center transition-colors"
                         style={{ color: item.is_cancelled ? "#00ff88" : "#ff6b00" }}>
-                        <Icon name={item.is_cancelled ? "RotateCcw" : "Ban"} size={14} />
+                        <Icon name={item.is_cancelled ? "RotateCcw" : "Ban"} size={13} />
                       </button>
                       <button onClick={() => openEdit(item)}
                         className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
-                        <Icon name="Pencil" size={14} />
+                        <Icon name="Pencil" size={13} />
                       </button>
                       <button onClick={() => setConfirmDeleteId(item.id)}
                         className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
@@ -344,7 +394,8 @@ export default function InstructorScheduleTab({ user, onOpenSheets }: Props) {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

@@ -340,63 +340,92 @@ export default function InstructorSheetsTab({ user }: Props) {
 
             {/* Table */}
             {sheetRows.length > 0 && (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" style={{ maxHeight: "55vh", overflowY: "auto" }}>
                 <table className="w-full text-left" style={{ borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(0,255,136,0.15)" }}>
-                      <th className="font-mono text-[9px] text-[#3a5570] tracking-wider px-2 py-2 whitespace-nowrap">ПОЗЫВНОЙ</th>
-                      <th className="font-mono text-[9px] text-[#3a5570] tracking-wider px-2 py-2 whitespace-nowrap">ИМЯ</th>
+                  <thead className="sticky top-0 z-10">
+                    <tr style={{ background: "#060f1e", borderBottom: "2px solid rgba(0,255,136,0.2)" }}>
+                      <th className="font-mono text-[9px] text-[#00ff88] tracking-wider px-3 py-2.5 whitespace-nowrap" style={{ borderRight: "1px solid rgba(0,245,255,0.08)" }}>ПОЗЫВНОЙ</th>
+                      <th className="font-mono text-[9px] text-[#00ff88] tracking-wider px-3 py-2.5 whitespace-nowrap" style={{ borderRight: "1px solid rgba(0,245,255,0.08)" }}>ИМЯ</th>
                       {columns.map(col => (
-                        <th key={col} className="font-mono text-[9px] text-[#3a5570] tracking-wider px-2 py-2 whitespace-nowrap text-center" style={{ minWidth: 80 }}>
-                          <div>{col}</div>
-                          <div className="font-mono text-[8px] text-[#2a4060] mt-0.5">Оц / Пос</div>
+                        <th key={col} className="font-mono text-[9px] text-[#00f5ff] tracking-wider px-2 py-2.5 whitespace-nowrap text-center" style={{ minWidth: 90, borderRight: "1px solid rgba(0,245,255,0.08)" }}>
+                          <div className="truncate max-w-[80px]">{col}</div>
+                          <div className="font-mono text-[8px] text-[#3a5570] mt-0.5">Оц · Пос</div>
                         </th>
                       ))}
-                      <th className="font-mono text-[9px] text-[#3a5570] px-2 py-2 whitespace-nowrap">КОММЕНТ</th>
+                      <th className="font-mono text-[9px] text-[#3a5570] px-3 py-2.5 whitespace-nowrap">КОММЕНТ</th>
                       <th className="w-8" />
                     </tr>
                   </thead>
                   <tbody>
-                    {sheetRows.map((row, ri) => (
-                      <tr key={ri} style={{ borderBottom: "1px solid rgba(0,245,255,0.04)" }}>
-                        <td className="px-2 py-1.5">
+                    {sheetRows.map((row, ri) => {
+                      const isEven = ri % 2 === 1;
+                      const hasLowGrade = columns.some(c => row.grades[c] === "2" || row.grades[c] === "незачёт");
+                      const hasAbsence = columns.some(c => row.attendance[c] === "О");
+                      const rowBg = hasLowGrade
+                        ? "rgba(255,34,68,0.04)"
+                        : isEven ? "rgba(0,245,255,0.02)" : "transparent";
+                      return (
+                      <tr key={ri}
+                        style={{ borderBottom: "1px solid rgba(0,245,255,0.05)", background: rowBg }}>
+                        <td className="px-3 py-2" style={{ borderRight: "1px solid rgba(0,245,255,0.05)" }}>
                           <input value={row.callsign || ""} onChange={e => setSheetRows(p => p.map((r,i)=>i===ri?{...r,callsign:e.target.value}:r))}
                             className="w-20 bg-transparent font-mono text-xs text-[#00f5ff] outline-none"
-                            style={{ border: "none", borderBottom: "1px solid rgba(0,245,255,0.15)" }} placeholder="Позывной" />
+                            style={{ border: "none" }} placeholder="Позывной" />
                         </td>
-                        <td className="px-2 py-1.5">
-                          <input value={row.name} onChange={e => setSheetRows(p => p.map((r,i)=>i===ri?{...r,name:e.target.value}:r))}
-                            className="w-28 bg-transparent font-plex text-xs text-white outline-none"
-                            style={{ border: "none", borderBottom: "1px solid rgba(0,245,255,0.15)" }} placeholder="Имя" />
+                        <td className="px-3 py-2" style={{ borderRight: "1px solid rgba(0,245,255,0.05)" }}>
+                          <div className="flex items-center gap-1.5">
+                            {(hasLowGrade || hasAbsence) && (
+                              <span title={hasLowGrade ? "Низкая оценка" : "Пропуск"}
+                                style={{ color: hasLowGrade ? "#ff2244" : "#ff6b00", fontSize: 10 }}>
+                                {hasLowGrade ? "⚠" : "•"}
+                              </span>
+                            )}
+                            <input value={row.name} onChange={e => setSheetRows(p => p.map((r,i)=>i===ri?{...r,name:e.target.value}:r))}
+                              className="w-28 bg-transparent font-plex text-xs text-white outline-none"
+                              style={{ border: "none" }} placeholder="Имя" />
+                          </div>
                         </td>
-                        {columns.map(col => (
-                          <td key={col} className="px-2 py-1.5 text-center">
+                        {columns.map(col => {
+                          const g = row.grades[col] || "";
+                          const a = row.attendance[col] || "";
+                          const gcol = GRADE_COLORS[g];
+                          const acol = ATTENDANCE_COLORS[a];
+                          const cellBg = g === "2" || g === "незачёт"
+                            ? "rgba(255,34,68,0.08)"
+                            : g === "5" || g === "зачёт"
+                            ? "rgba(0,255,136,0.06)"
+                            : "transparent";
+                          return (
+                          <td key={col} className="px-2 py-1.5 text-center"
+                            style={{ borderRight: "1px solid rgba(0,245,255,0.05)", background: cellBg }}>
                             <div className="flex flex-col gap-1 items-center">
-                              <select value={row.grades[col] || ""} onChange={e => setGrade(ri, col, e.target.value)}
-                                className="bg-transparent font-mono text-xs outline-none text-center"
-                                style={{ border: "1px solid rgba(0,245,255,0.15)", color: GRADE_COLORS[row.grades[col]] || "#5a7a95", minWidth: 52, background: "#0a1520" }}>
-                                {GRADE_OPTIONS.map(g => <option key={g} value={g} style={{ background: "#050810" }}>{g || "—"}</option>)}
+                              <select value={g} onChange={e => setGrade(ri, col, e.target.value)}
+                                className="font-mono text-xs outline-none text-center font-bold"
+                                style={{ border: `1px solid ${gcol ? gcol + "40" : "rgba(0,245,255,0.1)"}`, color: gcol || "#3a5570", minWidth: 52, background: "#060f1e", borderRadius: 3, padding: "1px 2px" }}>
+                                {GRADE_OPTIONS.map(opt => <option key={opt} value={opt} style={{ background: "#050810" }}>{opt || "—"}</option>)}
                               </select>
-                              <select value={row.attendance[col] || ""} onChange={e => setAttendance(ri, col, e.target.value)}
-                                className="bg-transparent font-mono text-xs outline-none text-center"
-                                style={{ border: "1px solid rgba(0,245,255,0.1)", color: ATTENDANCE_COLORS[row.attendance[col]] || "#3a5570", minWidth: 52, background: "#0a1520" }}>
-                                {ATTENDANCE_OPTIONS.map(a => <option key={a} value={a} style={{ background: "#050810" }}>{a || "—"}</option>)}
+                              <select value={a} onChange={e => setAttendance(ri, col, e.target.value)}
+                                className="font-mono text-xs outline-none text-center font-bold"
+                                style={{ border: `1px solid ${acol ? acol + "30" : "rgba(0,245,255,0.06)"}`, color: acol || "#2a4060", minWidth: 52, background: a === "О" ? "rgba(255,34,68,0.1)" : a === "Б" ? "rgba(255,107,0,0.08)" : "#060f1e", borderRadius: 3, padding: "1px 2px" }}>
+                                {ATTENDANCE_OPTIONS.map(opt => <option key={opt} value={opt} style={{ background: "#050810" }}>{opt || "—"}</option>)}
                               </select>
                             </div>
                           </td>
-                        ))}
-                        <td className="px-2 py-1.5">
+                          );
+                        })}
+                        <td className="px-3 py-2">
                           <input value={row.comment || ""} onChange={e => setSheetRows(p => p.map((r,i)=>i===ri?{...r,comment:e.target.value}:r))}
-                            className="w-28 bg-transparent font-mono text-xs text-[#5a7a95] outline-none"
-                            style={{ border: "none", borderBottom: "1px solid rgba(0,245,255,0.1)" }} placeholder="—" />
+                            className="w-32 bg-transparent font-mono text-xs text-[#5a7a95] outline-none"
+                            style={{ border: "none" }} placeholder="—" />
                         </td>
-                        <td className="px-2 py-1.5">
+                        <td className="px-2 py-2">
                           <button onClick={() => removeRow(ri)} className="text-[#3a5570] hover:text-[#ff2244] transition-colors">
                             <Icon name="X" size={12} />
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                     {/* Строка итогов */}
                     {sheetRows.length > 1 && (
                       <tr style={{ borderTop: "2px solid rgba(0,255,136,0.15)", background: "rgba(0,255,136,0.03)" }}>
