@@ -1,5 +1,6 @@
 const AUTH_URL = "https://functions.poehali.dev/549cd8d9-b876-4355-9483-609144c1e199";
 const ADMIN_URL = "https://functions.poehali.dev/5407bcc9-7143-4278-8422-e2a603eb0135";
+const INSTRUCTOR_URL = "https://functions.poehali.dev/a81b05cd-3d45-48ce-ad2b-fe05fae7383d";
 const FILES_URL = "https://functions.poehali.dev/0edb3a50-4c27-43a5-b907-883104f0c559";
 const MSG_URL = "https://functions.poehali.dev/64d88e88-79a2-48b8-8ac8-d37bfa8eb51e";
 const REMOVAL_URL = "https://functions.poehali.dev/c72247bf-756d-4755-9c5d-88a1c31e0f01";
@@ -372,5 +373,42 @@ export const api = {
       fetch(`${ADMIN_URL}/?action=drone-update`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
     delete: (id: number) =>
       fetch(`${ADMIN_URL}/?action=drone-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+  },
+
+  instructor: {
+    scheduleList: (params?: { date_from?: string; date_to?: string; all?: boolean }) => {
+      const p = new URLSearchParams({ action: "schedule-list" });
+      if (params?.date_from) p.set("date_from", params.date_from);
+      if (params?.date_to) p.set("date_to", params.date_to);
+      if (params?.all) p.set("all", "1");
+      return fetch(`${INSTRUCTOR_URL}/?${p}`, { headers: authHeaders() }).then(r => r.json());
+    },
+    scheduleCreate: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=schedule-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    scheduleUpdate: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=schedule-update`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    scheduleDelete: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=schedule-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+
+    notesList: (all = false) =>
+      fetch(`${INSTRUCTOR_URL}/?action=notes-list${all ? "&all=1" : ""}`, { headers: authHeaders() }).then(r => r.json()),
+    noteUpload: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=note-upload`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    noteDelete: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=note-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+
+    sheetsList: (all = false) =>
+      fetch(`${INSTRUCTOR_URL}/?action=sheets-list${all ? "&all=1" : ""}`, { headers: authHeaders() }).then(r => r.json()),
+    sheetGet: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=sheet-get&id=${id}`, { headers: authHeaders() }).then(r => r.json()),
+    sheetCreate: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=sheet-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    sheetUpdate: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=sheet-update`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    sheetDelete: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=sheet-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+
+    searchUsers: (q: string) =>
+      fetch(`${INSTRUCTOR_URL}/?action=search-users&q=${encodeURIComponent(q)}`, { headers: authHeaders() }).then(r => r.json()),
   },
 };

@@ -30,7 +30,7 @@ function useServerStatus() {
   return online;
 }
 
-const navItems: { id: Page; label: string; icon: string }[] = [
+const navItems: { id: Page; label: string; icon: string; instructorOnly?: boolean }[] = [
   { id: "lectures", label: "Лекции", icon: "BookOpen" },
   { id: "videos", label: "Видео", icon: "Play" },
   { id: "drone-types", label: "Типы БпЛА", icon: "Plane" },
@@ -38,6 +38,7 @@ const navItems: { id: Page; label: string; icon: string }[] = [
   { id: "tacmed", label: "Так Мед", icon: "HeartPulse" },
   { id: "firmware", label: "Загрузки и прошивки", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
+  { id: "instructor", label: "Инструктор", icon: "GraduationCap", instructorOnly: true },
 ];
 
 interface LayoutProps {
@@ -79,7 +80,7 @@ const PAGE_LABELS: Partial<Record<Page, string>> = {
   firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ", tacmed: "ТАК МЕД",
   profile: "ПРОФИЛЬ",
   messages: "СООБЩЕНИЯ", support: "ПОДДЕРЖКА",
-  "content-upload": "ЗАГРУЗКА",
+  "content-upload": "ЗАГРУЗКА", instructor: "ИНСТРУКТОР",
 };
 
 export default function Layout({ currentPage, onNavigate, children, user, onLogout, onGoToAdmin }: LayoutProps) {
@@ -101,7 +102,10 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
   useEffect(() => { if (currentPage === "messages") resetUnread(); }, [currentPage]);
   const unreadSupport = useUnreadSupport(user, currentPage);
 
+  const isInstructor = user?.is_admin || ["инструктор кт","инструктор fpv","инструктор оператор-сапер"].includes(user?.role || "");
+
   const visibleNavItems = navItems.filter(item => {
+    if (item.instructorOnly && !isInstructor) return false;
     if (!user?.permissions) return true;
     return user.permissions[item.id] !== false;
   });
@@ -259,6 +263,16 @@ export default function Layout({ currentPage, onNavigate, children, user, onLogo
                           <Icon name="User" size={12} />
                           ЛИЧНОЕ ДЕЛО
                         </button>
+                        {isInstructor && (
+                          <button
+                            onClick={() => { onNavigate("instructor"); setProfileOpen(false); }}
+                            className="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-xs hover:bg-[rgba(0,255,136,0.05)] transition-all"
+                            style={{ color: "#00ff88" }}
+                          >
+                            <Icon name="GraduationCap" size={12} />
+                            КАБИНЕТ ИНСТРУКТОРА
+                          </button>
+                        )}
                         {user.is_admin && onGoToAdmin && (
                           <button
                             onClick={() => { onGoToAdmin(); setProfileOpen(false); }}

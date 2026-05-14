@@ -14,7 +14,7 @@ CORS = {
     "Access-Control-Max-Age": "86400",
 }
 
-PAGES = ["home", "lectures", "videos", "drone-types", "materials", "firmware", "discussions", "downloads"]
+PAGES = ["home", "lectures", "videos", "drone-types", "materials", "firmware", "discussions", "downloads", "instructor"]
 ROLES = ["курсант", "инструктор кт", "инструктор fpv", "инструктор оператор-сапер"]
 INSTRUCTOR_ROLES = {"инструктор кт", "инструктор fpv", "инструктор оператор-сапер"}
 
@@ -139,13 +139,17 @@ def handler(event: dict, context) -> dict:
             if r not in result:
                 result[r] = {}
             result[r][row["page"]] = row["allowed"]
-        # заполнить пропущенные страницы дефолтом True
+        # дефолты: instructor страница закрыта для курсантов, открыта для инструкторов
+        INSTRUCTOR_PAGE_DEFAULT = {"курсант": False}
         for role in ROLES:
             if role not in result:
                 result[role] = {}
             for page in PAGES:
                 if page not in result[role]:
-                    result[role][page] = True
+                    if page == "instructor":
+                        result[role][page] = INSTRUCTOR_PAGE_DEFAULT.get(role, True)
+                    else:
+                        result[role][page] = True
         return ok({"permissions": result, "pages": PAGES, "roles": ROLES})
 
     # POST ?action=set-permissions

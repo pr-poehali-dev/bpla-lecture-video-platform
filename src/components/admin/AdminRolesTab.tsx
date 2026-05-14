@@ -11,6 +11,7 @@ const PAGE_LABELS: Record<string, string> = {
   "firmware": "Прошивки FPV КТ",
   "discussions": "Обсуждения",
   "downloads": "Загрузки",
+  "instructor": "Кабинет инструктора",
 };
 
 const PAGE_ICONS: Record<string, string> = {
@@ -22,6 +23,7 @@ const PAGE_ICONS: Record<string, string> = {
   "firmware": "Cpu",
   "discussions": "MessageSquare",
   "downloads": "Download",
+  "instructor": "GraduationCap",
 };
 
 const ROLE_COLORS: Record<string, string> = {

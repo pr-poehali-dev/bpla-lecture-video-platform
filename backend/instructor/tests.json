@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Schedule list without auth",
+      "method": "GET",
+      "path": "/?action=schedule-list",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Notes list without auth",
+      "method": "GET",
+      "path": "/?action=notes-list",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Sheet create without auth",
+      "method": "POST",
+      "path": "/?action=sheet-create",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
