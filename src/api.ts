@@ -137,7 +137,7 @@ export const api = {
     topContent: () =>
       fetch(`${ADMIN_URL}/?action=top-content`, { headers: authHeaders() }).then((r) => r.json()),
 
-    updateFile: (id: number, data: { title?: string; description?: string; category?: string }) =>
+    updateFile: (id: number, data: { title?: string; description?: string; category?: string; sort_order?: number }) =>
       fetch(`${ADMIN_URL}/?action=update-file`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, ...data }) }).then((r) => r.json()),
 
     bulkDeleteFiles: (ids: number[]) =>
@@ -212,6 +212,8 @@ export const api = {
       fetch(`${MSG_URL}/?action=typing-get&chat_id=${chat_id}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({ typing: [] })),
     directOpen: (target_id: number) =>
       fetch(`${MSG_URL}/?action=direct-open`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ target_id }) }).then(r => r.json()),
+    messageEdit: (msg_id: number, content: string) =>
+      fetch(`${MSG_URL}/?action=message-edit`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ msg_id, content }) }).then(r => r.json()),
   },
 
   support: {

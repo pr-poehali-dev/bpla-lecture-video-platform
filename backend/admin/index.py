@@ -901,14 +901,28 @@ def handle_discussions(event, method, action, body, conn, cur):
         quote_reply_id = body.get("quote_reply_id")
         if not text:
             return err("Текст не может быть пустым")
-        cur.execute(f"SELECT id FROM {q('topics')} WHERE id = %s", (topic_id,))
-        if not cur.fetchone():
+        cur.execute(f"SELECT id, title, author_id FROM {q('topics')} WHERE id = %s", (topic_id,))
+        topic_row = cur.fetchone()
+        if not topic_row:
             return err("Топик не найден", 404)
         cur.execute(f"INSERT INTO {q('topic_replies')} (topic_id, author_id, text, quote_reply_id) VALUES (%s, %s, %s, %s) RETURNING id",
             (topic_id, user["id"], text, quote_reply_id or None))
         reply_id = cur.fetchone()["id"]
         cur.execute(f"UPDATE {q('topics')} SET updated_at = NOW() WHERE id = %s", (topic_id,))
         conn.commit()
+        # Уведомление автору темы (если не сам ответил)
+        author_id = topic_row["author_id"]
+        if author_id and author_id != user["id"]:
+            replier_name = user.get("callsign") or user.get("name", "Кто-то")
+            notif_text = f"{replier_name} ответил(а) в теме «{topic_row['title'][:40]}»"
+            try:
+                cur.execute(f"""
+                    INSERT INTO {q('notifications')} (user_id, title, body, type, link_page)
+                    VALUES (%s, %s, %s, 'discussion_reply', 'discussions')
+                """, (author_id, "Новый ответ в обсуждении", notif_text))
+                conn.commit()
+            except Exception:
+                pass
         return ok({"id": reply_id})
 
     # POST лайк/снять лайк с ответа

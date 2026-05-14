@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { api } from "@/api";
 import { User } from "@/App";
 import Icon from "@/components/ui/icon";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface NoteFile {
   id: number;
@@ -54,6 +55,7 @@ export default function InstructorNotesTab({ user }: Props) {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [viewing, setViewing] = useState<NoteFile | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const showMsg = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };
@@ -91,9 +93,9 @@ export default function InstructorNotesTab({ user }: Props) {
     reader.readAsDataURL(selectedFile);
   };
 
-  const del = async (id: number) => {
-    if (!confirm("Удалить конспект?")) return;
+  const doDelete = async (id: number) => {
     const res = await api.instructor.noteDelete(id);
+    setConfirmDeleteId(null);
     if (res.error) showMsg(res.error, false);
     else { showMsg("Удалён"); load(); }
   };
@@ -285,7 +287,7 @@ export default function InstructorNotesTab({ user }: Props) {
               <div className="font-mono text-[10px] text-[#3a5570] tracking-widest mb-2">МОИ ФАЙЛЫ</div>
               <div style={{ border: "1px solid rgba(0,255,136,0.08)" }}>
                 {myFiles.map((file, i) => <NoteRow key={file.id} file={file} idx={i} total={myFiles.length} isOwn
-                  onView={() => setViewing(file)} onShare={() => share(file)} onDelete={() => del(file.id)} fmtSize={fmtSize} fmtDate={fmtDate} />)}
+                  onView={() => setViewing(file)} onShare={() => share(file)} onDelete={() => setConfirmDeleteId(file.id)} fmtSize={fmtSize} fmtDate={fmtDate} />)}
               </div>
             </div>
           )}
@@ -302,6 +304,16 @@ export default function InstructorNotesTab({ user }: Props) {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Удалить конспект"
+        message="Вы уверены, что хотите удалить этот конспект? Действие необратимо."
+        confirmLabel="Удалить"
+        danger
+        onConfirm={() => confirmDeleteId !== null && doDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

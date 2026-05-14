@@ -8,7 +8,7 @@ interface Chat {
   last_message?: string;
   last_message_at?: string;
   unread_count: number;
-  partner?: { id: number; name: string; callsign: string };
+  partner?: { id: number; name: string; callsign: string; avatar_url?: string | null; last_seen?: string | null };
 }
 
 interface Contact {
@@ -134,12 +134,14 @@ export default function ChatCombinedList({
                 <button key={c.id} onClick={() => onOpenContactChat(c)}
                   className="flex flex-col items-center gap-0.5 flex-shrink-0 group"
                   title={c.callsign || c.name}>
-                  <div className="relative w-9 h-9 flex items-center justify-center font-orbitron text-xs text-[#00f5ff] transition-all group-hover:scale-105"
+                  <div className="relative w-9 h-9 flex items-center justify-center font-orbitron text-xs text-[#00f5ff] transition-all group-hover:scale-105 overflow-hidden"
                     style={{
                       border: `1px solid ${online ? "rgba(0,255,136,0.4)" : "rgba(0,245,255,0.2)"}`,
                       background: online ? "rgba(0,255,136,0.06)" : "rgba(0,245,255,0.06)",
                     }}>
-                    {(c.callsign || c.name || "?")[0].toUpperCase()}
+                    {c.avatar_url
+                      ? <img src={c.avatar_url} className="w-full h-full object-cover" alt="" />
+                      : (c.callsign || c.name || "?")[0].toUpperCase()}
                     {online && (
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
                         style={{ background: "#00ff88", border: "1.5px solid rgba(5,8,16,1)", boxShadow: "0 0 5px #00ff88" }} />
@@ -210,9 +212,17 @@ export default function ChatCombinedList({
                     style={{ borderColor: "rgba(0,245,255,0.06)" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(0,245,255,0.04)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                    <div className="relative w-8 h-8 flex items-center justify-center flex-shrink-0 overflow-hidden font-orbitron text-xs text-[#00f5ff]"
                       style={{ border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)" }}>
-                      <Icon name={chat.type === "direct" ? "User" : "Users"} size={13} className="text-[#00f5ff]" />
+                      {chat.type === "direct" && chat.partner?.avatar_url
+                        ? <img src={chat.partner.avatar_url} className="w-full h-full object-cover" alt="" />
+                        : chat.type === "direct" && chat.partner
+                          ? (chat.partner.callsign || chat.partner.name || "?")[0].toUpperCase()
+                          : <Icon name="Users" size={13} className="text-[#00f5ff]" />}
+                      {chat.type === "direct" && (
+                        <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full"
+                          style={{ background: isOnline(chat.partner?.last_seen) ? "#00ff88" : "#2a4060", border: "1.5px solid rgba(3,5,11,1)" }} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">

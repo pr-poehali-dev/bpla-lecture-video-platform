@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { api } from "@/api";
 import { User, Page } from "@/App";
-import { Note } from "./profile/ProfileTypes";
+import { Note, UserStats } from "./profile/ProfileTypes";
 import ProfileCard from "./profile/ProfileCard";
 import ProfileActivity from "./profile/ProfileActivity";
+import ProfileStats from "./profile/ProfileStats";
 
 interface ProfilePageProps {
   user: User;
@@ -18,6 +19,9 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
   const [notes, setNotes] = useState<Note[]>([]);
   const [rightTab, setRightTab] = useState<"notes" | "upload">("notes");
   const [deletingNote, setDeletingNote] = useState<number | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [totalLectures, setTotalLectures] = useState(0);
+  const [totalVideos, setTotalVideos] = useState(0);
 
   // Profile edit state
   const [editing, setEditing] = useState(false);
@@ -46,6 +50,14 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
     api.progress.myNotes().then(res => {
       if (res.notes) setNotes(res.notes);
     }).catch(() => {});
+    api.progress.leaderboard().then(res => {
+      if (res.leaderboard) {
+        const me = res.leaderboard.find((r: { id: number; lectures_done: number; videos_done: number; quizzes_passed: number; score: number }) => r.id === user.id);
+        if (me) setUserStats({ lectures_done: me.lectures_done, videos_done: me.videos_done, quizzes_passed: me.quizzes_passed, score: me.score, my_position: res.my_position });
+      }
+    }).catch(() => {});
+    api.files.list("document", undefined, "general").then(r => setTotalLectures((r.files || []).length)).catch(() => {});
+    api.files.list("video", undefined, "general").then(r => setTotalVideos((r.files || []).length)).catch(() => {});
   }, [user.id]);
 
   useEffect(() => {
@@ -159,6 +171,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
         />
 
         <div className="lg:col-span-3 flex flex-col gap-4">
+          <ProfileStats stats={userStats} totalLectures={totalLectures} totalVideos={totalVideos} />
           <ProfileActivity
             user={user}
             notes={notes}

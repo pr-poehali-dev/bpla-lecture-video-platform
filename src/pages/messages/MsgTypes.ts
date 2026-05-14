@@ -39,3 +39,18 @@ export function getChatTitle(chat: Chat): string {
 export function getChatIcon(chat: Chat): "User" | "Users" {
   return chat.type === "direct" ? "User" : "Users";
 }
+
+export function isOnline(lastSeen?: string | null): boolean {
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < 3 * 60 * 1000; // онлайн если был < 3 мин назад
+}
+
+export function lastSeenLabel(lastSeen?: string | null): string {
+  if (!lastSeen) return "";
+  const diff = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 1000);
+  if (diff < 60) return "только что";
+  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
+  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} д назад`;
+  return new Date(lastSeen).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+}

@@ -105,6 +105,7 @@ export default function ProfileActivity({
           { page: "videos" as Page, icon: "Play", label: "Видео", color: "#00f5ff" },
           { page: "materials" as Page, icon: "FileText", label: "Материалы", color: "#00f5ff" },
           { page: "discussions" as Page, icon: "MessageSquare", label: "Обсуждения", color: "#00ff88" },
+          { page: "leaderboard" as Page, icon: "Trophy", label: "Рейтинг", color: "#ffbe32" },
           { page: "messages" as Page, icon: "MessageCircle", label: "Сообщения", color: "#00f5ff" },
           { page: "support" as Page, icon: "Headphones", label: "Поддержка", color: "#00ff88" },
         ].map(item => (

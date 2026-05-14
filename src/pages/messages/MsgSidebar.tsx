@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
-import { Chat, Contact, FoundUser, getChatTitle, formatTime } from "./MsgTypes";
+import { Chat, Contact, FoundUser, getChatTitle, formatTime, isOnline, lastSeenLabel } from "./MsgTypes";
 
 interface Props {
   chats: Chat[];
@@ -159,7 +159,9 @@ export default function MsgSidebar({
           const sub = type === "direct"
             ? (chat?.last_message ? chat.last_message.slice(0, 28) + (chat.last_message.length > 28 ? "…" : "") : contact!.rank || "")
             : (chat?.last_message ? chat.last_message.slice(0, 28) + (chat.last_message.length > 28 ? "…" : "") : "Группа");
-          const avatarUrl = type === "direct" ? contact!.avatar_url : null;
+          const avatarUrl = type === "direct" ? (chat?.partner?.avatar_url ?? contact!.avatar_url) : null;
+          const partnerLastSeen = type === "direct" ? chat?.partner?.last_seen : null;
+          const online = type === "direct" && isOnline(partnerLastSeen);
           const accentColor = type === "group" ? "#00ff88" : "#00f5ff";
 
           return (
@@ -185,8 +187,8 @@ export default function MsgSidebar({
                     : (contact!.callsign[0] || "?").toUpperCase()
                 }
                 {type === "direct" && (
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#00ff88]"
-                    style={{ border: "1.5px solid rgba(3,5,11,1)" }} />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full"
+                    style={{ background: online ? "#00ff88" : "#2a4060", border: "1.5px solid rgba(3,5,11,1)", boxShadow: online ? "0 0 4px #00ff88" : "none" }} />
                 )}
               </div>
               {/* Текст */}
@@ -197,7 +199,11 @@ export default function MsgSidebar({
                     <span className="font-mono text-[9px] flex-shrink-0" style={{ color: "#2a4060" }}>{formatTime(chat.last_message_at)}</span>
                   )}
                 </div>
-                <div className="font-mono text-[10px] truncate" style={{ color: "#3a5570" }}>{sub}</div>
+                <div className="font-mono text-[10px] truncate" style={{ color: "#3a5570" }}>
+                  {type === "direct" && !chat?.last_message && partnerLastSeen
+                    ? (online ? "в сети" : lastSeenLabel(partnerLastSeen))
+                    : sub}
+                </div>
               </div>
               {/* Бейдж */}
               {unread > 0 && (

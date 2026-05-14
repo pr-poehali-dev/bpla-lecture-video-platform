@@ -7,6 +7,7 @@ import MsgSidebar from "./messages/MsgSidebar";
 import MsgChatArea from "./messages/MsgChatArea";
 import MsgCreateGroupModal from "./messages/MsgCreateGroupModal";
 import SupportPage from "./SupportPage";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface MessagesPageProps { user: User; }
 
@@ -44,10 +45,29 @@ export default function MessagesPage({ user }: MessagesPageProps) {
 
   const [showSupport, setShowSupport] = useState(false);
   const [unreadSupport, setUnreadSupport] = useState(0);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [editingMsg, setEditingMsg] = useState<{ id: number; content: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const typingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const playNotifSound = () => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (_) { /* AudioContext not available */ }
+  };
 
   useEffect(() => {
     loadAll();
@@ -64,7 +84,22 @@ export default function MessagesPage({ user }: MessagesPageProps) {
   useEffect(() => {
     if (activeChat) {
       if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(() => loadMessages(activeChat.id), 8000);
+      pollRef.current = setInterval(async () => {
+        const res = await api.msg.chatMessages(activeChat.id);
+        if (res.messages) {
+          setMessages(prev => {
+            const incoming: Message[] = res.messages;
+            if (incoming.length > prev.length) {
+              const newOnes = incoming.slice(prev.length);
+              const hasOthers = newOnes.some((m: Message) => m.sender_id !== user.id);
+              if (hasOthers && (document.hidden || true)) {
+                playNotifSound();
+              }
+            }
+            return incoming;
+          });
+        }
+      }, 8000);
 
       if (typingPollRef.current) clearInterval(typingPollRef.current);
       typingPollRef.current = setInterval(() => {
@@ -88,7 +123,17 @@ export default function MessagesPage({ user }: MessagesPageProps) {
 
   const loadMessages = async (chatId: number) => {
     const res = await api.msg.chatMessages(chatId);
-    if (res.messages) setMessages(res.messages);
+    if (res.messages) {
+      setMessages(prev => {
+        const incoming: Message[] = res.messages;
+        if (incoming.length > prev.length && prev.length > 0) {
+          const newOnes = incoming.slice(prev.length);
+          const hasOthers = newOnes.some((m: Message) => m.sender_id !== user.id);
+          if (hasOthers) playNotifSound();
+        }
+        return incoming;
+      });
+    }
   };
 
   const openDirectChat = async (contactUserId: number) => {
@@ -174,20 +219,38 @@ export default function MessagesPage({ user }: MessagesPageProps) {
     }
   };
 
+  const handleEditMessage = async (msgId: number, newContent: string) => {
+    const res = await api.msg.messageEdit(msgId, newContent);
+    if (res.ok) setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: newContent } : m));
+    setEditingMsg(null);
+  };
+
   const handleLeaveChat = async () => {
-    if (!activeChat || !confirm("Выйти из чата?")) return;
+    if (!activeChat) return;
+    setConfirmLeave(true);
+    setShowChatMenu(false);
+  };
+
+  const doLeaveChat = async () => {
+    if (!activeChat) return;
     await api.msg.chatLeave(activeChat.id);
     setActiveChat(null);
     setMessages([]);
     setChats(prev => prev.filter(c => c.id !== activeChat.id));
-    setShowChatMenu(false);
+    setConfirmLeave(false);
   };
 
   const handleClearChat = async () => {
-    if (!activeChat || !confirm("Очистить историю?")) return;
+    if (!activeChat) return;
+    setConfirmClear(true);
+    setShowChatMenu(false);
+  };
+
+  const doClearChat = async () => {
+    if (!activeChat) return;
     await api.msg.chatClear(activeChat.id);
     setMessages([]);
-    setShowChatMenu(false);
+    setConfirmClear(false);
   };
 
   const handleRenameChat = async () => {
@@ -315,6 +378,7 @@ export default function MessagesPage({ user }: MessagesPageProps) {
               renaming={renaming}
               newChatName={newChatName}
               messagesEndRef={messagesEndRef}
+              editingMsg={editingMsg}
               onClose={() => setActiveChat(null)}
               onInputChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -337,6 +401,9 @@ export default function MessagesPage({ user }: MessagesPageProps) {
               onRenameKeyDown={e => { if (e.key === "Enter") handleRenameChat(); if (e.key === "Escape") setRenaming(false); }}
               onRenameConfirm={handleRenameChat}
               onCancelRename={() => setRenaming(false)}
+              onStartEdit={setEditingMsg}
+              onEditSubmit={handleEditMessage}
+              onCancelEdit={() => setEditingMsg(null)}
             />
           )}
         </div>
@@ -356,6 +423,25 @@ export default function MessagesPage({ user }: MessagesPageProps) {
           onCreate={createGroup}
         />
       )}
+
+      <ConfirmModal
+        open={confirmLeave}
+        title="Выйти из чата"
+        message={`Выйти из чата «${activeChat?.name || activeChat?.type === "direct" ? (activeChat?.partner?.callsign || activeChat?.partner?.name || "чат") : (activeChat?.name || "чат")}»?`}
+        confirmLabel="Выйти"
+        danger
+        onConfirm={doLeaveChat}
+        onCancel={() => setConfirmLeave(false)}
+      />
+      <ConfirmModal
+        open={confirmClear}
+        title="Очистить историю"
+        message="Все сообщения в этом чате будут удалены безвозвратно."
+        confirmLabel="Очистить"
+        danger
+        onConfirm={doClearChat}
+        onCancel={() => setConfirmClear(false)}
+      />
     </div>
   );
 }

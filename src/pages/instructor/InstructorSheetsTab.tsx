@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/api";
 import { User } from "@/App";
 import Icon from "@/components/ui/icon";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface SheetRow {
   user_id?: number;
@@ -49,6 +50,7 @@ export default function InstructorSheetsTab({ user }: Props) {
   const [newColName, setNewColName] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const [userResults, setUserResults] = useState<{ id: number; name: string; callsign: string; rank: string }[]>([]);
 
@@ -144,9 +146,9 @@ export default function InstructorSheetsTab({ user }: Props) {
     load();
   };
 
-  const del = async (id: number) => {
-    if (!confirm("Удалить ведомость?")) return;
+  const doDelete = async (id: number) => {
     const res = await api.instructor.sheetDelete(id);
+    setConfirmDeleteId(null);
     if (res.error) showMsg(res.error, false);
     else { showMsg("Удалена"); load(); }
   };
@@ -455,7 +457,7 @@ export default function InstructorSheetsTab({ user }: Props) {
                   className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
                   <Icon name="Pencil" size={14} />
                 </button>
-                <button onClick={() => del(sheet.id)}
+                <button onClick={() => setConfirmDeleteId(sheet.id)}
                   className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
                   <Icon name="Trash2" size={14} />
                 </button>
@@ -464,6 +466,16 @@ export default function InstructorSheetsTab({ user }: Props) {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Удалить ведомость"
+        message="Вы уверены, что хотите удалить эту ведомость? Действие необратимо."
+        confirmLabel="Удалить"
+        danger
+        onConfirm={() => confirmDeleteId !== null && doDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

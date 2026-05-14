@@ -38,6 +38,7 @@ const navItems: { id: Page; label: string; icon: string; instructorOnly?: boolea
   { id: "tacmed", label: "Так Мед", icon: "HeartPulse" },
   { id: "firmware", label: "Загрузки и прошивки", icon: "Cpu" },
   { id: "discussions", label: "Обсуждения", icon: "MessageSquare" },
+  { id: "leaderboard", label: "Рейтинг", icon: "Trophy" },
   { id: "instructor", label: "Инструктор", icon: "GraduationCap", instructorOnly: true },
 ];
 
@@ -78,7 +79,7 @@ const PAGE_LABELS: Partial<Record<Page, string>> = {
   home: "ГЛАВНАЯ", lectures: "ЛЕКЦИИ", videos: "ВИДЕО",
   "drone-types": "ТИПЫ БПЛА", materials: "МАТЕРИАЛЫ",
   firmware: "ЗАГРУЗКИ", discussions: "ОБСУЖДЕНИЯ", tacmed: "ТАК МЕД",
-  profile: "ПРОФИЛЬ",
+  profile: "ПРОФИЛЬ", leaderboard: "РЕЙТИНГ",
   messages: "СООБЩЕНИЯ", support: "ПОДДЕРЖКА",
   "content-upload": "ЗАГРУЗКА", instructor: "ИНСТРУКТОР",
 };

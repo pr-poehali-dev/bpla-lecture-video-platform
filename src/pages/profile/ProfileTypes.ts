@@ -9,6 +9,14 @@ export interface Note {
   updated_at: string;
 }
 
+export interface UserStats {
+  lectures_done: number;
+  videos_done: number;
+  quizzes_passed: number;
+  score: number;
+  my_position?: number | null;
+}
+
 export const RANKS = [
   "Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант",
   "Старшина", "Прапорщик", "Старший прапорщик",

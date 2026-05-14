@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "@/api";
 import { User } from "@/App";
 import Icon from "@/components/ui/icon";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface Doc {
   id: number;
@@ -272,6 +273,7 @@ export default function InstructorDocsTab({ user }: Props) {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("Все");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const showMsg = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };
 
@@ -336,9 +338,9 @@ export default function InstructorDocsTab({ user }: Props) {
     }
   };
 
-  const del = async (id: number) => {
-    if (!confirm("Удалить документ?")) return;
+  const doDelete = async (id: number) => {
     const res = await api.instructor.docDelete(id);
+    setConfirmDeleteId(null);
     if (res.error) showMsg(res.error, false);
     else { showMsg("Удалён"); load(); }
   };
@@ -415,7 +417,7 @@ export default function InstructorDocsTab({ user }: Props) {
           {myDocs.length > 0 && (
             <div className="space-y-2">
               <div className="font-mono text-[10px] text-[#3a5570] tracking-widest">МОИ ДОКУМЕНТЫ</div>
-              {myDocs.map((doc, i) => <DocCard key={doc.id} doc={doc} idx={i} onOpen={openDoc} onDelete={del} onShare={toggleShare} isOwn />)}
+              {myDocs.map((doc, i) => <DocCard key={doc.id} doc={doc} idx={i} onOpen={openDoc} onDelete={(id) => setConfirmDeleteId(id)} onShare={toggleShare} isOwn />)}
             </div>
           )}
 
@@ -438,6 +440,16 @@ export default function InstructorDocsTab({ user }: Props) {
           )}
         </>
       )}
+
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Удалить документ"
+        message="Вы уверены, что хотите удалить этот документ? Действие необратимо."
+        confirmLabel="Удалить"
+        danger
+        onConfirm={() => confirmDeleteId !== null && doDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

@@ -19,13 +19,14 @@ import ContentUploadPage from "@/pages/ContentUploadPage";
 import SupportPage from "@/pages/SupportPage";
 import TacmedPage from "@/pages/TacmedPage";
 import InstructorPage from "@/pages/InstructorPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 import Layout from "@/components/Layout";
 import Intro from "@/components/Intro";
 import AdminPage from "@/pages/AdminPage";
 import { api } from "@/api";
 import { ChatProvider } from "@/context/ChatContext";
 
-export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "tacmed" | "profile" | "messages" | "content-upload" | "support" | "instructor";
+export type Page = "home" | "lectures" | "videos" | "materials" | "drone-types" | "discussions" | "firmware" | "tacmed" | "profile" | "messages" | "content-upload" | "support" | "instructor" | "leaderboard";
 type AuthPage = "login" | "register";
 
 export interface User {
@@ -200,6 +201,7 @@ export default function App() {
         const isInstr = user.is_admin || ["инструктор кт","инструктор fpv","инструктор оператор-сапер"].includes(user.role || "");
         return isInstr ? <InstructorPage user={user} /> : <HomePage onNavigate={navigate} />;
       }
+      case "leaderboard": return <LeaderboardPage user={user} />;
       default: return <HomePage onNavigate={navigate} />;
     }
   };

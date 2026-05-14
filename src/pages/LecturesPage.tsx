@@ -83,6 +83,9 @@ export default function LecturesPage() {
   const { set: bookmarks, toggle: toggleBookmark } = useLocalSet("lecture_bookmarks");
   const { done: read, toggle: toggleRead } = useProgress("lecture");
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+  const [hasMore, setHasMore] = useState(true);
   const [noteFile, setNoteFile] = useState<FileItem | null>(null);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
@@ -110,7 +113,7 @@ export default function LecturesPage() {
     else setQuizData(null);
   };
 
-  const filtered = files
+  const filteredAll = files
     .filter((f) => {
       const matchCat = activeCategory === "Все" || f.category === activeCategory;
       const matchSearch = f.title.toLowerCase().includes(search.toLowerCase()) || (f.description || "").toLowerCase().includes(search.toLowerCase());
@@ -123,6 +126,13 @@ export default function LecturesPage() {
       if (sort === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+
+  const filtered = filteredAll.slice(0, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+  }, [search, activeCategory, sort, showBookmarks]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -191,7 +201,7 @@ export default function LecturesPage() {
       </div>
 
       <div className="flex items-center justify-between mb-6">
-        <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
+        <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filteredAll.length}</div>
         <button
           onClick={() => setShowBookmarks(!showBookmarks)}
           className="flex items-center gap-1.5 font-mono text-xs px-3 py-1.5 transition-all"
@@ -251,7 +261,7 @@ export default function LecturesPage() {
       {/* List */}
       {loading ? (
         <SkeletonList count={6} />
-      ) : filtered.length === 0 ? (
+      ) : filteredAll.length === 0 ? (
         <div className="text-center py-20" style={{ border: "1px solid #1a2a3a" }}>
           <Icon name="FileText" size={32} className="text-[#3a5570] mx-auto mb-3" />
           <div className="font-mono text-xs text-[#3a5570]">Материалы не найдены</div>
@@ -327,6 +337,16 @@ export default function LecturesPage() {
               </div>
             </div>
           ))}
+          {filteredAll.length > page * PAGE_SIZE && (
+            <div className="flex justify-center mt-6">
+              <button onClick={() => setPage(p => p + 1)}
+                className="flex items-center gap-2 px-6 py-3 font-mono text-xs transition-all"
+                style={{ border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff", background: "rgba(0,245,255,0.04)" }}>
+                <Icon name="ChevronDown" size={14} />
+                ЕЩЁ ({filteredAll.length - page * PAGE_SIZE} материалов)
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

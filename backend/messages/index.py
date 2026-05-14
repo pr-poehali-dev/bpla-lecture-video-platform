@@ -520,4 +520,24 @@ def handler(event: dict, context) -> dict:
         typing = [row["callsign"] for row in cur.fetchall()]
         return ok({"typing": typing})
 
+    # Редактировать сообщение
+    if action == "message-edit" and method == "POST":
+        msg_id = body.get("msg_id")
+        content = (body.get("content") or "").strip()
+        if not msg_id or not content:
+            return err("Укажите msg_id и content")
+        if len(content) > 2000:
+            return err("Сообщение слишком длинное")
+        cur.execute(f"SELECT sender_id, message_type FROM {t('messages')} WHERE id = %s AND hidden = FALSE", (msg_id,))
+        msg = cur.fetchone()
+        if not msg:
+            return err("Сообщение не найдено", 404)
+        if msg["sender_id"] != user["id"]:
+            return err("Можно редактировать только свои сообщения", 403)
+        if msg["message_type"] == "image":
+            return err("Изображения нельзя редактировать", 400)
+        cur.execute(f"UPDATE {t('messages')} SET content = %s WHERE id = %s", (content, msg_id))
+        conn.commit()
+        return ok({"ok": True, "msg_id": msg_id, "content": content})
+
     return err("Не найдено", 404)

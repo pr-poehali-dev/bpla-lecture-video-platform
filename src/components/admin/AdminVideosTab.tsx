@@ -42,6 +42,7 @@ export default function AdminVideosTab() {
   const [filterCat, setFilterCat] = useState("Все");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
+  const [dragId, setDragId] = useState<number | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadMode, setUploadMode] = useState<UploadMode>("file");
 
@@ -355,9 +356,40 @@ export default function AdminVideosTab() {
             return (
               <div
                 key={f.id}
+                draggable
+                onDragStart={() => setDragId(f.id)}
+                onDragOver={e => { e.preventDefault(); }}
+                onDrop={() => {
+                  if (dragId === null || dragId === f.id) return;
+                  setFiles(prev => {
+                    const from = prev.findIndex(x => x.id === dragId);
+                    const to = prev.findIndex(x => x.id === f.id);
+                    if (from === -1 || to === -1) return prev;
+                    const next = [...prev];
+                    const [moved] = next.splice(from, 1);
+                    next.splice(to, 0, moved);
+                    next.forEach((item, idx) => {
+                      api.admin.updateFile(item.id, { sort_order: idx + 1 }).catch(() => {});
+                    });
+                    return next;
+                  });
+                  setDragId(null);
+                }}
+                onDragEnd={() => setDragId(null)}
                 className="flex items-center gap-4 p-4 animate-fade-in"
-                style={{ background: "#0a1520", border: "1px solid #1a2a3a", animationDelay: `${i * 0.03}s` }}
+                style={{
+                  background: "#0a1520",
+                  border: `1px solid ${dragId === f.id ? "rgba(0,245,255,0.4)" : "#1a2a3a"}`,
+                  animationDelay: `${i * 0.03}s`,
+                  cursor: "grab",
+                  opacity: dragId === f.id ? 0.5 : 1,
+                  transition: "opacity 0.15s, border-color 0.15s",
+                }}
               >
+                <div className="flex-shrink-0 text-[#3a5570] hover:text-[#5a7a95] transition-colors" style={{ cursor: "grab" }}>
+                  <Icon name="GripVertical" size={14} />
+                </div>
+
                 {/* Thumbnail / icon */}
                 <div className="w-16 h-10 flex-shrink-0 overflow-hidden" style={{ border: "1px solid #1a2a3a" }}>
                   {thumbUrl

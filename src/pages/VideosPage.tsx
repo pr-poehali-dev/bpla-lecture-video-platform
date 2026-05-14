@@ -82,6 +82,9 @@ export default function VideosPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const [playing, setPlaying] = useState<FileItem | null>(null);
   const { done: watched, toggle: toggleWatched } = useProgress("video");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 16;
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     api.files.list("video", undefined, "general").then((res) => {
@@ -93,7 +96,7 @@ export default function VideosPage() {
   const { header } = usePageData("videos");
   const categories = header?.categories ?? VIDEO_CATEGORIES;
 
-  const filtered = files
+  const filteredAll = files
     .filter((f) => {
       const matchCat = activeCategory === "Все" || f.category === activeCategory;
       const matchSearch = !search || f.title.toLowerCase().includes(search.toLowerCase()) || (f.description || "").toLowerCase().includes(search.toLowerCase());
@@ -104,6 +107,13 @@ export default function VideosPage() {
       if (sort === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+
+  const filtered = filteredAll.slice(0, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+  }, [search, activeCategory, sort]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -160,7 +170,7 @@ export default function VideosPage() {
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filtered.length}</div>
+        <div className="font-mono text-xs text-[#3a5570]">НАЙДЕНО: {loading ? "..." : filteredAll.length}</div>
         {files.length > 0 && (
           <div className="flex items-center gap-2">
             <div className="w-32 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,245,255,0.08)" }}>
@@ -175,7 +185,7 @@ export default function VideosPage() {
         <div className="text-center py-20">
           <div className="font-mono text-xs text-[#3a5570] tracking-widest animate-pulse">ЗАГРУЗКА...</div>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filteredAll.length === 0 ? (
         <div className="text-center py-20" style={{ border: "1px solid #1a2a3a" }}>
           <Icon name="VideoOff" size={32} className="text-[#3a5570] mx-auto mb-3" />
           <div className="font-mono text-xs text-[#3a5570] tracking-widest">ВИДЕО НЕ НАЙДЕНЫ</div>
@@ -247,6 +257,16 @@ export default function VideosPage() {
               </div>
             </div>
           ))}
+          {filteredAll.length > page * PAGE_SIZE && (
+            <div className="col-span-full flex justify-center mt-6">
+              <button onClick={() => setPage(p => p + 1)}
+                className="flex items-center gap-2 px-6 py-3 font-mono text-xs transition-all"
+                style={{ border: "1px solid rgba(0,245,255,0.3)", color: "#00f5ff", background: "rgba(0,245,255,0.04)" }}>
+                <Icon name="ChevronDown" size={14} />
+                ЕЩЁ ({filteredAll.length - page * PAGE_SIZE} видео)
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
