@@ -410,5 +410,23 @@ export const api = {
 
     searchUsers: (q: string) =>
       fetch(`${INSTRUCTOR_URL}/?action=search-users&q=${encodeURIComponent(q)}`, { headers: authHeaders() }).then(r => r.json()),
+
+    noteShare: (id: number, is_shared: boolean) =>
+      fetch(`${INSTRUCTOR_URL}/?action=note-share`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, is_shared }) }).then(r => r.json()),
+    sheetShare: (id: number, is_shared: boolean) =>
+      fetch(`${INSTRUCTOR_URL}/?action=sheet-share`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, is_shared }) }).then(r => r.json()),
+
+    docsList: (all = false) =>
+      fetch(`${INSTRUCTOR_URL}/?action=docs-list${all ? "&all=1" : ""}`, { headers: authHeaders() }).then(r => r.json()),
+    docGet: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-get&id=${id}`, { headers: authHeaders() }).then(r => r.json()),
+    docCreate: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    docUpdate: (data: Record<string, unknown>) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-update`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    docDelete: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+    docExportDocx: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-export-docx`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
   },
 };

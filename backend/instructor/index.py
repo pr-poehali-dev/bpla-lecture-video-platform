@@ -1,14 +1,16 @@
 """
-Инструкторский раздел: расписание, конспекты, ведомости.
+Инструкторский раздел: расписание, конспекты, ведомости, документы.
 Доступ только для инструкторов и администраторов.
-Действия: schedule-list, schedule-create, schedule-update, schedule-delete,
-          notes-list, note-upload, note-delete,
-          sheets-list, sheet-create, sheet-update, sheet-delete
+Действия: schedule-list/create/update/delete,
+          notes-list/upload/delete/share,
+          sheets-list/get/create/update/delete/share,
+          docs-list/get/create/update/delete/share/export-docx
 """
 import json
 import os
 import base64
 import uuid
+import re
 import psycopg2
 import psycopg2.extras
 import boto3
@@ -272,7 +274,7 @@ def handler(event: dict, context) -> dict:
             vals.append(uid)
         cur.execute(f"""
             SELECT gs.id, gs.title, gs.group_name, gs.subject, gs.notes,
-                   gs.created_at, gs.updated_at,
+                   gs.is_shared, gs.created_at, gs.updated_at,
                    u.name AS instructor_name, u.callsign AS instructor_callsign,
                    jsonb_array_length(gs.sheet_data) AS rows_count
             FROM {t('instructor_grade_sheets')} gs
@@ -356,6 +358,246 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"DELETE FROM {t('instructor_grade_sheets')} WHERE id = %s", (sid,))
         conn.commit(); conn.close()
         return ok({"message": "Ведомость удалена"})
+
+    if action == "sheet-share" and method == "POST":
+        sid = body.get("id")
+        shared = bool(body.get("is_shared", True))
+        if not sid:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_grade_sheets')} WHERE id = %s", (sid,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Ведомость не найдена", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        cur.execute(f"UPDATE {t('instructor_grade_sheets')} SET is_shared = %s, updated_at = NOW() WHERE id = %s", (shared, sid))
+        conn.commit(); conn.close()
+        return ok({"message": "Доступ обновлён", "is_shared": shared})
+
+    # ── ШАРИНГ КОНСПЕКТОВ (files) ─────────────────────────────────────────────
+
+    if action == "note-share" and method == "POST":
+        fid = body.get("id")
+        # Для конспектов-файлов шаринг = перенос в section instructor_shared
+        # Используем поле description prefix "[SHARED]"
+        if not fid:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT uploaded_by, description FROM {t('files')} WHERE id = %s AND section = 'instructor'", (fid,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Файл не найден", 404)
+        if not user["is_admin"] and row["uploaded_by"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        shared = bool(body.get("is_shared", True))
+        desc = row["description"] or ""
+        if shared and not desc.startswith("[SHARED]"):
+            desc = "[SHARED] " + desc
+        elif not shared:
+            desc = desc.replace("[SHARED] ", "").replace("[SHARED]", "")
+        cur.execute(f"UPDATE {t('files')} SET description = %s WHERE id = %s", (desc, fid))
+        conn.commit(); conn.close()
+        return ok({"message": "Доступ обновлён", "is_shared": shared})
+
+    # ── ДОКУМЕНТЫ (встроенный редактор) ──────────────────────────────────────
+
+    if action == "docs-list" and method == "GET":
+        show_all = params.get("all") == "1"
+        if show_all:
+            # все свои + все расшаренные другими
+            cur.execute(f"""
+                SELECT d.id, d.title, d.category, d.group_name, d.subject,
+                       d.is_shared, d.created_at, d.updated_at,
+                       u.name AS instructor_name, u.callsign AS instructor_callsign,
+                       LENGTH(d.content_html) AS content_len
+                FROM {t('instructor_documents')} d
+                JOIN {t('users')} u ON u.id = d.instructor_id
+                WHERE d.instructor_id = %s OR d.is_shared = TRUE
+                ORDER BY d.updated_at DESC
+            """, (uid,))
+        else:
+            cur.execute(f"""
+                SELECT d.id, d.title, d.category, d.group_name, d.subject,
+                       d.is_shared, d.created_at, d.updated_at,
+                       u.name AS instructor_name, u.callsign AS instructor_callsign,
+                       LENGTH(d.content_html) AS content_len
+                FROM {t('instructor_documents')} d
+                JOIN {t('users')} u ON u.id = d.instructor_id
+                WHERE d.instructor_id = %s
+                ORDER BY d.updated_at DESC
+            """, (uid,))
+        docs = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"docs": docs})
+
+    if action == "doc-get" and method == "GET":
+        did = params.get("id")
+        if not did:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"""
+            SELECT d.*, u.name AS instructor_name, u.callsign AS instructor_callsign
+            FROM {t('instructor_documents')} d
+            JOIN {t('users')} u ON u.id = d.instructor_id
+            WHERE d.id = %s
+        """, (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        row = dict(row)
+        if not user["is_admin"] and row["instructor_id"] != uid and not row["is_shared"]:
+            conn.close(); return err("Нет доступа", 403)
+        conn.close()
+        return ok({"doc": row})
+
+    if action == "doc-create" and method == "POST":
+        title = (body.get("title") or "Новый документ").strip()
+        cur.execute(f"""
+            INSERT INTO {t('instructor_documents')}
+            (instructor_id, title, category, content_html, group_name, subject, is_shared)
+            VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id
+        """, (uid, title, body.get("category","Конспект"),
+              body.get("content_html",""), body.get("group_name",""),
+              body.get("subject",""), bool(body.get("is_shared", False))))
+        new_id = cur.fetchone()["id"]
+        conn.commit(); conn.close()
+        return ok({"id": new_id, "message": "Документ создан"})
+
+    if action == "doc-update" and method == "POST":
+        did = body.get("id")
+        if not did:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        fields, vals = [], []
+        for col in ["title","category","group_name","subject"]:
+            if col in body:
+                fields.append(f"{col} = %s"); vals.append(body[col])
+        if "content_html" in body:
+            fields.append("content_html = %s"); vals.append(body["content_html"])
+        if "is_shared" in body:
+            fields.append("is_shared = %s"); vals.append(bool(body["is_shared"]))
+        if not fields:
+            conn.close(); return err("Нет полей")
+        fields.append("updated_at = NOW()")
+        vals.append(did)
+        cur.execute(f"UPDATE {t('instructor_documents')} SET {', '.join(fields)} WHERE id = %s", vals)
+        conn.commit(); conn.close()
+        return ok({"message": "Сохранено"})
+
+    if action == "doc-delete" and method == "POST":
+        did = body.get("id")
+        if not did:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        cur.execute(f"DELETE FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        conn.commit(); conn.close()
+        return ok({"message": "Удалён"})
+
+    if action == "doc-export-docx" and method == "POST":
+        """Конвертирует HTML-контент документа в DOCX и отдаёт base64."""
+        did = body.get("id")
+        if not did:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT * FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        row = dict(row)
+        if not user["is_admin"] and row["instructor_id"] != uid and not row["is_shared"]:
+            conn.close(); return err("Нет доступа", 403)
+        conn.close()
+
+        try:
+            from docx import Document
+            from docx.shared import Pt, RGBColor
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            import io
+
+            doc = Document()
+            # Стили документа
+            style = doc.styles["Normal"]
+            style.font.name = "Times New Roman"
+            style.font.size = Pt(12)
+
+            # Заголовок документа
+            title_para = doc.add_heading(row["title"], 0)
+            title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+            # Метаданные
+            if row.get("subject") or row.get("group_name"):
+                meta = []
+                if row.get("subject"): meta.append(f"Предмет: {row['subject']}")
+                if row.get("group_name"): meta.append(f"Группа: {row['group_name']}")
+                meta_para = doc.add_paragraph(" | ".join(meta))
+                meta_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                for run in meta_para.runs:
+                    run.font.color.rgb = RGBColor(0x5a, 0x7a, 0x95)
+                    run.font.size = Pt(10)
+
+            doc.add_paragraph("")
+
+            # Парсим HTML в параграфы
+            html = row.get("content_html", "")
+            # Убираем теги, оставляем структуру
+            html = html.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+
+            # Разбиваем по блочным тегам
+            blocks = re.split(r'(</?(?:p|h[1-6]|ul|ol|li|div|blockquote)[^>]*>)', html)
+            current_tag = "p"
+            list_level = 0
+
+            for block in blocks:
+                block = block.strip()
+                if not block:
+                    continue
+                # Тег открывающий
+                m = re.match(r'^<(h[1-6]|p|li|ul|ol|div|blockquote)([^>]*)>$', block, re.I)
+                if m:
+                    current_tag = m.group(1).lower()
+                    if current_tag in ("ul", "ol"):
+                        list_level += 1
+                    continue
+                # Тег закрывающий
+                if re.match(r'^</(h[1-6]|p|li|ul|ol|div|blockquote)>$', block, re.I):
+                    if re.match(r'^</(ul|ol)>$', block, re.I):
+                        list_level = max(0, list_level - 1)
+                    continue
+                # Текстовый контент — убираем оставшиеся теги
+                text = re.sub(r'<[^>]+>', '', block).strip()
+                if not text:
+                    continue
+
+                if current_tag in ("h1", "h2"):
+                    para = doc.add_heading(text, level=1)
+                elif current_tag in ("h3", "h4"):
+                    para = doc.add_heading(text, level=2)
+                elif current_tag in ("h5", "h6"):
+                    para = doc.add_heading(text, level=3)
+                elif current_tag == "li":
+                    para = doc.add_paragraph(style="List Bullet")
+                    para.add_run(text)
+                else:
+                    para = doc.add_paragraph(text)
+
+            # Сохраняем в байты
+            buf = io.BytesIO()
+            doc.save(buf)
+            docx_b64 = base64.b64encode(buf.getvalue()).decode()
+            filename = re.sub(r'[^\w\s-]', '', row["title"]).strip().replace(' ', '_') or "document"
+            return ok({"docx_b64": docx_b64, "filename": f"{filename}.docx"})
+
+        except ImportError:
+            return err("python-docx не установлен на сервере", 500)
+        except Exception as e:
+            return err(f"Ошибка экспорта: {str(e)}", 500)
 
     # ── ПОИСК КУРСАНТОВ для ведомости ────────────────────────────────────────
 

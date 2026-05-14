@@ -151,6 +151,56 @@ export default function InstructorSheetsTab({ user }: Props) {
     else { showMsg("Удалена"); load(); }
   };
 
+  const toggleShare = async (sheet: Sheet) => {
+    const res = await api.instructor.sheetShare(sheet.id, !sheet.is_shared);
+    if (!res.error) { showMsg(sheet.is_shared ? "Доступ закрыт" : "Ведомость доступна всем инструкторам"); load(); }
+    else showMsg(res.error, false);
+  };
+
+  const printSheet = async (sheet: Sheet) => {
+    const res = await api.instructor.sheetGet(sheet.id);
+    if (!res.sheet) return;
+    const s: Sheet = res.sheet;
+    const cols = s.sheet_data?.[0] ? Object.keys(s.sheet_data[0].grades || {}) : [];
+    const rows = s.sheet_data || [];
+    const html = `
+      <html><head><meta charset="utf-8"><title>${s.title}</title>
+      <style>
+        body{font-family:Times New Roman,serif;font-size:12pt;color:#000;margin:20mm}
+        h2{text-align:center;margin-bottom:4px}
+        .meta{text-align:center;color:#555;font-size:10pt;margin-bottom:16px}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th,td{border:1px solid #333;padding:4px 8px;text-align:center;font-size:11pt}
+        th{background:#f0f0f0;font-weight:bold}
+        td:nth-child(2){text-align:left}
+        .sign{margin-top:40px;display:flex;justify-content:space-between}
+        @media print{body{margin:10mm}}
+      </style></head><body>
+      <h2>${s.title}</h2>
+      <div class="meta">${[s.subject, s.group_name].filter(Boolean).join(" · ")}</div>
+      <table>
+        <tr><th>#</th><th>Позывной / Имя</th>
+        ${cols.map(c => `<th>${c}<br/><small>Оц / Пос</small></th>`).join("")}
+        <th>Комм.</th></tr>
+        ${rows.map((r, i) => `<tr>
+          <td>${i+1}</td>
+          <td>${r.callsign ? `<b>${r.callsign}</b> ` : ""}${r.name}</td>
+          ${cols.map(c => `<td>${r.grades?.[c] || ""}${r.attendance?.[c] ? ` / ${r.attendance[c]}` : ""}</td>`).join("")}
+          <td>${r.comment || ""}</td>
+        </tr>`).join("")}
+      </table>
+      <div class="sign">
+        <div>Инструктор: ________________</div>
+        <div>Дата: ________________</div>
+      </div>
+      </body></html>`;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => { win.print(); }, 400);
+  };
+
   const exportCSV = (sheet: Sheet) => {
     if (!sheet.sheet_data?.length) return;
     const cols = Object.keys(sheet.sheet_data[0]?.grades || {});
@@ -387,6 +437,15 @@ export default function InstructorSheetsTab({ user }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={() => toggleShare(sheet)} title={sheet.is_shared ? "Закрыть доступ" : "Поделиться"}
+                  className="w-8 h-8 flex items-center justify-center transition-colors"
+                  style={{ color: sheet.is_shared ? "#a855f7" : "#3a5570" }}>
+                  <Icon name="Share2" size={14} />
+                </button>
+                <button onClick={() => printSheet(sheet)} title="Печать ведомости"
+                  className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
+                  <Icon name="Printer" size={14} />
+                </button>
                 <button onClick={() => exportCSV(sheet)} title="Экспорт CSV"
                   className="flex items-center gap-1 px-2.5 py-1.5 font-mono text-[10px] text-[#00ff88] hover:text-white transition-colors"
                   style={{ border: "1px solid rgba(0,255,136,0.2)" }}>

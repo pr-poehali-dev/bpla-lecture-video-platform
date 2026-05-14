@@ -1,0 +1,1 @@
+ALTER TABLE instructor_grade_sheets ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT FALSE;

@@ -98,11 +98,35 @@ export default function InstructorNotesTab({ user }: Props) {
     else { showMsg("Удалён"); load(); }
   };
 
+  const share = async (file: NoteFile) => {
+    const isShared = file.description?.startsWith("[SHARED]");
+    const res = await api.instructor.noteShare(file.id, !isShared);
+    if (!res.error) { showMsg(!isShared ? "Файл доступен всем инструкторам" : "Доступ закрыт"); load(); }
+    else showMsg(res.error, false);
+  };
+
   const filtered = files.filter(f => {
     const matchCat = filterCat === "Все" || f.category === filterCat;
     const matchSearch = !search || f.title.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  // Разделяем мои и расшаренные
+  const myFiles = filtered.filter(f => f.uploader_name === user.name || f.uploader_callsign === user.callsign);
+  const sharedFiles = filtered.filter(f => f.description?.startsWith("[SHARED]") && f.uploader_name !== user.name);
+
+  const printFile = (file: NoteFile) => {
+    const win = window.open(file.cdn_url, "_blank");
+    win?.focus();
+  };
+
+  const getViewerUrl = (file: NoteFile) => {
+    const isDocx = file.mime_type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      || file.mime_type === "application/msword";
+    if (isDocx) return `https://docs.google.com/viewer?url=${encodeURIComponent(file.cdn_url)}&embedded=true`;
+    if (file.mime_type === "application/pdf") return `${file.cdn_url}#toolbar=1`;
+    return null;
+  };
 
   return (
     <div className="space-y-5">
@@ -195,40 +219,56 @@ export default function InstructorNotesTab({ user }: Props) {
       )}
 
       {/* File viewer modal */}
-      {viewing && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          style={{ background: "rgba(5,8,16,0.95)" }}
-          onClick={e => { if (e.target === e.currentTarget) setViewing(null); }}>
-          <div className="w-full sm:max-w-4xl flex flex-col" style={{ border: "1px solid rgba(0,255,136,0.3)", background: "#0a1520", maxHeight: "90vh" }}>
-            <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,255,136,0.1)" }}>
-              <span className="font-mono text-sm text-white truncate">{viewing.title}</span>
-              <div className="flex items-center gap-3 ml-4">
-                <a href={viewing.cdn_url} download={viewing.original_name}
-                  className="font-mono text-xs text-[#3a5570] hover:text-[#00ff88] transition-colors flex items-center gap-1">
-                  <Icon name="Download" size={13} /> Скачать
-                </a>
-                <button onClick={() => setViewing(null)} className="text-[#3a5570] hover:text-white transition-colors">
-                  <Icon name="X" size={18} />
-                </button>
+      {viewing && (() => {
+        const viewerUrl = getViewerUrl(viewing);
+        const isShared = viewing.description?.startsWith("[SHARED]");
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+            style={{ background: "rgba(5,8,16,0.95)" }}
+            onClick={e => { if (e.target === e.currentTarget) setViewing(null); }}>
+            <div className="w-full sm:max-w-5xl flex flex-col" style={{ border: "1px solid rgba(0,255,136,0.3)", background: "#0a1520", maxHeight: "92vh" }}>
+              <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,255,136,0.1)" }}>
+                <span className="font-mono text-sm text-white truncate">{viewing.title}</span>
+                <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  <button onClick={() => share(viewing)} title={isShared ? "Закрыть общий доступ" : "Поделиться с инструкторами"}
+                    className="flex items-center gap-1.5 font-mono text-xs transition-colors px-2 py-1"
+                    style={{ border: `1px solid ${isShared ? "rgba(168,85,247,0.4)" : "rgba(0,245,255,0.2)"}`, color: isShared ? "#a855f7" : "#3a5570" }}>
+                    <Icon name="Share2" size={12} />
+                    {isShared ? "Закрыть" : "Поделиться"}
+                  </button>
+                  <button onClick={() => printFile(viewing)} title="Открыть для печати"
+                    className="flex items-center gap-1.5 font-mono text-xs transition-colors px-2 py-1"
+                    style={{ border: "1px solid rgba(0,245,255,0.2)", color: "#00f5ff" }}>
+                    <Icon name="Printer" size={12} /> Печать
+                  </button>
+                  <a href={viewing.cdn_url} download={viewing.original_name}
+                    className="flex items-center gap-1.5 font-mono text-xs text-[#3a5570] hover:text-[#00ff88] transition-colors px-2 py-1"
+                    style={{ border: "1px solid rgba(0,245,255,0.1)" }}>
+                    <Icon name="Download" size={12} /> Скачать
+                  </a>
+                  <button onClick={() => setViewing(null)} className="text-[#3a5570] hover:text-white transition-colors ml-1">
+                    <Icon name="X" size={18} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+                {viewerUrl ? (
+                  <iframe src={viewerUrl} className="w-full h-full" style={{ minHeight: "72vh", border: "none" }} title={viewing.title} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
+                    <Icon name="FileDown" size={48} className="text-[#3a5570]" />
+                    <div className="font-mono text-sm text-[#3a5570]">Предпросмотр недоступен для этого формата</div>
+                    <a href={viewing.cdn_url} download={viewing.original_name}
+                      className="font-mono text-xs px-4 py-2" style={{ border: "1px solid rgba(0,255,136,0.4)", color: "#00ff88" }}>
+                      СКАЧАТЬ ФАЙЛ
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
-              {viewing.mime_type === "application/pdf" ? (
-                <iframe src={`${viewing.cdn_url}#toolbar=1`} className="w-full h-full" style={{ minHeight: "70vh", border: "none" }} title={viewing.title} />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full py-20 gap-4">
-                  <Icon name="FileDown" size={48} className="text-[#3a5570]" />
-                  <div className="font-mono text-sm text-[#3a5570]">Предпросмотр недоступен</div>
-                  <a href={viewing.cdn_url} download={viewing.original_name}
-                    className="font-mono text-xs px-4 py-2" style={{ border: "1px solid rgba(0,255,136,0.4)", color: "#00ff88" }}>
-                    СКАЧАТЬ ФАЙЛ
-                  </a>
-                </div>
-              )}
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* File list */}
       {loading ? (
@@ -239,46 +279,84 @@ export default function InstructorNotesTab({ user }: Props) {
           <div className="font-mono text-xs text-[#3a5570]">Конспектов нет</div>
         </div>
       ) : (
-        <div style={{ border: "1px solid rgba(0,255,136,0.08)" }}>
-          {filtered.map((file, i) => {
-            const meta = MIME_LABELS[file.mime_type] || { label: "FILE", color: "#3a5570" };
-            return (
-              <div key={file.id}
-                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[rgba(0,255,136,0.02)] transition-colors"
-                style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(0,245,255,0.04)" : "none" }}
-                onClick={() => setViewing(file)}>
-                <span className="font-mono text-[10px] px-1.5 py-0.5 flex-shrink-0"
-                  style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}55`, color: meta.color }}>
-                  {meta.label}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-plex text-sm text-white truncate">{file.title}</div>
-                  <div className="font-mono text-[10px] text-[#3a5570] flex flex-wrap gap-x-3">
-                    {file.category && <span>{file.category}</span>}
-                    <span>{fmtDate(file.created_at)}</span>
-                    {(showAll || user.is_admin) && <span className="text-[#a855f7]">{file.uploader_callsign || file.uploader_name}</span>}
-                  </div>
-                </div>
-                <span className="font-mono text-[10px] text-[#3a5570] flex-shrink-0 hidden sm:block">{fmtSize(file.file_size)}</span>
-                <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setViewing(file)} title="Открыть"
-                    className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#00ff88] transition-colors">
-                    <Icon name="Eye" size={14} />
-                  </button>
-                  <a href={file.cdn_url} download={file.original_name} title="Скачать"
-                    className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
-                    <Icon name="Download" size={14} />
-                  </a>
-                  <button onClick={() => del(file.id)} title="Удалить"
-                    className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
-                    <Icon name="Trash2" size={14} />
-                  </button>
-                </div>
+        <div className="space-y-4">
+          {myFiles.length > 0 && (
+            <div>
+              <div className="font-mono text-[10px] text-[#3a5570] tracking-widest mb-2">МОИ ФАЙЛЫ</div>
+              <div style={{ border: "1px solid rgba(0,255,136,0.08)" }}>
+                {myFiles.map((file, i) => <NoteRow key={file.id} file={file} idx={i} total={myFiles.length} isOwn
+                  onView={() => setViewing(file)} onShare={() => share(file)} onDelete={() => del(file.id)} fmtSize={fmtSize} fmtDate={fmtDate} />)}
               </div>
-            );
-          })}
+            </div>
+          )}
+          {sharedFiles.length > 0 && (
+            <div>
+              <div className="font-mono text-[10px] text-[#a855f7] tracking-widest mb-2 flex items-center gap-1">
+                <Icon name="Share2" size={9} /> РАСШАРЕННЫЕ ДРУГИМИ ИНСТРУКТОРАМИ
+              </div>
+              <div style={{ border: "1px solid rgba(168,85,247,0.15)" }}>
+                {sharedFiles.map((file, i) => <NoteRow key={file.id} file={file} idx={i} total={sharedFiles.length} isOwn={false}
+                  onView={() => setViewing(file)} onShare={() => {}} onDelete={() => {}} fmtSize={fmtSize} fmtDate={fmtDate} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function NoteRow({ file, idx, total, isOwn, onView, onShare, onDelete, fmtSize, fmtDate }: {
+  file: NoteFile; idx: number; total: number; isOwn: boolean;
+  onView: () => void; onShare: () => void; onDelete: () => void;
+  fmtSize: (b: number) => string; fmtDate: (s: string) => string;
+}) {
+  const meta = MIME_LABELS[file.mime_type] || { label: "FILE", color: "#3a5570" };
+  const isShared = file.description?.startsWith("[SHARED]");
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[rgba(0,255,136,0.02)] transition-colors"
+      style={{ borderBottom: idx < total - 1 ? "1px solid rgba(0,245,255,0.04)" : "none" }}
+      onClick={onView}>
+      <span className="font-mono text-[10px] px-1.5 py-0.5 flex-shrink-0"
+        style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}55`, color: meta.color }}>
+        {meta.label}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-plex text-sm text-white truncate">{file.title}</span>
+          {isShared && isOwn && (
+            <span className="font-mono text-[9px] px-1.5 py-0.5 flex items-center gap-1 flex-shrink-0"
+              style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.3)", color: "#a855f7" }}>
+              <Icon name="Share2" size={8} /> ОБЩИЙ
+            </span>
+          )}
+        </div>
+        <div className="font-mono text-[10px] text-[#3a5570] flex flex-wrap gap-x-3">
+          {file.category && <span>{file.category}</span>}
+          <span>{fmtDate(file.created_at)}</span>
+          {!isOwn && <span className="text-[#a855f7]">{file.uploader_callsign || file.uploader_name}</span>}
+        </div>
+      </div>
+      <span className="font-mono text-[10px] text-[#3a5570] flex-shrink-0 hidden sm:block">{fmtSize(file.file_size)}</span>
+      <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+        {isOwn && (
+          <button onClick={onShare} title={isShared ? "Закрыть доступ" : "Поделиться"}
+            className="w-8 h-8 flex items-center justify-center transition-colors"
+            style={{ color: isShared ? "#a855f7" : "#3a5570" }}>
+            <Icon name="Share2" size={13} />
+          </button>
+        )}
+        <a href={file.cdn_url} download={file.original_name} title="Скачать"
+          className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#00f5ff] transition-colors">
+          <Icon name="Download" size={13} />
+        </a>
+        {isOwn && (
+          <button onClick={onDelete} title="Удалить"
+            className="w-8 h-8 flex items-center justify-center text-[#3a5570] hover:text-[#ff2244] transition-colors">
+            <Icon name="Trash2" size={13} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

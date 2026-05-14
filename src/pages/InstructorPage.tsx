@@ -4,13 +4,15 @@ import Icon from "@/components/ui/icon";
 import InstructorScheduleTab from "./instructor/InstructorScheduleTab";
 import InstructorNotesTab from "./instructor/InstructorNotesTab";
 import InstructorSheetsTab from "./instructor/InstructorSheetsTab";
+import InstructorDocsTab from "./instructor/InstructorDocsTab";
 
-type Tab = "schedule" | "notes" | "sheets";
+type Tab = "schedule" | "docs" | "notes" | "sheets";
 
-const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
-  { id: "schedule", label: "Расписание", icon: "CalendarDays", desc: "Занятия и события" },
-  { id: "notes",    label: "Конспекты",  icon: "FileText",     desc: "Учебные материалы" },
-  { id: "sheets",   label: "Ведомости",  icon: "ClipboardList", desc: "Успеваемость" },
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: "schedule", label: "Расписание", icon: "CalendarDays" },
+  { id: "docs",     label: "Документы",  icon: "FileEdit" },
+  { id: "notes",    label: "Конспекты",  icon: "FileText" },
+  { id: "sheets",   label: "Ведомости",  icon: "ClipboardList" },
 ];
 
 interface Props { user: User; }
@@ -40,7 +42,7 @@ export default function InstructorPage({ user }: Props) {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className="flex items-center gap-2 px-4 sm:px-6 py-3 font-mono text-xs tracking-wider transition-all"
+            className="flex items-center gap-2 px-4 sm:px-5 py-3 font-mono text-xs tracking-wider transition-all"
             style={{
               borderBottom: tab === t.id ? "2px solid #00ff88" : "2px solid transparent",
               color: tab === t.id ? "#00ff88" : "#3a5570",
@@ -50,13 +52,14 @@ export default function InstructorPage({ user }: Props) {
           >
             <Icon name={t.icon as "CalendarDays"} size={13} />
             <span className="hidden sm:inline">{t.label}</span>
-            <span className="sm:hidden">{t.label.slice(0, 4)}</span>
+            <span className="sm:hidden">{t.label.slice(0, 3)}</span>
           </button>
         ))}
       </div>
 
       {/* Content */}
       {tab === "schedule" && <InstructorScheduleTab user={user} />}
+      {tab === "docs"     && <InstructorDocsTab     user={user} />}
       {tab === "notes"    && <InstructorNotesTab    user={user} />}
       {tab === "sheets"   && <InstructorSheetsTab   user={user} />}
     </div>
