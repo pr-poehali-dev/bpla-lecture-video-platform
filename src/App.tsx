@@ -199,7 +199,9 @@ export default function App() {
       case "support": return <SupportPage user={user} />;
       case "instructor": {
         const isInstr = user.is_admin || ["инструктор кт","инструктор fpv","инструктор оператор-сапер"].includes(user.role || "");
-        return isInstr ? <InstructorPage user={user} /> : <HomePage onNavigate={navigate} />;
+        return isInstr
+          ? <InstructorPage user={user} onUpdate={(u) => setUser(u)} onNavigate={navigate} onGoToAdmin={user.is_admin ? () => setShowAdmin(true) : undefined} onLogout={handleLogout} />
+          : <HomePage onNavigate={navigate} />;
       }
       case "leaderboard": return <LeaderboardPage user={user} />;
       default: return <HomePage onNavigate={navigate} />;
