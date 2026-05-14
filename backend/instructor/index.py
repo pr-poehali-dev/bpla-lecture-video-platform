@@ -599,6 +599,183 @@ def handler(event: dict, context) -> dict:
         except Exception as e:
             return err(f"Ошибка экспорта: {str(e)}", 500)
 
+    # ── ПАПКИ ────────────────────────────────────────────────────────────────
+
+    if action == "folders-list" and method == "GET":
+        # Возвращает все папки + документы в них для текущего инструктора
+        # (и расшаренные другими если ?all=1)
+        show_all = params.get("all") == "1"
+        if show_all:
+            cur.execute(f"""
+                SELECT f.id, f.name, f.parent_id, f.color, f.sort_order, f.is_shared,
+                       u.name AS owner_name, u.callsign AS owner_callsign
+                FROM {t('instructor_folders')} f
+                JOIN {t('users')} u ON u.id = f.instructor_id
+                WHERE f.instructor_id = %s OR f.is_shared = TRUE
+                ORDER BY f.parent_id NULLS FIRST, f.sort_order, f.name
+            """, (uid,))
+        else:
+            cur.execute(f"""
+                SELECT f.id, f.name, f.parent_id, f.color, f.sort_order, f.is_shared,
+                       u.name AS owner_name, u.callsign AS owner_callsign
+                FROM {t('instructor_folders')} f
+                JOIN {t('users')} u ON u.id = f.instructor_id
+                WHERE f.instructor_id = %s
+                ORDER BY f.parent_id NULLS FIRST, f.sort_order, f.name
+            """, (uid,))
+        folders = [dict(r) for r in cur.fetchall()]
+        # Документы в папках
+        folder_ids = [f["id"] for f in folders]
+        docs = []
+        if folder_ids or True:
+            if show_all:
+                cur.execute(f"""
+                    SELECT d.id, d.title, d.category, d.doc_type, d.folder_id,
+                           d.group_name, d.subject, d.is_shared, d.updated_at,
+                           d.file_url, d.file_original_name, d.file_size, d.file_mime,
+                           d.sort_order, u.name AS instructor_name, u.callsign AS instructor_callsign
+                    FROM {t('instructor_documents')} d
+                    JOIN {t('users')} u ON u.id = d.instructor_id
+                    WHERE d.instructor_id = %s OR d.is_shared = TRUE
+                    ORDER BY d.folder_id NULLS LAST, d.sort_order, d.updated_at DESC
+                """, (uid,))
+            else:
+                cur.execute(f"""
+                    SELECT d.id, d.title, d.category, d.doc_type, d.folder_id,
+                           d.group_name, d.subject, d.is_shared, d.updated_at,
+                           d.file_url, d.file_original_name, d.file_size, d.file_mime,
+                           d.sort_order, u.name AS instructor_name, u.callsign AS instructor_callsign
+                    FROM {t('instructor_documents')} d
+                    JOIN {t('users')} u ON u.id = d.instructor_id
+                    WHERE d.instructor_id = %s
+                    ORDER BY d.folder_id NULLS LAST, d.sort_order, d.updated_at DESC
+                """, (uid,))
+            docs = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return ok({"folders": folders, "docs": docs})
+
+    if action == "folder-create" and method == "POST":
+        name = (body.get("name") or "").strip()
+        if not name:
+            conn.close(); return err("Название обязательно")
+        parent_id = body.get("parent_id") or None
+        color = body.get("color", "#00f5ff")
+        cur.execute(f"SELECT COALESCE(MAX(sort_order),0)+1 FROM {t('instructor_folders')} WHERE instructor_id = %s AND parent_id IS NOT DISTINCT FROM %s", (uid, parent_id))
+        order = cur.fetchone()[0]
+        cur.execute(f"""
+            INSERT INTO {t('instructor_folders')} (instructor_id, name, parent_id, color, sort_order)
+            VALUES (%s,%s,%s,%s,%s) RETURNING id
+        """, (uid, name, parent_id, color, order))
+        new_id = cur.fetchone()["id"]
+        conn.commit(); conn.close()
+        return ok({"id": new_id, "message": f"Папка «{name}» создана"})
+
+    if action == "folder-update" and method == "POST":
+        fid = body.get("id")
+        if not fid:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_folders')} WHERE id = %s", (fid,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Папка не найдена", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        fields, vals = [], []
+        for col in ["name", "color", "parent_id"]:
+            if col in body:
+                fields.append(f"{col} = %s"); vals.append(body[col] if body[col] != "" else None)
+        if "is_shared" in body:
+            fields.append("is_shared = %s"); vals.append(bool(body["is_shared"]))
+        if not fields:
+            conn.close(); return err("Нет полей")
+        fields.append("updated_at = NOW()")
+        vals.append(fid)
+        cur.execute(f"UPDATE {t('instructor_folders')} SET {', '.join(fields)} WHERE id = %s", vals)
+        conn.commit(); conn.close()
+        return ok({"message": "Папка обновлена"})
+
+    if action == "folder-delete" and method == "POST":
+        fid = body.get("id")
+        if not fid:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_folders')} WHERE id = %s", (fid,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Папка не найдена", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        # Документы в папке переносим в корень
+        cur.execute(f"UPDATE {t('instructor_documents')} SET folder_id = NULL WHERE folder_id = %s", (fid,))
+        # Подпапки переносим в корень
+        cur.execute(f"UPDATE {t('instructor_folders')} SET parent_id = NULL WHERE parent_id = %s", (fid,))
+        cur.execute(f"UPDATE {t('instructor_folders')} SET parent_id = NULL WHERE id = %s", (fid,))
+        conn.commit(); conn.close()
+        return ok({"message": "Папка удалена"})
+
+    # ── ЗАГРУЗКА WORD/PDF ФАЙЛОВ ──────────────────────────────────────────────
+
+    if action == "file-upload" and method == "POST":
+        title = (body.get("title") or "").strip()
+        file_data = body.get("file_data", "")
+        original_name = body.get("original_name", "file")
+        mime_type = body.get("mime_type", "application/octet-stream")
+        folder_id = body.get("folder_id") or None
+        category = body.get("category", "Конспект")
+        if not title:
+            conn.close(); return err("Название обязательно")
+        if not file_data:
+            conn.close(); return err("Файл обязателен")
+        try:
+            raw = base64.b64decode(file_data.split(",")[-1] if "," in file_data else file_data)
+        except Exception:
+            conn.close(); return err("Ошибка декодирования файла")
+        ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else "bin"
+        key = f"instructor-files/{uuid.uuid4()}.{ext}"
+        s3 = get_s3()
+        s3.put_object(Bucket="files", Key=key, Body=raw, ContentType=mime_type)
+        cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+        cur.execute(f"""
+            INSERT INTO {t('instructor_documents')}
+            (instructor_id, title, category, content_html, folder_id, doc_type,
+             file_url, file_original_name, file_size, file_mime, s3_key)
+            VALUES (%s,%s,%s,'',%s,'file',%s,%s,%s,%s,%s) RETURNING id
+        """, (uid, title, category, folder_id, cdn_url, original_name, len(raw), mime_type, key))
+        new_id = cur.fetchone()["id"]
+        conn.commit(); conn.close()
+        return ok({"id": new_id, "file_url": cdn_url, "message": "Файл загружен"})
+
+    # Перемещение документа в папку
+    if action == "doc-move" and method == "POST":
+        did = body.get("id")
+        folder_id = body.get("folder_id")  # None = корень
+        if not did:
+            conn.close(); return err("id обязателен")
+        cur.execute(f"SELECT instructor_id FROM {t('instructor_documents')} WHERE id = %s", (did,))
+        row = cur.fetchone()
+        if not row:
+            conn.close(); return err("Документ не найден", 404)
+        if not user["is_admin"] and row["instructor_id"] != uid:
+            conn.close(); return err("Нет доступа", 403)
+        cur.execute(f"UPDATE {t('instructor_documents')} SET folder_id = %s, updated_at = NOW() WHERE id = %s",
+                    (folder_id if folder_id else None, did))
+        conn.commit(); conn.close()
+        return ok({"message": "Перемещено"})
+
+    # Создать документ в папке
+    if action == "doc-create-in-folder" and method == "POST":
+        title = (body.get("title") or "Новый документ").strip()
+        folder_id = body.get("folder_id") or None
+        category = body.get("category", "Конспект")
+        cur.execute(f"""
+            INSERT INTO {t('instructor_documents')}
+            (instructor_id, title, category, content_html, group_name, subject, is_shared, folder_id, doc_type)
+            VALUES (%s,%s,%s,'',%s,%s,%s,%s,'document') RETURNING id
+        """, (uid, title, category, body.get("group_name",""), body.get("subject",""),
+              bool(body.get("is_shared", False)), folder_id))
+        new_id = cur.fetchone()["id"]
+        conn.commit(); conn.close()
+        return ok({"id": new_id, "message": "Документ создан"})
+
     # ── ПОИСК КУРСАНТОВ для ведомости ────────────────────────────────────────
 
     if action == "search-users" and method == "GET":

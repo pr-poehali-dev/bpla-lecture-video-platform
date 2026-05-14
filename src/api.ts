@@ -430,5 +430,23 @@ export const api = {
       fetch(`${INSTRUCTOR_URL}/?action=doc-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
     docExportDocx: (id: number) =>
       fetch(`${INSTRUCTOR_URL}/?action=doc-export-docx`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+
+    // Файловый менеджер с папками
+    foldersList: (all = false) =>
+      fetch(`${INSTRUCTOR_URL}/?action=folders-list${all ? "&all=1" : ""}`, { headers: authHeaders() }).then(r => r.json()),
+    folderCreate: (data: { name: string; parent_id?: number | null; color?: string }) =>
+      fetch(`${INSTRUCTOR_URL}/?action=folder-create`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    folderUpdate: (data: { id: number; name?: string; color?: string; parent_id?: number | null; is_shared?: boolean }) =>
+      fetch(`${INSTRUCTOR_URL}/?action=folder-update`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+    folderDelete: (id: number) =>
+      fetch(`${INSTRUCTOR_URL}/?action=folder-delete`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id }) }).then(r => r.json()),
+
+    fileUpload: (data: { title: string; file_data: string; original_name: string; mime_type: string; folder_id?: number | null; category?: string }) =>
+      fetch(`${INSTRUCTOR_URL}/?action=file-upload`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
+
+    docMove: (id: number, folder_id: number | null) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-move`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ id, folder_id }) }).then(r => r.json()),
+    docCreateInFolder: (data: { title: string; folder_id?: number | null; category?: string; group_name?: string; subject?: string }) =>
+      fetch(`${INSTRUCTOR_URL}/?action=doc-create-in-folder`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) }).then(r => r.json()),
   },
 };

@@ -20,6 +20,27 @@
       "path": "/?action=sheet-create",
       "expectedStatus": 401,
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Folders list without auth",
+      "method": "GET",
+      "path": "/?action=folders-list",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Folder create without auth",
+      "method": "POST",
+      "path": "/?action=folder-create",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "File upload without auth",
+      "method": "POST",
+      "path": "/?action=file-upload",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
     }
   ]
 }
