@@ -63,7 +63,7 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
 
   useEffect(() => {
     api.progress.myNotes().then(res => { if (res.notes) setNotes(res.notes); }).catch(() => {});
-    api.progress.myStats().then(res => {
+    api.progress.myProgress().then(res => {
       if (res.stats) setStats(res.stats);
       if (res.total_lectures) setTotalLectures(res.total_lectures);
       if (res.total_videos) setTotalVideos(res.total_videos);
