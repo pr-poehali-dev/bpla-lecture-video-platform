@@ -128,7 +128,7 @@ def handler(event: dict, context) -> dict:
 
     # GET ?action=users
     if action == "users" and method == "GET":
-        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, is_blocked, role, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
+        cur.execute(f"SELECT id, name, callsign, email, status, is_admin, is_blocked, role, rank, dog_tag, unit, created_at, approved_at FROM {q('users')} ORDER BY created_at DESC")
         users = [dict(u) for u in cur.fetchall()]
         return ok({"users": users})
 
@@ -441,7 +441,7 @@ def handler(event: dict, context) -> dict:
         if not uid:
             return err("user_id обязателен")
         cur.execute(f"""
-            SELECT id, name, callsign, email, rank, role, status, is_admin, is_blocked,
+            SELECT id, name, callsign, email, rank, dog_tag, unit, role, status, is_admin, is_blocked,
                    created_at, approved_at, last_seen
             FROM {q('users')} WHERE id = %s
         """, (uid,))

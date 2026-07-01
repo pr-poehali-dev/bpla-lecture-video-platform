@@ -278,6 +278,8 @@ export default function ProfilePage({ user, onUpdate, onNavigate, onGoToAdmin, o
                   { label: "ИМЯ", value: user.name, icon: "UserCheck" },
                   { label: "ПОЛ", value: user.gender === "male" ? "Мужской" : user.gender === "female" ? "Женский" : undefined, icon: "User" },
                   { label: "ЗВАНИЕ", value: user.rank, icon: "Award" },
+                  { label: "№ ЖЕТОНА", value: user.dog_tag, icon: "Tag" },
+                  { label: "ПОДРАЗДЕЛЕНИЕ", value: user.unit, icon: "Shield" },
                   { label: "КОНТАКТЫ", value: user.contacts, icon: "Phone" },
                   { label: "EMAIL", value: user.email, icon: "Mail" },
                 ].map(f => (

@@ -12,6 +12,9 @@ export interface User {
   is_admin: boolean;
   is_blocked?: boolean;
   role: string;
+  rank?: string;
+  dog_tag?: string;
+  unit?: string;
   created_at: string;
   approved_at: string | null;
 }
@@ -52,7 +55,7 @@ interface Props {
   onDeleteUser?: (id: number) => void;
   onBlockUser?: (id: number, reason: string) => void;
   onUnblockUser?: (id: number) => void;
-  onResetPassword?: (id: number) => void;
+  onResetPassword?: (id: number) => Promise<unknown>;
   onBulkApprove?: (ids: number[]) => void;
   onBulkReject?: (ids: number[]) => void;
 }

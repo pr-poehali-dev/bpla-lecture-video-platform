@@ -36,6 +36,8 @@ export interface User {
   email: string;
   callsign?: string;
   rank?: string;
+  dog_tag?: string;
+  unit?: string;
   contacts?: string;
   avatar_url?: string | null;
   is_admin: boolean;
@@ -81,7 +83,7 @@ export default function App() {
     return () => clearInterval(ping);
   }, []);
 
-  const handleLogin = (u: object) => {
+  const handleLogin = (u: object, _token?: string) => {
     setUser(u as User);
   };
 

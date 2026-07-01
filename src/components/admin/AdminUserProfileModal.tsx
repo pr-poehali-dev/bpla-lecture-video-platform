@@ -27,6 +27,8 @@ interface RankOrder {
 
 interface ProfileData extends User {
   rank?: string;
+  dog_tag?: string;
+  unit?: string;
   last_seen?: string;
   progress_count: number;
   topics_count: number;
@@ -169,6 +171,8 @@ export default function AdminUserProfileModal({ user, onClose }: Props) {
       ["Email", p.email],
       ["Роль", p.role],
       ["Статус", p.status],
+      ["Номер жетона", p.dog_tag || ""],
+      ["Подразделение", p.unit || ""],
       ["Создан", fmtDate(p.created_at)],
       ["Одобрен", fmtDate(p.approved_at)],
     ];
@@ -254,6 +258,25 @@ export default function AdminUserProfileModal({ user, onClose }: Props) {
                 </div>
               ))}
             </div>
+
+            {/* Жетон и подразделение */}
+            {(profile?.dog_tag || user.dog_tag || profile?.unit || user.unit) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { label: "НОМЕР ЖЕТОНА", value: profile?.dog_tag || user.dog_tag || "—", icon: "Tag" },
+                  { label: "ПОДРАЗДЕЛЕНИЕ", value: profile?.unit || user.unit || "—", icon: "Shield" },
+                ].map(d => (
+                  <div key={d.label} className="p-3 flex items-start gap-2"
+                    style={{ background: "rgba(13,27,46,0.6)", border: "1px solid rgba(0,245,255,0.06)" }}>
+                    <Icon name={d.icon as "Tag"} size={12} className="text-[#3a5570] mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-mono text-[9px] text-[#3a5570] tracking-wider mb-1">{d.label}</div>
+                      <div className="font-mono text-xs text-[#8ab0cc]">{d.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Dates */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
